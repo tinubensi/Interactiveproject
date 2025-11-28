@@ -1,0 +1,40 @@
+import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { getPortal } from '../../lib/portalRepository';
+import { jsonResponse, handleError } from '../../lib/httpResponses';
+import { ensureAuthorized } from '../../lib/auth';
+import { handlePreflight } from '../../lib/corsHelper';
+
+const getPortalHandler = async (
+  request: HttpRequest,
+  context: InvocationContext
+): Promise<HttpResponseInit> => {
+  const preflightResponse = handlePreflight(request);
+  if (preflightResponse) return preflightResponse;
+
+  try {
+    ensureAuthorized(request);
+    const portalId = request.params.portalId;
+    if (!portalId) {
+      return jsonResponse(400, { error: 'portalId is required' });
+    }
+
+    context.log('Getting portal', { portalId });
+    const portal = await getPortal(portalId);
+    if (!portal) {
+      return jsonResponse(404, { error: 'Portal not found' });
+    }
+
+    return jsonResponse(200, portal);
+  } catch (error) {
+    context.error('Error getting portal', error);
+    return handleError(error);
+  }
+};
+
+app.http('GetPortal', {
+  methods: ['GET', 'OPTIONS'],
+  authLevel: 'anonymous',
+  route: 'portals/{portalId}',
+  handler: getPortalHandler
+});
+
