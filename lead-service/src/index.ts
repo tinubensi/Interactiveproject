@@ -1,0 +1,36 @@
+/**
+ * Lead Service - Main Entry Point
+ * Registers all Azure Functions
+ */
+
+// Import all function modules to register them
+import './functions/leads/createLead';
+import './functions/leads/listLeads';
+import './functions/leads/getLeadById';
+import './functions/leads/updateLead';
+import './functions/leads/deleteLead';
+import './functions/leads/changeStage';
+
+import './functions/timelines/getTimeline';
+
+import './functions/stages/getStages';
+
+import './functions/metadata/getPetTypes';
+import './functions/metadata/getBreeds';
+import './functions/metadata/getBreedTypes';
+import './functions/metadata/getGenderTypes';
+import './functions/metadata/getEmirates';
+
+import './functions/events/handlePlansFetched';
+import './functions/events/handleQuotationCreated';
+import './functions/events/handlePolicyIssued';
+
+// All functions are auto-registered via app.http() and app.eventGrid() calls
+export * from './models/lead';
+export * from './models/events';
+export * from './models/metadata';
+export * from './services/cosmosService';
+export * from './services/eventGridService';
+export * from './services/metadataService';
+
+

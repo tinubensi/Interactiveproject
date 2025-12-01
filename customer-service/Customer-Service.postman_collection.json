@@ -1,0 +1,213 @@
+{
+	"info": {
+		"name": "Customer Service API",
+		"description": "API collection for Customer Service Azure Functions",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Signup - Individual",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customerType\": \"INDIVIDUAL\",\n  \"title\": \"Mr\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"name\": \"John Doe\",\n  \"dateOfBirth\": \"1990-01-15\",\n  \"email\": \"john.doe@example.com\",\n  \"phoneNumber\": \"+971501234567\",\n  \"mobileNumber\": \"+971501234567\",\n  \"nationality\": \"American\",\n  \"gender\": \"Male\",\n  \"address\": \"123 Main St, Dubai\",\n  \"agent\": \"Direct\",\n  \"placementExecutive\": \"Jane Smith\",\n  \"customerTypeCategory\": \"VERY IMPORTANT PERSON\",\n  \"currency\": \"AED\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/customers/signup",
+							"host": ["{{base_url}}"],
+							"path": ["customers", "signup"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set(\"customer_id\", response.id);",
+									"    console.log(\"Customer ID saved:\", response.id);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Signup - Company",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customerType\": \"COMPANY\",\n  \"title\": \"M/S\",\n  \"companyName\": \"Acme Corporation\",\n  \"tradeLicenseId\": \"TL123456\",\n  \"email1\": \"info@acme.com\",\n  \"phoneNumber1\": \"+97141234567\",\n  \"phoneNumber2\": \"+97141234568\",\n  \"address\": \"Business Bay, Dubai\",\n  \"agent\": \"Direct\",\n  \"accountExecutive\": \"John Manager\",\n  \"customerTypeCategory\": \"VERY IMPORTANT PERSON\",\n  \"currency\": \"AED\",\n  \"creditLimit\": 100000,\n  \"creditTerm\": 30,\n  \"monthlyIncome\": 50000,\n  \"trnNumber\": \"TRN123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/customers/signup",
+							"host": ["{{base_url}}"],
+							"path": ["customers", "signup"]
+						}
+					}
+				},
+				{
+					"name": "Login (Request OTP)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/customers/login",
+							"host": ["{{base_url}}"],
+							"path": ["customers", "login"]
+						}
+					}
+				},
+				{
+					"name": "Verify OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"otp\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/customers/verify-otp",
+							"host": ["{{base_url}}"],
+							"path": ["customers", "verify-otp"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Customers",
+			"item": [
+				{
+					"name": "Get Customer by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/customers/{{customer_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["customers", "{{customer_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/customers/{{customer_id}}/profile",
+							"host": ["{{base_url}}"],
+							"path": ["customers", "{{customer_id}}", "profile"]
+						}
+					}
+				},
+				{
+					"name": "Add Contact",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"type\": \"email\",\n  \"value\": \"newemail@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/customers/{{customer_id}}/contact",
+							"host": ["{{base_url}}"],
+							"path": ["customers", "{{customer_id}}", "contact"]
+						}
+					}
+				},
+				{
+					"name": "Get Policies",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/customers/{{customer_id}}/policies",
+							"host": ["{{base_url}}"],
+							"path": ["customers", "{{customer_id}}", "policies"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Debug",
+			"item": [
+				{
+					"name": "Check Environment Variables",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/debug/env",
+							"host": ["{{base_url}}"],
+							"path": ["debug", "env"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:7071/api",
+			"type": "string"
+		},
+		{
+			"key": "customer_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+
