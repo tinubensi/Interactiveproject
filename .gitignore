@@ -9,10 +9,10 @@ src/*/.env
 src/*/.env.*
 src/*/dist/
 src/*/build/
-src/*/.gitignore
 src/*/package-lock.json
 src/*/yarn.lock
 src/*/logs/
 src/*/coverage/
 src/*/.nyc_output/
+src/*/local.settings.json
 
