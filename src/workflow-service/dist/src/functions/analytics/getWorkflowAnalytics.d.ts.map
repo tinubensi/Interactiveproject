@@ -1,1 +1,0 @@
-{"version":3,"file":"getWorkflowAnalytics.d.ts","sourceRoot":"","sources":["../../../../src/functions/analytics/getWorkflowAnalytics.ts"],"names":[],"mappings":"AAAA,OAAO,EAEL,WAAW,EACX,gBAAgB,EAChB,iBAAiB,EAClB,MAAM,kBAAkB,CAAC;AAO1B,wBAAsB,2BAA2B,CAC/C,OAAO,EAAE,WAAW,EACpB,OAAO,EAAE,iBAAiB,GACzB,OAAO,CAAC,gBAAgB,CAAC,CAuC3B"}
