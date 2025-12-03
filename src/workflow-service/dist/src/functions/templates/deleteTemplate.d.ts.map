@@ -1,0 +1,1 @@
+{"version":3,"file":"deleteTemplate.d.ts","sourceRoot":"","sources":["../../../../src/functions/templates/deleteTemplate.ts"],"names":[],"mappings":"AAAA,OAAO,EAEL,WAAW,EACX,gBAAgB,EAChB,iBAAiB,EAClB,MAAM,kBAAkB,CAAC;AAS1B,wBAAsB,qBAAqB,CACzC,OAAO,EAAE,WAAW,EACpB,OAAO,EAAE,iBAAiB,GACzB,OAAO,CAAC,gBAAgB,CAAC,CAkC3B"}
