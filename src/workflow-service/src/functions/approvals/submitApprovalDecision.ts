@@ -1,0 +1,136 @@
+import {
+  app,
+  HttpRequest,
+  HttpResponseInit,
+  InvocationContext
+} from '@azure/functions';
+import { jsonResponse, handleError } from '../../lib/utils/httpResponses';
+import {
+  recordApprovalDecision,
+  ApprovalNotFoundError,
+  getApproval
+} from '../../lib/repositories/approvalRepository';
+import { resumeWorkflow } from '../../lib/engine/workflowOrchestrator';
+import { getInstance } from '../../lib/repositories/instanceRepository';
+import { ensureAuthorized, getUserFromRequest } from '../../lib/utils/auth';
+import { handlePreflight } from '../../lib/utils/corsHelper';
+import {
+  publishWorkflowApprovalCompletedEvent
+} from '../../lib/eventPublisher';
+import {
+  trackApprovalDecision
+} from '../../lib/telemetry';
+
+interface SubmitApprovalRequest {
+  decision: 'approved' | 'rejected';
+  comment?: string;
+  data?: Record<string, unknown>;
+}
+
+const submitApprovalDecisionHandler = async (
+  request: HttpRequest,
+  context: InvocationContext
+): Promise<HttpResponseInit> => {
+  const preflightResponse = handlePreflight(request);
+  if (preflightResponse) return preflightResponse;
+
+  try {
+    ensureAuthorized(request);
+
+    const approvalId = request.params.approvalId;
+    const user = getUserFromRequest(request);
+    const body = (await request.json()) as SubmitApprovalRequest;
+
+    if (!approvalId) {
+      return jsonResponse(400, { message: 'Approval ID is required' });
+    }
+
+    if (!body.decision || !['approved', 'rejected'].includes(body.decision)) {
+      return jsonResponse(400, {
+        message: 'Decision must be either "approved" or "rejected"'
+      });
+    }
+
+    context.log(`Processing approval decision for ${approvalId}:`, {
+      userId: user.userId,
+      decision: body.decision
+    });
+
+    // Get the approval before recording decision to calculate duration
+    const approvalBefore = await getApproval(approvalId);
+    const startTime = new Date(approvalBefore.requestedAt).getTime();
+
+    // Record the decision
+    const updatedApproval = await recordApprovalDecision(
+      approvalId,
+      user.userId,
+      user.userName,
+      body.decision,
+      body.comment,
+      body.data
+    );
+
+    // Get the instance
+    const instance = await getInstance(updatedApproval.instanceId);
+
+    // Calculate duration
+    const durationMs = Date.now() - startTime;
+
+    // Track telemetry
+    trackApprovalDecision(instance, approvalId, body.decision, durationMs);
+
+    // Publish event
+    await publishWorkflowApprovalCompletedEvent(
+      approvalId,
+      instance,
+      updatedApproval.stepId,
+      body.decision,
+      user.userId,
+      body.comment
+    );
+
+    // If approval is complete (approved or rejected), resume the workflow
+    if (updatedApproval.status === 'approved' || updatedApproval.status === 'rejected') {
+      context.log(
+        `Approval ${approvalId} finalized with status: ${updatedApproval.status}`
+      );
+
+      // Resume workflow with approval result
+      if (instance.status === 'waiting') {
+        try {
+          await resumeWorkflow(instance.instanceId, {
+            approvalResult: {
+              approvalId,
+              status: updatedApproval.status,
+              decisions: updatedApproval.decisions,
+              data: body.data
+            }
+          });
+          context.log(`Workflow ${instance.instanceId} resumed`);
+        } catch (resumeError) {
+          context.warn('Failed to resume workflow:', resumeError);
+          // Don't fail the request, approval was recorded
+        }
+      }
+    }
+
+    return jsonResponse(200, {
+      approval: updatedApproval,
+      workflowResumed: instance.status === 'waiting'
+    });
+  } catch (error) {
+    context.error('Error submitting approval decision:', error);
+    if (error instanceof ApprovalNotFoundError) {
+      return jsonResponse(404, { message: error.message });
+    }
+    return handleError(error);
+  }
+};
+
+app.http('SubmitApprovalDecision', {
+  methods: ['POST', 'OPTIONS'],
+  authLevel: 'anonymous',
+  route: 'approvals/{approvalId}/decide',
+  handler: submitApprovalDecisionHandler
+});
+
