@@ -1,5 +1,5 @@
 import { Container, SqlParameter, SqlQuerySpec } from '@azure/cosmos';
-import { v4 as uuid } from 'uuid';
+import { generateId } from './idGenerator';
 import { FormTemplate } from '../models/formTypes';
 import { getCosmosContainers } from './cosmosClient';
 
@@ -95,7 +95,7 @@ export const createFormTemplate = async (
   const now = new Date().toISOString();
   const newTemplate: FormTemplate = {
     ...template,
-    templateId: uuid(),
+    templateId: generateId(),
     version: 1,
     createdAt: now,
     isDeleted: false,
@@ -111,7 +111,7 @@ export const updateFormTemplate = async (
   const updated: FormTemplate = {
     ...template,
     updatedAt: new Date().toISOString(),
-    isDeleted: false,
+    // Preserve isDeleted state from template (don't override to false)
   };
   await container.items.upsert(updated);
   return updated;

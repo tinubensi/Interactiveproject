@@ -1,5 +1,5 @@
 import { Container, SqlParameter, SqlQuerySpec } from '@azure/cosmos';
-import { v4 as uuid } from 'uuid';
+import { generateId } from './idGenerator';
 import { FormIntake } from '../models/formTypes';
 import { getCosmosContainers } from './cosmosClient';
 
@@ -13,7 +13,7 @@ export const createDraftIntake = async (
 ): Promise<FormIntake> => {
   const container = await getContainer();
   const now = new Date().toISOString();
-  const intakeId = uuid();
+  const intakeId = generateId();
   const newIntake: FormIntake = {
     ...intake,
     id: intakeId,

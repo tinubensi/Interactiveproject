@@ -1,5 +1,5 @@
 import { Container, SqlParameter, SqlQuerySpec } from '@azure/cosmos';
-import { v4 as uuid } from 'uuid';
+import { generateId } from './idGenerator';
 import { UnmappedField, FieldMapping, UnmappedFieldStatus } from '../models/portalTypes';
 import { getCosmosContainers } from './cosmosClient';
 
@@ -86,7 +86,7 @@ export const createUnmappedField = async (
   const now = new Date().toISOString();
   const newField: UnmappedField = {
     ...field,
-    id: uuid(),
+    id: generateId(),
     occurrenceCount: 1,
     status: 'pending',
     createdAt: now,

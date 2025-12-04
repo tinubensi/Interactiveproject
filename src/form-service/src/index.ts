@@ -1,3 +1,6 @@
+// Apply polyfills first
+import './polyfills';
+
 // This file imports all functions to ensure they are registered with the Azure Functions runtime
 // Azure Functions v4 programming model auto-discovers functions when their modules are imported
 
