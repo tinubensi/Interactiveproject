@@ -10,10 +10,13 @@ import './functions/leads/getLeadById';
 import './functions/leads/updateLead';
 import './functions/leads/deleteLead';
 import './functions/leads/changeStage';
+import './functions/leads/refetchPlans';
 
 import './functions/timelines/getTimeline';
 
 import './functions/stages/getStages';
+
+import './functions/plans/getLeadPlans';
 
 import './functions/metadata/getPetTypes';
 import './functions/metadata/getBreeds';

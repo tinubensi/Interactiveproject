@@ -114,6 +114,26 @@ export interface QuotationApprovedEvent extends BaseEvent {
   };
 }
 
+export interface QuotationPolicyIssuedEvent extends BaseEvent {
+  eventType: 'quotation.policy_issued';
+  data: {
+    quotationId: string;
+    referenceId: string;
+    leadId: string;
+    customerId: string;
+    selectedPlanId: string;
+    selectedPlanName: string;
+    vendorId: string;
+    vendorName: string;
+    annualPremium: number;
+    currency: string;
+    lineOfBusiness: LineOfBusiness;
+    businessType: string;
+    approvedBy?: string;
+    issuedAt: Date;
+  };
+}
+
 export type PolicyServicePublishedEvent =
   | PolicyRequestCreatedEvent
   | PolicyRequestApprovedEvent
@@ -123,7 +143,7 @@ export type PolicyServicePublishedEvent =
   | PolicyCancelledEvent
   | PolicyStatusChangedEvent;
 
-export type PolicyServiceSubscribedEvent = QuotationApprovedEvent;
+export type PolicyServiceSubscribedEvent = QuotationApprovedEvent | QuotationPolicyIssuedEvent;
 
 export interface EventGridEvent<T = any> {
   id: string;

@@ -12,6 +12,22 @@ import { generateQuotationReferenceId } from '../../utils/referenceGenerator';
 import { PlansSelectedEvent } from '../../models/events';
 import { Quotation, QuotationPlan } from '../../models/quotation';
 
+// Helper function to fetch lead data from lead service
+async function fetchLeadData(leadId: string, context: InvocationContext): Promise<any | null> {
+  try {
+    const leadServiceUrl = process.env.LEAD_SERVICE_URL || 'http://localhost:7071';
+    const response = await fetch(`${leadServiceUrl}/api/leads/${leadId}`);
+    if (response.ok) {
+      return await response.json();
+    }
+    context.warn(`Failed to fetch lead ${leadId}: ${response.status}`);
+    return null;
+  } catch (error) {
+    context.warn(`Error fetching lead ${leadId}:`, error);
+    return null;
+  }
+}
+
 export async function handlePlansSelected(
   eventGridEvent: any,
   context: InvocationContext
@@ -21,6 +37,20 @@ export async function handlePlansSelected(
     const data = event.data;
 
     context.log(`Received plans.selected event for lead ${data.leadId}`);
+
+    // Fetch lead data for snapshot
+    const leadData = await fetchLeadData(data.leadId, context);
+    const leadSnapshot = leadData ? {
+      firstName: leadData.firstName,
+      lastName: leadData.lastName,
+      email: leadData.email,
+      phone: leadData.phone,
+      emirate: leadData.emirate,
+      referenceId: leadData.referenceId,
+      lineOfBusiness: leadData.lineOfBusiness,
+      businessType: leadData.businessType,
+      lobData: leadData.lobData,
+    } : undefined;
 
     // Fetch plans (mock for now)
     const selectedPlans = data.planIds.map((id: string, index: number) => ({
@@ -61,10 +91,10 @@ export async function handlePlansSelected(
       id: quotationId,
       referenceId,
       leadId: data.leadId,
-      customerId: 'customer-' + data.leadId, // TODO: Get from lead
+      customerId: leadData?.customerId || 'customer-' + data.leadId,
       planIds: data.planIds,
-      lineOfBusiness: 'medical', // TODO: Get from lead
-      businessType: 'individual', // TODO: Get from lead
+      lineOfBusiness: leadData?.lineOfBusiness || 'medical',
+      businessType: leadData?.businessType || 'individual',
       totalPremium,
       currency: 'AED',
       validUntil,
@@ -73,6 +103,7 @@ export async function handlePlansSelected(
       isCurrentVersion: true,
       version,
       previousVersionId: existingQuotation?.id,
+      leadSnapshot, // Include lead snapshot for customer info
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -114,7 +145,8 @@ export async function handlePlansSelected(
       lineOfBusiness: quotation.lineOfBusiness,
       totalPremium,
       planCount: quotationPlans.length,
-      version
+      version,
+      planIds: data.planIds
     });
 
     context.log(`Auto-created quotation ${referenceId} for lead ${data.leadId}`);

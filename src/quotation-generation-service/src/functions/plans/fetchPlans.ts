@@ -105,13 +105,14 @@ export async function fetchPlans(
       completedAt: new Date()
     });
 
-    // Publish fetch completed event
+    // Publish fetch completed event with plans for Lead Service to save
     await eventGridService.publishPlansFetchCompleted({
       leadId: body.leadId,
       fetchRequestId: fetchRequest.id,
       totalPlans: plans.length,
       successfulVendors,
-      failedVendors
+      failedVendors,
+      plans // Include full plans array for Lead Service
     });
 
     context.log(`Plans fetched successfully for lead ${body.leadId}: ${plans.length} plans from ${successfulVendors.length} vendors`);
