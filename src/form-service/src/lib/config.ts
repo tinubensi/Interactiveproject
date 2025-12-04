@@ -28,7 +28,7 @@ export const getConfig = (): AppConfig => {
   const {
     COSMOS_DB_ENDPOINT,
     COSMOS_DB_KEY,
-    COSMOS_DB_NAME = 'form-service',
+    COSMOS_DB_NAME = 'FormDB',
     COSMOS_FORM_DEFINITIONS_CONTAINER = 'form-definitions',
     COSMOS_INTAKE_FORMS_CONTAINER = 'intake-forms',
     COSMOS_PORTAL_REGISTRY_CONTAINER = 'portal-registry',

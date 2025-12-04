@@ -7,24 +7,29 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { cosmosService } from '../../services/cosmosService';
 import { PlanListRequest } from '../../models/plan';
+import { handlePreflight, withCors } from '../../utils/corsHelper';
 import { ensureAuthorized, requirePermission, QUOTE_PERMISSIONS } from '../../lib/auth';
 
 export async function listPlans(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
+  // Handle CORS preflight
+  const preflightResponse = handlePreflight(request);
+  if (preflightResponse) return preflightResponse;
+
   try {
     const userContext = await ensureAuthorized(request);
     await requirePermission(userContext.userId, QUOTE_PERMISSIONS.QUOTES_READ);
     const body: PlanListRequest = await request.json() as PlanListRequest;
 
     if (!body.leadId) {
-      return {
+      return withCors(request, {
         status: 400,
         jsonBody: {
           error: 'leadId is required'
         }
-      };
+      });
     }
 
     // Set defaults
@@ -84,28 +89,28 @@ export async function listPlans(
 
     context.log(`Listed ${result.data.length} plans for lead ${body.leadId}`);
 
-    return {
+    return withCors(request, {
       status: 200,
       jsonBody: {
         success: true,
         ...result
       }
-    };
+    });
   } catch (error: any) {
     context.error('List plans error:', error);
-    return {
+    return withCors(request, {
       status: 500,
       jsonBody: {
         success: false,
         error: 'Failed to list plans',
         details: error.message
       }
-    };
+    });
   }
 }
 
 app.http('listPlans', {
-  methods: ['POST'],
+  methods: ['POST', 'OPTIONS'],
   authLevel: 'anonymous',
   route: 'plans/list',
   handler: listPlans

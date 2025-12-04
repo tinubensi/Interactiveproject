@@ -18,7 +18,10 @@ class EventGridService {
     this.client = new EventGridPublisherClient(
       this.topicEndpoint,
       'EventGrid',
-      new AzureKeyCredential(topicKey)
+      new AzureKeyCredential(topicKey),
+      {
+        allowInsecureConnection: true // Allow HTTP connections for local Event Grid mock
+      }
     );
   }
 
@@ -61,6 +64,7 @@ class EventGridService {
     totalPlans: number;
     successfulVendors: string[];
     failedVendors: string[];
+    plans: any[]; // Include full plans array for Lead Service to save
   }): Promise<void> {
     await this.publishEvent('plans.fetch_completed', `plans/${data.leadId}`, {
       ...data,
