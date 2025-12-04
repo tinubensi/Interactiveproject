@@ -13,11 +13,25 @@ class MetadataService {
   private metadataContainer: Container;
 
   constructor() {
-    const endpoint = process.env.COSMOS_DB_ENDPOINT!;
-    const key = process.env.COSMOS_DB_KEY!;
-    const databaseName = process.env.COSMOS_DB_NAME || 'LeadDB';
+    // Support both connection string (Azure) and separate endpoint/key (emulator)
+    const connectionString = process.env.COSMOS_CONNECTION_STRING;
+    const endpoint = process.env.COSMOS_DB_ENDPOINT;
+    const key = process.env.COSMOS_DB_KEY;
+    const databaseName = process.env.COSMOS_DB_NAME || 'lead-service-db';
 
-    this.client = new CosmosClient({ endpoint, key });
+    if (connectionString) {
+      // Using Azure Cosmos DB (production/cloud)
+      this.client = new CosmosClient(connectionString);
+    } else if (endpoint && key) {
+      // Using emulator with separate endpoint/key
+      if (endpoint && (endpoint.includes('localhost') || endpoint.includes('127.0.0.1'))) {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      }
+      this.client = new CosmosClient({ endpoint, key });
+    } else {
+      throw new Error('COSMOS_CONNECTION_STRING or (COSMOS_DB_ENDPOINT + COSMOS_DB_KEY) must be set');
+    }
+
     this.database = this.client.database(databaseName);
     this.metadataContainer = this.database.container('metadata');
   }

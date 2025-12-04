@@ -6,11 +6,16 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { cosmosService } from '../../services/cosmosService';
 import { QuotationListRequest } from '../../models/quotation';
+import { handlePreflight, withCors } from '../../utils/corsHelper';
 
 export async function listQuotations(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
+  // Handle CORS preflight
+  const preflightResponse = handlePreflight(request);
+  if (preflightResponse) return preflightResponse;
+
   try {
     const body: QuotationListRequest = await request.json() as QuotationListRequest;
 
@@ -31,28 +36,28 @@ export async function listQuotations(
 
     context.log(`Listed ${result.data.length} quotations`);
 
-    return {
+    return withCors(request, {
       status: 200,
       jsonBody: {
         success: true,
         ...result
       }
-    };
+    });
   } catch (error: any) {
     context.error('List quotations error:', error);
-    return {
+    return withCors(request, {
       status: 500,
       jsonBody: {
         success: false,
         error: 'Failed to list quotations',
         details: error.message
       }
-    };
+    });
   }
 }
 
 app.http('listQuotations', {
-  methods: ['POST'],
+  methods: ['POST', 'OPTIONS'],
   authLevel: 'anonymous',
   route: 'quotations/list',
   handler: listQuotations

@@ -16,11 +16,25 @@ class CosmosService {
   private vendorsContainer: Container;
 
   constructor() {
-    const endpoint = process.env.COSMOS_DB_ENDPOINT!;
-    const key = process.env.COSMOS_DB_KEY!;
-    const databaseName = process.env.COSMOS_DB_NAME || 'PlanDB';
+    // Support both connection string (Azure) and separate endpoint/key (emulator)
+    const connectionString = process.env.COSMOS_CONNECTION_STRING;
+    const endpoint = process.env.COSMOS_DB_ENDPOINT;
+    const key = process.env.COSMOS_DB_KEY;
+    const databaseName = process.env.COSMOS_DB_NAME || 'quotation-generation-service-db';
 
-    this.client = new CosmosClient({ endpoint, key });
+    if (connectionString) {
+      // Using Azure Cosmos DB (production/cloud)
+      this.client = new CosmosClient(connectionString);
+    } else if (endpoint && key) {
+      // Using emulator with separate endpoint/key
+      if (endpoint && (endpoint.includes('localhost') || endpoint.includes('127.0.0.1'))) {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      }
+      this.client = new CosmosClient({ endpoint, key });
+    } else {
+      throw new Error('COSMOS_CONNECTION_STRING or (COSMOS_DB_ENDPOINT + COSMOS_DB_KEY) must be set');
+    }
+
     this.database = this.client.database(databaseName);
     this.fetchRequestsContainer = this.database.container('fetchRequests');
     this.plansContainer = this.database.container('plans');
@@ -31,7 +45,7 @@ class CosmosService {
 
   async initialize(): Promise<void> {
     try {
-      await this.client.databases.createIfNotExists({ id: process.env.COSMOS_DB_NAME || 'PlanDB' });
+      await this.client.databases.createIfNotExists({ id: process.env.COSMOS_DB_NAME || 'quotation-generation-service-db' });
 
       await this.database.containers.createIfNotExists({
         id: 'fetchRequests',
