@@ -8,6 +8,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { cosmosService } from '../../services/cosmosService';
 import { PlanListRequest } from '../../models/plan';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
+import { ensureAuthorized, requirePermission, QUOTE_PERMISSIONS } from '../../lib/auth';
 
 export async function listPlans(
   request: HttpRequest,
@@ -18,6 +19,8 @@ export async function listPlans(
   if (preflightResponse) return preflightResponse;
 
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, QUOTE_PERMISSIONS.QUOTES_READ);
     const body: PlanListRequest = await request.json() as PlanListRequest;
 
     if (!body.leadId) {

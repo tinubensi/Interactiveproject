@@ -15,6 +15,7 @@ import {
   internalServerError,
 } from '../utils/httpHelpers';
 import { calculateTTL, isValidExpiryDate } from '../utils/ttlHelpers';
+import { ensureAuthorized, requirePermission, DOCUMENT_PERMISSIONS } from '../lib/auth';
 
 /**
  * POST /api/customers/{customerId}/documents
@@ -27,6 +28,8 @@ export async function createDocument(
   context.log('Processing CreateDocument request');
 
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, DOCUMENT_PERMISSIONS.DOCUMENTS_CREATE);
     // Extract customerId from route parameters
     const customerId = request.params.customerId;
     if (!customerId) {

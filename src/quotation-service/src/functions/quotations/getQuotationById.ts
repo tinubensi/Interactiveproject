@@ -4,12 +4,15 @@
 
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { cosmosService } from '../../services/cosmosService';
+import { ensureAuthorized, requirePermission, QUOTATION_PERMISSIONS } from '../../lib/auth';
 
 export async function getQuotationById(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTES_READ);
     const id = request.params.id;
     const leadId = request.query.get('leadId');
 

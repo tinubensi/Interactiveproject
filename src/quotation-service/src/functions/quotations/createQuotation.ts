@@ -11,6 +11,7 @@ import { eventGridService } from '../../services/eventGridService';
 import { generateQuotationReferenceId } from '../../utils/referenceGenerator';
 import { Quotation, QuotationPlan, CreateQuotationRequest } from '../../models/quotation';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
+import { ensureAuthorized, requirePermission, QUOTATION_PERMISSIONS } from '../../lib/auth';
 
 export async function createQuotation(
   request: HttpRequest,
@@ -21,6 +22,8 @@ export async function createQuotation(
   if (preflightResponse) return preflightResponse;
 
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTES_CREATE);
     const body: CreateQuotationRequest = await request.json() as CreateQuotationRequest;
 
     if (!body.leadId || !body.customerId || !body.planIds || body.planIds.length === 0) {

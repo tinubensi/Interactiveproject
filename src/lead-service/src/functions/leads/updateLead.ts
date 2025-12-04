@@ -10,12 +10,15 @@ import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
 import { validateUpdateLeadRequest, sanitizeInput } from '../../utils/validation';
 import { UpdateLeadRequest } from '../../models/lead';
+import { ensureAuthorized, requirePermission, LEAD_PERMISSIONS } from '../../lib/auth';
 
 export async function updateLead(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, LEAD_PERMISSIONS.LEADS_UPDATE);
     const id = request.params.id;
     const lineOfBusiness = request.query.get('lineOfBusiness');
     const body: UpdateLeadRequest = await request.json() as UpdateLeadRequest;

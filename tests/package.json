@@ -1,0 +1,31 @@
+{
+  "name": "@nectaria/integration-tests",
+  "version": "1.0.0",
+  "description": "Integration and E2E tests for Nectaria services",
+  "private": true,
+  "scripts": {
+    "test": "jest",
+    "test:api": "jest --testPathPattern=api",
+    "test:contracts": "jest --testPathPattern=contracts",
+    "test:e2e": "jest --testPathPattern=e2e --runInBand",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
+    "services:start": "tsx utils/start-services.ts",
+    "services:stop": "tsx utils/stop-services.ts"
+  },
+  "dependencies": {
+    "@nectaria/shared-types": "file:../../packages/@nectaria/shared-types"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.0.0",
+    "@types/supertest": "^6.0.2",
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.1.2",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0",
+    "wait-on": "^7.2.0"
+  }
+}
+

@@ -9,12 +9,15 @@ import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
 import { generatePolicyRequestReferenceId } from '../../utils/referenceGenerator';
 import { PolicyRequest, CreatePolicyRequestDTO } from '../../models/policy';
+import { ensureAuthorized, requirePermission, POLICY_PERMISSIONS } from '../../lib/auth';
 
 export async function createPolicyRequest(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, POLICY_PERMISSIONS.POLICIES_CREATE);
     const body: CreatePolicyRequestDTO = await request.json() as CreatePolicyRequestDTO;
 
     if (!body.quotationId || !body.leadId || !body.customerId || !body.selectedPlanId) {
