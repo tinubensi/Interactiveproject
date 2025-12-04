@@ -10,12 +10,15 @@ import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
 import { generatePolicyNumber } from '../../utils/referenceGenerator';
 import { UpdatePolicyRequestStatusDTO, Policy } from '../../models/policy';
+import { ensureAuthorized, requirePermission, POLICY_PERMISSIONS } from '../../lib/auth';
 
 export async function updateStatus(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, POLICY_PERMISSIONS.POLICIES_ENDORSE);
     const id = request.params.id;
     const quotationId = request.query.get('quotationId');
     const body: UpdatePolicyRequestStatusDTO = await request.json() as UpdatePolicyRequestStatusDTO;

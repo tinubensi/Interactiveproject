@@ -6,7 +6,7 @@ import {
 } from '@azure/functions';
 import { jsonResponse, handleError } from '../../lib/utils/httpResponses';
 import { getPendingApprovalsForUser } from '../../lib/repositories/approvalRepository';
-import { ensureAuthorized, getUserFromRequest } from '../../lib/utils/auth';
+import { ensureAuthorized, requirePermission, WORKFLOW_PERMISSIONS } from '../../lib/utils/auth';
 import { handlePreflight } from '../../lib/utils/corsHelper';
 
 const listPendingApprovalsHandler = async (
@@ -17,9 +17,9 @@ const listPendingApprovalsHandler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const user = await ensureAuthorized(request);
+    await requirePermission(user.userId, WORKFLOW_PERMISSIONS.APPROVALS_READ);
 
-    const user = getUserFromRequest(request);
     const organizationId = request.query.get('organizationId') || undefined;
 
     context.log(

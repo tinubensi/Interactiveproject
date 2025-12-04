@@ -2,6 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { CosmosService } from '../services/CosmosService';
 import { ListDocumentResponse } from '../models/Document';
 import { badRequest, success, internalServerError } from '../utils/httpHelpers';
+import { ensureAuthorized, requirePermission, DOCUMENT_PERMISSIONS } from '../lib/auth';
 
 /**
  * GET /api/customers/{customerId}/documents?userId={userId}
@@ -14,6 +15,8 @@ export async function listDocuments(
   context.log('Processing ListDocuments request');
 
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, DOCUMENT_PERMISSIONS.DOCUMENTS_READ);
     // Extract customerId from route parameters
     const customerId = request.params.customerId;
     if (!customerId) {

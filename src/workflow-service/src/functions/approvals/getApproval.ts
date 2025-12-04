@@ -6,7 +6,7 @@ import {
 } from '@azure/functions';
 import { jsonResponse, handleError } from '../../lib/utils/httpResponses';
 import { getApproval, ApprovalNotFoundError } from '../../lib/repositories/approvalRepository';
-import { ensureAuthorized } from '../../lib/utils/auth';
+import { ensureAuthorized, requirePermission, WORKFLOW_PERMISSIONS } from '../../lib/utils/auth';
 import { handlePreflight } from '../../lib/utils/corsHelper';
 
 const getApprovalHandler = async (
@@ -17,7 +17,8 @@ const getApprovalHandler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, WORKFLOW_PERMISSIONS.APPROVALS_READ);
 
     const approvalId = request.params.approvalId;
 

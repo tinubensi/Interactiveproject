@@ -8,6 +8,7 @@ import {
   success,
   internalServerError,
 } from '../utils/httpHelpers';
+import { ensureAuthorized, requirePermission, DOCUMENT_PERMISSIONS } from '../lib/auth';
 
 /**
  * GET /api/documents/{docId}/download
@@ -20,6 +21,8 @@ export async function getDownloadUrl(
   context.log('Processing GetDownloadUrl request');
 
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, DOCUMENT_PERMISSIONS.DOCUMENTS_READ);
     // Extract docId from route parameters
     const docId = request.params.docId;
     if (!docId) {
