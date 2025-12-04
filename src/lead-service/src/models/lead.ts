@@ -59,6 +59,7 @@ export interface Lead {
   
   // References to other services
   planFetchRequestId?: string; // Reference to PlanDB.fetchRequests
+  plansCount?: number; // Number of plans fetched
   currentQuotationId?: string; // Reference to QuotationDB.quotations
   policyId?: string; // Reference to PolicyDB.policies
   

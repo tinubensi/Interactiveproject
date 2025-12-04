@@ -84,7 +84,7 @@ export async function createLead(
       ambassador: body.ambassador,
       agent: body.agent,
       source: body.source || 'Website',
-      currentStage: 'New Lead',
+      currentStage: 'Plans Fetching',
       stageId: 'stage-1',
       isHotLead: false,
       isEmailRepeated,
@@ -102,9 +102,9 @@ export async function createLead(
     await cosmosService.createTimelineEntry({
       id: uuidv4(),
       leadId: createdLead.id,
-      stage: 'New Lead',
+      stage: 'Plans Fetching',
       stageId: 'stage-1',
-      remark: 'Lead created',
+      remark: 'Lead created - fetching plans from vendors',
       changedBy: body.assignedTo || 'system',
       changedByName: 'System',
       timestamp: new Date()

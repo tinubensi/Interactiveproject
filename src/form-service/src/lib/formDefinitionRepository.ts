@@ -111,7 +111,7 @@ export const updateFormTemplate = async (
   const updated: FormTemplate = {
     ...template,
     updatedAt: new Date().toISOString(),
-    isDeleted: false,
+    // Preserve isDeleted state from template (don't override to false)
   };
   await container.items.upsert(updated);
   return updated;

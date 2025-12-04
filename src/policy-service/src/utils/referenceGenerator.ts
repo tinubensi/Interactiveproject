@@ -9,11 +9,14 @@ export function generatePolicyRequestReferenceId(): string {
   return `POL-REQ-${year}-${timestamp}`;
 }
 
-export function generatePolicyNumber(): string {
+export function generatePolicyNumber(lineOfBusiness?: string): string {
   const year = new Date().getFullYear();
   const timestamp = Date.now().toString().slice(-8);
   const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  return `POL-${year}-${timestamp}-${random}`;
+  
+  // Add LOB prefix if provided
+  const lobPrefix = lineOfBusiness ? lineOfBusiness.toUpperCase().slice(0, 3) : 'GEN';
+  return `POL-${lobPrefix}-${year}-${timestamp}-${random}`;
 }
 
 

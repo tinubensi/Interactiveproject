@@ -18,7 +18,10 @@ class EventGridService {
     this.client = new EventGridPublisherClient(
       this.topicEndpoint,
       'EventGrid',
-      new AzureKeyCredential(topicKey)
+      new AzureKeyCredential(topicKey),
+      {
+        allowInsecureConnection: true // Allow HTTP connections for local Event Grid mock
+      }
     );
   }
 
@@ -52,6 +55,7 @@ class EventGridService {
     totalPremium: number;
     planCount: number;
     version: number;
+    planIds: string[];
   }): Promise<void> {
     await this.publishEvent('quotation.created', `quotation/${data.quotationId}`, {
       ...data,
@@ -130,6 +134,46 @@ class EventGridService {
     await this.publishEvent('quotation.status_changed', `quotation/${data.quotationId}`, {
       ...data,
       timestamp: new Date()
+    });
+  }
+
+  async publishQuotationPendingApproval(data: {
+    quotationId: string;
+    referenceId: string;
+    leadId: string;
+    customerId: string;
+    selectedPlanId: string;
+    selectedPlanName: string;
+    vendorName: string;
+    annualPremium: number;
+    currency: string;
+    lineOfBusiness: LineOfBusiness;
+    businessType: string;
+  }): Promise<void> {
+    await this.publishEvent('quotation.pending_approval', `quotation/${data.quotationId}`, {
+      ...data,
+      submittedAt: new Date()
+    });
+  }
+
+  async publishPolicyIssued(data: {
+    quotationId: string;
+    referenceId: string;
+    leadId: string;
+    customerId: string;
+    selectedPlanId: string;
+    selectedPlanName: string;
+    vendorId: string;
+    vendorName: string;
+    annualPremium: number;
+    currency: string;
+    lineOfBusiness: LineOfBusiness;
+    businessType: string;
+    approvedBy?: string;
+  }): Promise<void> {
+    await this.publishEvent('quotation.policy_issued', `quotation/${data.quotationId}`, {
+      ...data,
+      issuedAt: new Date()
     });
   }
 }

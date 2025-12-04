@@ -10,8 +10,10 @@ export type QuotationStatus =
   | 'pending'         // Awaiting review
   | 'sent'            // Sent to customer
   | 'viewed'          // Customer viewed quotation
-  | 'approved'        // Customer approved, ready for policy issuance
-  | 'rejected'        // Customer rejected
+  | 'pending_approval' // Customer selected plan, awaiting internal approval
+  | 'approved'        // Internally approved, ready for policy issuance
+  | 'policy_issued'   // Policy has been issued
+  | 'rejected'        // Rejected (by customer or internally)
   | 'expired'         // Validity period expired
   | 'superseded';     // Replaced by a newer revision
 
@@ -51,6 +53,11 @@ export interface Quotation {
   approvedAt?: Date;
   rejectedAt?: Date;
   rejectionReason?: string;
+  
+  // Customer Plan Selection (via temporary link)
+  selectionToken?: string; // Unique token for customer review link
+  tokenUsedAt?: Date; // When customer used the token to select a plan
+  customerSelectedPlanId?: string; // Plan ID selected by customer
   
   // PDF Document
   pdfUrl?: string; // Blob storage URL
@@ -233,6 +240,22 @@ export interface CreateQuotationRequest {
   validityDays?: number; // Default 30 days
   termsAndConditions?: string;
   remarks?: Quotation['remarks'];
+  // Lead snapshot - customer info at time of quotation
+  leadSnapshot?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: {
+      number: string;
+      countryCode: string;
+      isoCode?: string;
+    };
+    emirate?: string;
+    referenceId?: string;
+    lineOfBusiness?: string;
+    businessType?: string;
+    lobData?: any;
+  };
 }
 
 /**
@@ -289,6 +312,28 @@ export interface ChangeStatusRequest {
 export interface SelectPlanRequest {
   quotationId: string;
   planId: string; // Which plan customer selected for policy
+}
+
+/**
+ * Customer Plan Selection Request DTO (via token)
+ */
+export interface CustomerSelectPlanRequest {
+  planId: string; // Which plan customer selected
+}
+
+/**
+ * Approve Quotation Request DTO
+ */
+export interface ApproveQuotationRequest {
+  remarks?: string;
+}
+
+/**
+ * Reject Quotation Request DTO
+ */
+export interface RejectQuotationRequest {
+  reason: string;
+  remarks?: string;
 }
 
 

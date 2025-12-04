@@ -14,7 +14,7 @@ class CosmosService {
   constructor() {
     const endpoint = process.env.COSMOS_DB_ENDPOINT!;
     const key = process.env.COSMOS_DB_KEY!;
-    const databaseName = process.env.COSMOS_DB_NAME || 'PolicyDB';
+    const databaseName = process.env.COSMOS_DB_NAME || 'policy-service-db';
 
     this.client = new CosmosClient({ endpoint, key });
     this.database = this.client.database(databaseName);
@@ -24,7 +24,7 @@ class CosmosService {
 
   async initialize(): Promise<void> {
     try {
-      await this.client.databases.createIfNotExists({ id: process.env.COSMOS_DB_NAME || 'PolicyDB' });
+      await this.client.databases.createIfNotExists({ id: process.env.COSMOS_DB_NAME || 'policy-service-db' });
 
       await this.database.containers.createIfNotExists({
         id: 'policyRequests',
