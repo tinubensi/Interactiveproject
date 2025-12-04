@@ -6,12 +6,15 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { cosmosService } from '../../services/cosmosService';
 import { QuotationListRequest } from '../../models/quotation';
+import { ensureAuthorized, requirePermission, QUOTATION_PERMISSIONS } from '../../lib/auth';
 
 export async function listQuotations(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTES_READ);
     const body: QuotationListRequest = await request.json() as QuotationListRequest;
 
     // Set defaults

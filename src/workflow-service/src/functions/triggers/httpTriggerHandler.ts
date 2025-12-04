@@ -18,7 +18,7 @@ import {
   badRequestResponse,
   notFoundResponse
 } from '../../lib/utils/httpResponses';
-import { ensureAuthorized } from '../../lib/utils/auth';
+import { ensureAuthorized, requirePermission, WORKFLOW_PERMISSIONS } from '../../lib/utils/auth';
 import { handlePreflight } from '../../lib/utils/corsHelper';
 import { StartWorkflowRequest, HttpTriggerConfig } from '../../models/workflowTypes';
 
@@ -30,7 +30,8 @@ const handler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    const userContext = ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, WORKFLOW_PERMISSIONS.WORKFLOWS_EXECUTE);
 
     const workflowId = request.params.workflowId;
     if (!workflowId) {

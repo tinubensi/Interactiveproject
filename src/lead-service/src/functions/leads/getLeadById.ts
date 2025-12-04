@@ -7,6 +7,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { cosmosService } from '../../services/cosmosService';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
+import { ensureAuthorized, requirePermission, LEAD_PERMISSIONS } from '../../lib/auth';
 
 export async function getLeadById(
   request: HttpRequest,
@@ -17,6 +18,8 @@ export async function getLeadById(
   if (preflightResponse) return preflightResponse;
 
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, LEAD_PERMISSIONS.LEADS_READ);
     const id = request.params.id;
     const lineOfBusiness = request.query.get('lineOfBusiness');
 

@@ -12,7 +12,7 @@ import {
 } from '../../lib/repositories/approvalRepository';
 import { resumeWorkflow } from '../../lib/engine/workflowOrchestrator';
 import { getInstance } from '../../lib/repositories/instanceRepository';
-import { ensureAuthorized, getUserFromRequest } from '../../lib/utils/auth';
+import { ensureAuthorized, requirePermission, WORKFLOW_PERMISSIONS } from '../../lib/utils/auth';
 import { handlePreflight } from '../../lib/utils/corsHelper';
 import {
   publishWorkflowApprovalCompletedEvent
@@ -20,6 +20,8 @@ import {
 import {
   trackApprovalDecision
 } from '../../lib/telemetry';
+import { logApprovalDecision } from '../../lib/auditClient';
+import { sendApprovalDecidedNotification } from '../../lib/notificationClient';
 
 interface SubmitApprovalRequest {
   decision: 'approved' | 'rejected';
@@ -35,10 +37,10 @@ const submitApprovalDecisionHandler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const user = await ensureAuthorized(request);
+    await requirePermission(user.userId, WORKFLOW_PERMISSIONS.APPROVALS_DECIDE);
 
     const approvalId = request.params.approvalId;
-    const user = getUserFromRequest(request);
     const body = (await request.json()) as SubmitApprovalRequest;
 
     if (!approvalId) {
@@ -64,7 +66,7 @@ const submitApprovalDecisionHandler = async (
     const updatedApproval = await recordApprovalDecision(
       approvalId,
       user.userId,
-      user.userName,
+      user.name || user.email || user.userId,
       body.decision,
       body.comment,
       body.data
@@ -88,6 +90,33 @@ const submitApprovalDecisionHandler = async (
       user.userId,
       body.comment
     );
+
+    // Log audit event
+    await logApprovalDecision(
+      approvalId,
+      body.decision,
+      user,
+      {
+        workflowId: instance.workflowId,
+        instanceId: instance.instanceId,
+        comment: body.comment,
+      }
+    );
+
+    // Send notification to requester (only if we have the initiator)
+    if (instance.initiatedBy) {
+      await sendApprovalDecidedNotification(
+        approvalId,
+        instance.initiatedBy,
+        {
+          approvalType: 'Workflow Approval',
+          entityType: instance.workflowId,
+          decision: body.decision === 'approved' ? 'Approved' : 'Rejected',
+          decidedBy: user.name || user.email || user.userId,
+          comments: body.comment,
+        }
+      );
+    }
 
     // If approval is complete (approved or rejected), resume the workflow
     if (updatedApproval.status === 'approved' || updatedApproval.status === 'rejected') {

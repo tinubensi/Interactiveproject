@@ -6,7 +6,8 @@ import {
 } from '@azure/functions';
 import {
   cancelInstance,
-  InstanceNotFoundError
+  InstanceNotFoundError,
+  getInstance
 } from '../../lib/repositories/instanceRepository';
 import {
   successResponse,
@@ -14,8 +15,9 @@ import {
   badRequestResponse,
   notFoundResponse
 } from '../../lib/utils/httpResponses';
-import { ensureAuthorized } from '../../lib/utils/auth';
+import { ensureAuthorized, requirePermission, WORKFLOW_PERMISSIONS } from '../../lib/utils/auth';
 import { handlePreflight } from '../../lib/utils/corsHelper';
+import { logInstanceCancelled } from '../../lib/auditClient';
 
 interface CancelRequest {
   reason?: string;
@@ -29,7 +31,8 @@ const handler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    const userContext = ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, WORKFLOW_PERMISSIONS.WORKFLOWS_EXECUTE);
 
     const instanceId = request.params.instanceId;
     if (!instanceId) {
@@ -45,11 +48,17 @@ const handler = async (
 
     context.log('Cancelling workflow instance', { instanceId });
 
+    // Get instance info before cancelling
+    const instanceBefore = await getInstance(instanceId);
+
     const instance = await cancelInstance(
       instanceId,
       userContext.userId,
       body.reason
     );
+
+    // Log audit event
+    await logInstanceCancelled(instanceId, instanceBefore.workflowId, userContext, body.reason);
 
     // TODO: Terminate the Durable Functions orchestrator
 

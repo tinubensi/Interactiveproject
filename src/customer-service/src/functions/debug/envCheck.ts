@@ -1,6 +1,16 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { ensureAuthorized, requirePermission, CUSTOMER_PERMISSIONS } from '../../lib/auth';
 
 export async function envCheck(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+  try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, CUSTOMER_PERMISSIONS.ADMIN_DEBUG);
+  } catch (error: any) {
+    return {
+      status: 403,
+      jsonBody: { error: 'Access denied', message: error.message },
+    };
+  }
   const envVars = {
     COSMOS_DB_ENDPOINT: process.env.COSMOS_DB_ENDPOINT || 'NOT SET',
     COSMOS_DB_KEY: process.env.COSMOS_DB_KEY ? 'SET (length: ' + process.env.COSMOS_DB_KEY.length + ')' : 'NOT SET',

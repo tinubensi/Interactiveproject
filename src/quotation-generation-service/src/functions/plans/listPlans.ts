@@ -7,12 +7,15 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { cosmosService } from '../../services/cosmosService';
 import { PlanListRequest } from '../../models/plan';
+import { ensureAuthorized, requirePermission, QUOTE_PERMISSIONS } from '../../lib/auth';
 
 export async function listPlans(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, QUOTE_PERMISSIONS.QUOTES_READ);
     const body: PlanListRequest = await request.json() as PlanListRequest;
 
     if (!body.leadId) {

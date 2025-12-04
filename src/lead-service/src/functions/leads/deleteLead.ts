@@ -7,12 +7,15 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
+import { ensureAuthorized, requirePermission, LEAD_PERMISSIONS } from '../../lib/auth';
 
 export async function deleteLead(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, LEAD_PERMISSIONS.LEADS_DELETE);
     const id = request.params.id;
     const lineOfBusiness = request.query.get('lineOfBusiness');
 

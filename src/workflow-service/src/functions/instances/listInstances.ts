@@ -6,7 +6,7 @@ import {
 } from '@azure/functions';
 import { listInstances } from '../../lib/repositories/instanceRepository';
 import { successResponse, handleError } from '../../lib/utils/httpResponses';
-import { ensureAuthorized } from '../../lib/utils/auth';
+import { ensureAuthorized, requirePermission, WORKFLOW_PERMISSIONS } from '../../lib/utils/auth';
 import { handlePreflight } from '../../lib/utils/corsHelper';
 import { InstanceFilters, InstanceStatus } from '../../models/workflowTypes';
 
@@ -18,7 +18,8 @@ const handler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    const userContext = ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, WORKFLOW_PERMISSIONS.WORKFLOWS_READ);
 
     const filters: InstanceFilters = {
       organizationId:

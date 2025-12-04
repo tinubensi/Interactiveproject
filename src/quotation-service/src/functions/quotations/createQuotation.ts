@@ -10,12 +10,15 @@ import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
 import { generateQuotationReferenceId } from '../../utils/referenceGenerator';
 import { Quotation, QuotationPlan, CreateQuotationRequest } from '../../models/quotation';
+import { ensureAuthorized, requirePermission, QUOTATION_PERMISSIONS } from '../../lib/auth';
 
 export async function createQuotation(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTES_CREATE);
     const body: CreateQuotationRequest = await request.json() as CreateQuotationRequest;
 
     if (!body.leadId || !body.customerId || !body.planIds || body.planIds.length === 0) {
