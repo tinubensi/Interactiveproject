@@ -7,10 +7,13 @@ import {
 import { jsonResponse, handleError } from '../../lib/utils/httpResponses';
 import {
   reassignApproval,
-  ApprovalNotFoundError
+  ApprovalNotFoundError,
+  getApproval
 } from '../../lib/repositories/approvalRepository';
-import { ensureAuthorized } from '../../lib/utils/auth';
+import { ensureAuthorized, requirePermission, WORKFLOW_PERMISSIONS } from '../../lib/utils/auth';
 import { handlePreflight } from '../../lib/utils/corsHelper';
+import { logApprovalReassigned } from '../../lib/auditClient';
+import { sendApprovalRequiredNotification } from '../../lib/notificationClient';
 
 interface ReassignApprovalRequest {
   toUserId: string;
@@ -25,7 +28,8 @@ const reassignApprovalHandler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, WORKFLOW_PERMISSIONS.APPROVALS_REASSIGN);
 
     const approvalId = request.params.approvalId;
     const body = (await request.json()) as ReassignApprovalRequest;
@@ -38,12 +42,36 @@ const reassignApprovalHandler = async (
       return jsonResponse(400, { message: 'Target user ID is required' });
     }
 
+    // Get original approval for audit
+    const originalApproval = await getApproval(approvalId);
+
     context.log(`Reassigning approval ${approvalId} to ${body.toUserId}`);
 
     const newApproval = await reassignApproval(
       approvalId,
       body.toUserId,
       body.reason
+    );
+
+    // Log audit event - use first approverUser or 'system' as original assignee
+    const originalAssignee = originalApproval.approverUsers?.[0] || 'system';
+    await logApprovalReassigned(
+      approvalId,
+      originalAssignee,
+      body.toUserId,
+      userContext,
+      body.reason
+    );
+
+    // Send notification to new assignee
+    await sendApprovalRequiredNotification(
+      newApproval.approvalId,
+      [body.toUserId],
+      {
+        approvalType: 'Workflow Approval',
+        requesterName: 'System',
+        entityType: newApproval.workflowId,
+      }
     );
 
     return jsonResponse(200, {

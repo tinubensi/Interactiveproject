@@ -1,0 +1,36 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+
+    "COSMOS_ENDPOINT": "https://cosmos-nectaria-dev.documents.azure.com:443/",
+    "COSMOS_KEY": "<from-key-vault>",
+    "COSMOS_DATABASE_ID": "notification-db",
+
+    "EVENT_GRID_TOPIC_ENDPOINT": "<your-event-grid-endpoint>",
+    "EVENT_GRID_TOPIC_KEY": "<from-key-vault>",
+
+    "ACS_CONNECTION_STRING": "<azure-communication-services-connection-string>",
+    "ACS_SENDER_EMAIL": "noreply@nectaria.com",
+    "ACS_SENDER_PHONE": "+971501234567",
+
+    "SIGNALR_CONNECTION_STRING": "<signalr-connection-string>",
+    "SIGNALR_HUB_NAME": "notifications",
+
+    "INTERNAL_SERVICE_KEY": "<generate-strong-key>",
+    "STAFF_SERVICE_URL": "http://localhost:7074",
+
+    "RATE_LIMIT_EMAIL_PER_USER": "50",
+    "RATE_LIMIT_SMS_PER_USER": "10",
+    "RATE_LIMIT_PUSH_PER_USER": "100",
+
+    "NOTIFICATION_TTL_DAYS": "90"
+  },
+  "Host": {
+    "LocalHttpPort": 7075,
+    "CORS": "*",
+    "CORSCredentials": true
+  }
+}
+

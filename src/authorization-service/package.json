@@ -1,0 +1,35 @@
+{
+  "name": "authorization-service",
+  "version": "1.0.0",
+  "description": "Nectaria Authorization Service - RBAC, permission management, resource-level access control",
+  "main": "dist/src/functions/*.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "clean": "rimraf dist",
+    "prestart": "npm run build",
+    "start": "func start",
+    "pretest": "npm run build",
+    "test": "node --test --experimental-test-coverage dist/src/tests/**/*.test.js",
+    "test:watch": "tsc -w & node --test --watch dist/src/tests/**/*.test.js",
+    "seed": "node dist/scripts/seedRoles.js"
+  },
+  "dependencies": {
+    "@azure/cosmos": "^4.2.0",
+    "@azure/functions": "^4.5.1",
+    "@azure/eventgrid": "^5.5.1",
+    "@nectaria/shared-types": "file:../../../packages/@nectaria/shared-types",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@types/uuid": "^10.0.0",
+    "azure-functions-core-tools": "^4.x",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
+

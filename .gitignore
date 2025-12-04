@@ -1,0 +1,17 @@
+# Ignore general node modules and environment files
+node_modules/
+.env
+.env.*
+
+# Ignore build and log files in all service subfolders inside src/
+src/*/node_modules/
+src/*/.env
+src/*/.env.*
+src/*/dist/
+src/*/build/
+src/*/.gitignore
+src/*/package-lock.json
+src/*/yarn.lock
+src/*/logs/
+src/*/coverage/
+src/*/.nyc_output/

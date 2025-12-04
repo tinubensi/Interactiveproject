@@ -9,12 +9,15 @@ import { v4 as uuidv4 } from 'uuid';
 import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
 import { PlanFilter } from '../../models/plan';
+import { ensureAuthorized, requirePermission, QUOTE_PERMISSIONS } from '../../lib/auth';
 
 export async function saveFilters(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, QUOTE_PERMISSIONS.QUOTES_CREATE);
     const body: any = await request.json();
 
     if (!body.leadId) {

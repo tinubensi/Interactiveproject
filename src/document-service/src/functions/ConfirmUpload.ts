@@ -10,6 +10,7 @@ import {
   success,
   internalServerError,
 } from '../utils/httpHelpers';
+import { ensureAuthorized, requirePermission, DOCUMENT_PERMISSIONS } from '../lib/auth';
 
 /**
  * POST /api/documents/{docId}/confirm-upload
@@ -23,6 +24,8 @@ export async function confirmUpload(
   context.log('Processing ConfirmUpload request');
 
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, DOCUMENT_PERMISSIONS.DOCUMENTS_UPLOAD);
     // Extract docId from route parameters
     const docId = request.params.docId;
     if (!docId) {

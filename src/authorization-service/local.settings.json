@@ -1,0 +1,24 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+
+    "COSMOS_ENDPOINT": "https://cosmos-nectaria-dev.documents.azure.com:443/",
+    "COSMOS_KEY": "<from-key-vault>",
+    "COSMOS_DATABASE_ID": "authz-db",
+
+    "EVENT_GRID_TOPIC_ENDPOINT": "<your-event-grid-endpoint>",
+    "EVENT_GRID_TOPIC_KEY": "<from-key-vault>",
+
+    "INTERNAL_SERVICE_KEY": "<generate-strong-key>",
+
+    "PERMISSION_CACHE_TTL_SECONDS": "300"
+  },
+  "Host": {
+    "LocalHttpPort": 7072,
+    "CORS": "*",
+    "CORSCredentials": true
+  }
+}
+

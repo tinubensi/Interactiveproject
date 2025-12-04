@@ -10,8 +10,9 @@ import {
   handleError,
   badRequestResponse
 } from '../../lib/utils/httpResponses';
-import { ensureAuthorized } from '../../lib/utils/auth';
+import { ensureAuthorized, requirePermission, WORKFLOW_PERMISSIONS } from '../../lib/utils/auth';
 import { handlePreflight } from '../../lib/utils/corsHelper';
+import { logAuditEvent, WORKFLOW_AUDIT_EVENTS } from '../../lib/auditClient';
 
 interface CloneRequest {
   name: string;
@@ -25,7 +26,8 @@ const handler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    const userContext = ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, WORKFLOW_PERMISSIONS.WORKFLOWS_CREATE);
 
     const workflowId = request.params.workflowId;
     if (!workflowId) {
@@ -43,6 +45,16 @@ const handler = async (
       workflowId,
       body.name,
       userContext.userId
+    );
+
+    // Log audit event
+    await logAuditEvent(
+      WORKFLOW_AUDIT_EVENTS.WORKFLOW_CLONED,
+      'create',
+      'workflow',
+      workflow.workflowId,
+      userContext,
+      { sourceWorkflowId: workflowId, clonedName: body.name }
     );
 
     context.log(`Cloned workflow ${workflowId} to ${workflow.workflowId}`);
