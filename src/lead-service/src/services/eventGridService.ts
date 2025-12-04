@@ -17,12 +17,18 @@ class EventGridService {
     const topicKey = process.env.EVENT_GRID_TOPIC_KEY || '';
 
     // Only initialize if endpoint is configured
-    if (this.topicEndpoint && topicKey && !this.topicEndpoint.includes('localhost')) {
+    if (this.topicEndpoint && topicKey) {
       try {
+        // Allow insecure connection for localhost development
+        const clientOptions = this.topicEndpoint.includes('localhost') || this.topicEndpoint.includes('127.0.0.1')
+          ? { allowInsecureConnection: true }
+          : undefined;
+        
         this.client = new EventGridPublisherClient(
           this.topicEndpoint,
           'EventGrid',
-          new AzureKeyCredential(topicKey)
+          new AzureKeyCredential(topicKey),
+          clientOptions
         );
         this.enabled = true;
         console.log('Event Grid client initialized');

@@ -13,11 +13,25 @@ class CosmosService {
   private revisionsContainer: Container;
 
   constructor() {
-    const endpoint = process.env.COSMOS_DB_ENDPOINT!;
-    const key = process.env.COSMOS_DB_KEY!;
-    const databaseName = process.env.COSMOS_DB_NAME || 'QuotationDB';
+    // Support both connection string (Azure) and separate endpoint/key (emulator)
+    const connectionString = process.env.COSMOS_CONNECTION_STRING;
+    const endpoint = process.env.COSMOS_DB_ENDPOINT;
+    const key = process.env.COSMOS_DB_KEY;
+    const databaseName = process.env.COSMOS_DB_NAME || 'quotation-service-db';
 
-    this.client = new CosmosClient({ endpoint, key });
+    if (connectionString) {
+      // Using Azure Cosmos DB (production/cloud)
+      this.client = new CosmosClient(connectionString);
+    } else if (endpoint && key) {
+      // Using emulator with separate endpoint/key
+      if (endpoint && (endpoint.includes('localhost') || endpoint.includes('127.0.0.1'))) {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      }
+      this.client = new CosmosClient({ endpoint, key });
+    } else {
+      throw new Error('COSMOS_CONNECTION_STRING or (COSMOS_DB_ENDPOINT + COSMOS_DB_KEY) must be set');
+    }
+
     this.database = this.client.database(databaseName);
     this.quotationsContainer = this.database.container('quotations');
     this.quotationPlansContainer = this.database.container('quotationPlans');
@@ -26,7 +40,7 @@ class CosmosService {
 
   async initialize(): Promise<void> {
     try {
-      await this.client.databases.createIfNotExists({ id: process.env.COSMOS_DB_NAME || 'QuotationDB' });
+      await this.client.databases.createIfNotExists({ id: process.env.COSMOS_DB_NAME || 'quotation-service-db' });
 
       await this.database.containers.createIfNotExists({
         id: 'quotations',
@@ -80,6 +94,18 @@ class CosmosService {
     const query: SqlQuerySpec = {
       query: 'SELECT * FROM c WHERE c.leadId = @leadId AND c.isCurrentVersion = true',
       parameters: [{ name: '@leadId', value: leadId }]
+    };
+    const { resources } = await this.quotationsContainer.items.query<Quotation>(query).fetchAll();
+    return resources[0] || null;
+  }
+
+  /**
+   * Get quotation by selection token (for customer review link)
+   */
+  async getQuotationByToken(token: string): Promise<Quotation | null> {
+    const query: SqlQuerySpec = {
+      query: 'SELECT * FROM c WHERE c.selectionToken = @token',
+      parameters: [{ name: '@token', value: token }]
     };
     const { resources } = await this.quotationsContainer.items.query<Quotation>(query).fetchAll();
     return resources[0] || null;
