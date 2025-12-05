@@ -252,6 +252,18 @@ class CosmosService {
     };
   }
 
+  async deletePlansForLead(leadId: string): Promise<void> {
+    const plans = await this.getPlansForLead(leadId);
+    
+    for (const plan of plans) {
+      try {
+        await this.plansContainer.item(plan.id, leadId).delete();
+      } catch (error) {
+        console.error(`Error deleting plan ${plan.id}:`, error);
+      }
+    }
+  }
+
   async updatePlan(id: string, leadId: string, updates: Partial<Plan>): Promise<Plan> {
     const existing = await this.getPlanById(id, leadId);
     if (!existing) throw new Error('Plan not found');

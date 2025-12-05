@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "start": "func start",
+    "start": "npx func start --port 7075",
     "prestart": "npm run build",
     "clean": "rimraf dist",
     "setup": "npm run build && node dist/scripts/setup-database.js",
@@ -21,8 +21,8 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/uuid": "^9.0.0",
+    "azure-functions-core-tools": "^4.5.0",
     "rimraf": "^5.0.0",
     "typescript": "^5.0.0"
   }
 }
-

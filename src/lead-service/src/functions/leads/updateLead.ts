@@ -111,16 +111,20 @@ export async function updateLead(
       updates.assignedTo = body.assignedTo;
       changes.push({ field: 'assignedTo', oldValue: existingLead.assignedTo, newValue: body.assignedTo });
 
-      // Publish assignment event
-      await eventGridService.publishLeadAssigned({
-        leadId: existingLead.id,
-        referenceId: existingLead.referenceId,
-        customerId: existingLead.customerId,
-        previousAssignee: existingLead.assignedTo,
-        newAssignee: body.assignedTo,
-        assignedBy: body.assignedTo, // TODO: Get from auth context
-        timestamp: new Date()
-      });
+      // Publish assignment event (optional - don't fail if Event Grid is down)
+      try {
+        await eventGridService.publishLeadAssigned({
+          leadId: existingLead.id,
+          referenceId: existingLead.referenceId,
+          customerId: existingLead.customerId,
+          previousAssignee: existingLead.assignedTo,
+          newAssignee: body.assignedTo,
+          assignedBy: body.assignedTo, // TODO: Get from auth context
+          timestamp: new Date()
+        });
+      } catch (eventError) {
+        context.warn('Failed to publish lead.assigned event (Event Grid unavailable)');
+      }
 
       // Add timeline entry
       await cosmosService.createTimelineEntry({
@@ -143,6 +147,15 @@ export async function updateLead(
       changes.push({ field: 'lobData', oldValue: existingLead.lobData, newValue: updates.lobData });
     }
 
+    if (body.formData) {
+      updates.formData = body.formData;
+      updates.lobData = {
+        ...existingLead.lobData,
+        ...body.formData
+      };
+      changes.push({ field: 'formData', oldValue: existingLead.formData, newValue: body.formData });
+    }
+
     if (body.source && body.source !== existingLead.source) {
       updates.source = body.source;
       changes.push({ field: 'source', oldValue: existingLead.source, newValue: body.source });
@@ -153,30 +166,40 @@ export async function updateLead(
       changes.push({ field: 'isHotLead', oldValue: existingLead.isHotLead, newValue: body.isHotLead });
 
       if (body.isHotLead) {
-        // Publish hot lead marked event
-        await eventGridService.publishLeadHotLeadMarked({
-          leadId: existingLead.id,
-          referenceId: existingLead.referenceId,
-          customerId: existingLead.customerId,
-          markedBy: body.assignedTo, // TODO: Get from auth context
-          timestamp: new Date()
-        });
+        // Publish hot lead marked event (optional - don't fail if Event Grid is down)
+        try {
+          await eventGridService.publishLeadHotLeadMarked({
+            leadId: existingLead.id,
+            referenceId: existingLead.referenceId,
+            customerId: existingLead.customerId,
+            markedBy: body.assignedTo, // TODO: Get from auth context
+            timestamp: new Date()
+          });
+        } catch (eventError) {
+          context.warn('Failed to publish lead.hot_lead_marked event (Event Grid unavailable)');
+        }
       }
     }
 
     // Update lead
     const updatedLead = await cosmosService.updateLead(id, lineOfBusiness, updates);
 
-    // Publish lead.updated event if there were changes
+    // Publish lead.updated event if there were changes (optional - don't fail if Event Grid is down)
     if (changes.length > 0) {
-      await eventGridService.publishLeadUpdated({
-        leadId: updatedLead.id,
-        referenceId: updatedLead.referenceId,
-        customerId: updatedLead.customerId,
-        changes,
-        updatedBy: body.assignedTo, // TODO: Get from auth context
-        updatedAt: updatedLead.updatedAt
-      });
+      try {
+        await eventGridService.publishLeadUpdated({
+          leadId: updatedLead.id,
+          referenceId: updatedLead.referenceId,
+          customerId: updatedLead.customerId,
+          changes,
+          updatedBy: body.assignedTo, // TODO: Get from auth context
+          updatedAt: updatedLead.updatedAt
+        });
+        context.log('Lead updated event published successfully');
+      } catch (eventError) {
+        context.warn('Failed to publish lead.updated event (Event Grid unavailable):', eventError);
+        // Don't fail the update if event publishing fails
+      }
     }
 
     context.log(`Lead updated successfully: ${updatedLead.referenceId}`);

@@ -8,7 +8,7 @@
     "watch": "tsc -w",
     "clean": "rimraf dist",
     "prestart": "npm run clean && npm run build",
-    "start": "func start --port 7073",
+    "start": "npx func start --port 7078",
     "test": "npm run build && node --test \"dist/src/tests/**/*.js\"",
     "test:watch": "tsx watch --test \"src/tests/**/*.test.ts\"",
     "test:coverage": "npm run build && node --test --experimental-test-coverage \"dist/src/tests/**/*.js\"",
