@@ -63,10 +63,9 @@ export function createPkceVerifierCookie(verifier: string): Cookie {
     value: verifier,
     httpOnly: true,
     secure: config.cookies.secure,
-    sameSite: config.cookies.sameSite === 'strict' ? 'Strict' : 
-              config.cookies.sameSite === 'lax' ? 'Lax' : 'None',
+    sameSite: 'Lax',  // Must be Lax for OAuth redirects from Azure AD
     maxAge: 5 * 60, // 5 minutes
-    path: '/api/auth/callback',
+    path: '/api/auth',  // Broadened path to ensure cookie is sent to all auth endpoints
     domain: config.cookies.domain !== 'localhost' ? config.cookies.domain : undefined,
   };
 }
@@ -110,9 +109,9 @@ export function clearPkceVerifierCookie(): Cookie {
     value: '',
     httpOnly: true,
     secure: true,
-    sameSite: 'Strict',
+    sameSite: 'Lax',
     maxAge: 0,
-    path: '/api/auth/callback',
+    path: '/api/auth',  // Must match the path used in createPkceVerifierCookie
   };
 }
 

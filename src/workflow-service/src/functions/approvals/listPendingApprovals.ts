@@ -36,10 +36,10 @@ const listPendingApprovalsHandler = async (
     return jsonResponse(200, {
       approvals,
       count: approvals.length
-    });
+    }, request);
   } catch (error) {
     context.error('Error listing pending approvals:', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

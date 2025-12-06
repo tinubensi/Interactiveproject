@@ -53,10 +53,10 @@ const handler = async (
         errorCount: inst.errorCount
       })),
       count: instances.length
-    });
+    }, request);
   } catch (error) {
     context.error('Error listing instances', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

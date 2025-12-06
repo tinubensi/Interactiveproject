@@ -2,7 +2,7 @@
   "name": "audit-service",
   "version": "1.0.0",
   "description": "Nectaria Audit Service - Centralized logging, compliance reporting, PII sanitization, export",
-  "main": "dist/src/functions/*.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",

@@ -29,7 +29,7 @@ const handler = async (
 
     const workflowId = request.params.workflowId;
     if (!workflowId) {
-      return badRequestResponse('Workflow ID is required');
+      return badRequestResponse('Workflow ID is required', undefined, request);
     }
 
     const versionParam = request.query.get('version');
@@ -41,10 +41,10 @@ const handler = async (
       ? await getWorkflowByVersion(workflowId, version)
       : await getWorkflow(workflowId);
 
-    return successResponse(workflow);
+    return successResponse(workflow, request);
   } catch (error) {
     context.error('Error getting workflow', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

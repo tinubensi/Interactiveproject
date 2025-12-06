@@ -27,7 +27,7 @@ const handler = async (
 
     const workflowId = request.params.workflowId;
     if (!workflowId) {
-      return badRequestResponse('Workflow ID is required');
+      return badRequestResponse('Workflow ID is required', undefined, request);
     }
 
     context.log('Validating workflow', { workflowId });
@@ -41,10 +41,10 @@ const handler = async (
       valid: validation.valid,
       errors: validation.errors,
       canActivate: validation.valid && workflow.steps.length > 0
-    });
+    }, request);
   } catch (error) {
     context.error('Error validating workflow', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

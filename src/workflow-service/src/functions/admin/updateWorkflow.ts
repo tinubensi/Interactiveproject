@@ -29,7 +29,7 @@ const handler = async (
 
     const workflowId = request.params.workflowId;
     if (!workflowId) {
-      return badRequestResponse('Workflow ID is required');
+      return badRequestResponse('Workflow ID is required', undefined, request);
     }
 
     const body = (await request.json()) as UpdateWorkflowRequest;
@@ -46,10 +46,10 @@ const handler = async (
     await logWorkflowUpdated(workflowId, userContext);
 
     context.log(`Updated workflow ${workflowId} to version ${workflow.version}`);
-    return successResponse(workflow);
+    return successResponse(workflow, request);
   } catch (error) {
     context.error('Error updating workflow', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

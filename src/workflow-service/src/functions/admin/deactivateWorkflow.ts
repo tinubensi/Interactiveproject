@@ -27,7 +27,7 @@ const handler = async (
 
     const workflowId = request.params.workflowId;
     if (!workflowId) {
-      return badRequestResponse('Workflow ID is required');
+      return badRequestResponse('Workflow ID is required', undefined, request);
     }
 
     context.log('Deactivating workflow', { workflowId });
@@ -44,10 +44,10 @@ const handler = async (
     );
 
     context.log(`Deactivated workflow ${workflowId}`);
-    return successResponse(workflow);
+    return successResponse(workflow, request);
   } catch (error) {
     context.error('Error deactivating workflow', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

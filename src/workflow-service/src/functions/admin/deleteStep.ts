@@ -28,10 +28,10 @@ const handler = async (
     const stepId = request.params.stepId;
 
     if (!workflowId) {
-      return badRequestResponse('Workflow ID is required');
+      return badRequestResponse('Workflow ID is required', undefined, request);
     }
     if (!stepId) {
-      return badRequestResponse('Step ID is required');
+      return badRequestResponse('Step ID is required', undefined, request);
     }
 
     context.log('Deleting step', { workflowId, stepId });
@@ -39,10 +39,10 @@ const handler = async (
     const workflow = await deleteStep(workflowId, stepId, userContext.userId);
 
     context.log(`Deleted step ${stepId} from workflow ${workflowId}`);
-    return successResponse(workflow);
+    return successResponse(workflow, request);
   } catch (error) {
     context.error('Error deleting step', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

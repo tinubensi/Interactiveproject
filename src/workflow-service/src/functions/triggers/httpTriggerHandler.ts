@@ -35,7 +35,7 @@ const handler = async (
 
     const workflowId = request.params.workflowId;
     if (!workflowId) {
-      return badRequestResponse('Workflow ID is required');
+      return badRequestResponse('Workflow ID is required', undefined, request);
     }
 
     context.log('Triggering workflow', { workflowId });
@@ -45,7 +45,9 @@ const handler = async (
 
     if (workflow.status !== 'active') {
       return badRequestResponse(
-        `Workflow ${workflowId} is not active (status: ${workflow.status})`
+        `Workflow ${workflowId} is not active (status: ${workflow.status})`,
+        undefined,
+        request
       );
     }
 
@@ -53,7 +55,9 @@ const handler = async (
     const httpTrigger = workflow.triggers.find((t) => t.type === 'http');
     if (!httpTrigger) {
       return badRequestResponse(
-        `Workflow ${workflowId} does not have an HTTP trigger configured`
+        `Workflow ${workflowId} does not have an HTTP trigger configured`,
+        undefined,
+        request
       );
     }
 
@@ -66,7 +70,9 @@ const handler = async (
       request.method !== 'OPTIONS'
     ) {
       return badRequestResponse(
-        `Invalid HTTP method. Expected ${triggerConfig.method}`
+        `Invalid HTTP method. Expected ${triggerConfig.method}`,
+        undefined,
+        request
       );
     }
 
@@ -124,13 +130,13 @@ const handler = async (
       status: instance.status,
       createdAt: instance.createdAt,
       message: 'Workflow instance created successfully'
-    });
+    }, request);
   } catch (error) {
     if (error instanceof WorkflowNotFoundError) {
-      return notFoundResponse('Workflow');
+      return notFoundResponse('Workflow', request);
     }
     context.error('Error triggering workflow', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

@@ -15,3 +15,4 @@ src/*/yarn.lock
 src/*/logs/
 src/*/coverage/
 src/*/.nyc_output/
+src/*/local.settings.json

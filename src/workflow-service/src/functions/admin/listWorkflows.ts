@@ -42,10 +42,10 @@ const handler = async (
     return successResponse({
       workflows,
       count: workflows.length
-    });
+    }, request);
   } catch (error) {
     context.error('Error listing workflows', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

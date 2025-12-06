@@ -2,7 +2,7 @@
   "name": "authentication-service",
   "version": "1.0.0",
   "description": "Nectaria Authentication Service - Azure AD B2B SSO, session management, token lifecycle",
-  "main": "dist/src/functions/*.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@azure/cosmos": "^4.2.0",
-    "@azure/functions": "^4.5.1",
+    "@azure/functions": "^4.0.0",
     "@azure/identity": "^4.5.0",
     "@azure/msal-node": "^2.16.2",
     "@azure/eventgrid": "^5.5.1",

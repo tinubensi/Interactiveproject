@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { randomUUID } from 'crypto';
 import { verifyState } from '../lib/pkceHelper';
 import {
   getPkceVerifierFromCookies,
@@ -138,7 +139,8 @@ export async function CallbackB2B(
       },
       accessToken,
       refreshToken,
-      refreshTokenFamily
+      refreshTokenFamily,
+      sessionId  // Pass the sessionId that's already in the JWT
     );
     
     // Publish events
@@ -198,7 +200,7 @@ export async function CallbackB2B(
  * Generate a session ID
  */
 function generateSessionId(): string {
-  return crypto.randomUUID();
+  return randomUUID();
 }
 
 /**
@@ -209,7 +211,7 @@ function redirectToError(
   error: string,
   description: string
 ): HttpResponseInit {
-  const errorUrl = `${frontendUrl}/login?error=${encodeURIComponent(error)}&error_description=${encodeURIComponent(description)}`;
+  const errorUrl = `${frontendUrl}/staff-login?error=${encodeURIComponent(error)}&error_description=${encodeURIComponent(description)}`;
   
   return {
     status: 302,

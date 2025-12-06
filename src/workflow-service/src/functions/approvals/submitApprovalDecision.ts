@@ -44,13 +44,13 @@ const submitApprovalDecisionHandler = async (
     const body = (await request.json()) as SubmitApprovalRequest;
 
     if (!approvalId) {
-      return jsonResponse(400, { message: 'Approval ID is required' });
+      return jsonResponse(400, { message: 'Approval ID is required' }, request);
     }
 
     if (!body.decision || !['approved', 'rejected'].includes(body.decision)) {
       return jsonResponse(400, {
         message: 'Decision must be either "approved" or "rejected"'
-      });
+      }, request);
     }
 
     context.log(`Processing approval decision for ${approvalId}:`, {
@@ -146,13 +146,13 @@ const submitApprovalDecisionHandler = async (
     return jsonResponse(200, {
       approval: updatedApproval,
       workflowResumed: instance.status === 'waiting'
-    });
+    }, request);
   } catch (error) {
     context.error('Error submitting approval decision:', error);
     if (error instanceof ApprovalNotFoundError) {
-      return jsonResponse(404, { message: error.message });
+      return jsonResponse(404, { message: error.message }, request);
     }
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

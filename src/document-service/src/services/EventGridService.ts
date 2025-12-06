@@ -3,6 +3,7 @@ import { config } from '../config';
 import {
   CustomerDocumentUploadedEvent,
   CustomerDocumentExpiredEvent,
+  PipelineDocumentUploadedEvent,
   EventType,
 } from '../models/Events';
 
@@ -76,6 +77,32 @@ export class EventGridService {
       subject: `documents/${event.documentId}`,
       dataVersion: '1.0',
       eventType: EventType.DocumentExpired,
+      data: event,
+      eventTime: new Date(),
+    };
+
+    await this.getClient().send([eventGridEvent]);
+  }
+
+  /**
+   * Publish document.uploaded event for pipeline integration
+   * This event is published when a document is uploaded for a lead
+   */
+  async publishPipelineDocumentUploadedEvent(
+    event: PipelineDocumentUploadedEvent
+  ): Promise<void> {
+    // Skip event publishing in local development with mock endpoint
+    if (this.isLocalMock()) {
+      console.log('[EventGrid] Skipping event publishing (local development mode)');
+      console.log('[EventGrid] Would publish:', EventType.PipelineDocumentUploaded, event);
+      return;
+    }
+
+    const eventGridEvent = {
+      id: `${event.documentId}-pipeline-uploaded-${Date.now()}`,
+      subject: `documents/${event.documentId}`,
+      dataVersion: '1.0',
+      eventType: EventType.PipelineDocumentUploaded,
       data: event,
       eventTime: new Date(),
     };

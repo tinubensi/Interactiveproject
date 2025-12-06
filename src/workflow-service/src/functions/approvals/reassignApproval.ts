@@ -35,11 +35,11 @@ const reassignApprovalHandler = async (
     const body = (await request.json()) as ReassignApprovalRequest;
 
     if (!approvalId) {
-      return jsonResponse(400, { message: 'Approval ID is required' });
+      return jsonResponse(400, { message: 'Approval ID is required' }, request);
     }
 
     if (!body.toUserId) {
-      return jsonResponse(400, { message: 'Target user ID is required' });
+      return jsonResponse(400, { message: 'Target user ID is required' }, request);
     }
 
     // Get original approval for audit
@@ -78,13 +78,13 @@ const reassignApprovalHandler = async (
       message: 'Approval reassigned successfully',
       newApprovalId: newApproval.approvalId,
       approval: newApproval
-    });
+    }, request);
   } catch (error) {
     context.error('Error reassigning approval:', error);
     if (error instanceof ApprovalNotFoundError) {
-      return jsonResponse(404, { message: error.message });
+      return jsonResponse(404, { message: error.message }, request);
     }
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

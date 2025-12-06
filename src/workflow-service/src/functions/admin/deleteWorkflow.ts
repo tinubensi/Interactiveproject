@@ -27,7 +27,7 @@ const handler = async (
 
     const workflowId = request.params.workflowId;
     if (!workflowId) {
-      return badRequestResponse('Workflow ID is required');
+      return badRequestResponse('Workflow ID is required', undefined, request);
     }
 
     context.log('Deleting workflow', { workflowId });
@@ -41,10 +41,10 @@ const handler = async (
     await logWorkflowDeleted(workflowId, workflow.name, userContext);
 
     context.log(`Deleted workflow ${workflowId}`);
-    return noContentResponse();
+    return noContentResponse(request);
   } catch (error) {
     context.error('Error deleting workflow', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

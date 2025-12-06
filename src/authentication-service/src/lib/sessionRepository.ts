@@ -41,12 +41,12 @@ export async function createSession(
   input: CreateSessionInput,
   accessToken: string,
   refreshToken: string,
-  refreshTokenFamily: string
+  refreshTokenFamily: string,
+  sessionId: string
 ): Promise<Session> {
   const container = getSessionsContainer();
   const config = getConfig();
   
-  const sessionId = uuidv4();
   const now = new Date();
   const expiresAt = new Date(now.getTime() + config.tokens.refreshTokenLifetime * 1000);
   

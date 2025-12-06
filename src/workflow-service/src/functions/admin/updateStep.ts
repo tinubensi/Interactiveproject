@@ -29,10 +29,10 @@ const handler = async (
     const stepId = request.params.stepId;
 
     if (!workflowId) {
-      return badRequestResponse('Workflow ID is required');
+      return badRequestResponse('Workflow ID is required', undefined, request);
     }
     if (!stepId) {
-      return badRequestResponse('Step ID is required');
+      return badRequestResponse('Step ID is required', undefined, request);
     }
 
     const body = (await request.json()) as Partial<Omit<WorkflowStep, 'id'>>;
@@ -46,10 +46,10 @@ const handler = async (
     );
 
     context.log(`Updated step ${stepId} in workflow ${workflowId}`);
-    return successResponse(workflow);
+    return successResponse(workflow, request);
   } catch (error) {
     context.error('Error updating step', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

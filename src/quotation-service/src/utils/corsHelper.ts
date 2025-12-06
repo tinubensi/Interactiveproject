@@ -17,15 +17,13 @@ const ALLOWED_ORIGINS = [
  * Get CORS headers for a given request
  */
 export function getCorsHeaders(request: HttpRequest): Record<string, string> {
-  const origin = request.headers.get('origin') || '';
-  
-  // Allow all origins in development
-  const allowedOrigin = origin || '*';
+  const origin = request.headers.get('origin') || 'http://localhost:3000';
   
   return {
-    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-ms-client-request-id',
+    'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Max-Age': '86400',
   };
 }
