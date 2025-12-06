@@ -5,12 +5,15 @@
 
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { cosmosService } from '../../services/cosmosService';
+import { ensureAuthorized, requirePermission, QUOTE_PERMISSIONS } from '../../lib/auth';
 
 export async function getPlanById(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, QUOTE_PERMISSIONS.QUOTES_READ);
     const id = request.params.id;
     const leadId = request.query.get('leadId');
 

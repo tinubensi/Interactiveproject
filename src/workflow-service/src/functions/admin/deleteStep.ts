@@ -10,7 +10,7 @@ import {
   handleError,
   badRequestResponse
 } from '../../lib/utils/httpResponses';
-import { ensureAuthorized } from '../../lib/utils/auth';
+import { ensureAuthorized, requirePermission, WORKFLOW_PERMISSIONS } from '../../lib/utils/auth';
 import { handlePreflight } from '../../lib/utils/corsHelper';
 
 const handler = async (
@@ -21,16 +21,17 @@ const handler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    const userContext = ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, WORKFLOW_PERMISSIONS.WORKFLOWS_UPDATE);
 
     const workflowId = request.params.workflowId;
     const stepId = request.params.stepId;
 
     if (!workflowId) {
-      return badRequestResponse('Workflow ID is required');
+      return badRequestResponse('Workflow ID is required', undefined, request);
     }
     if (!stepId) {
-      return badRequestResponse('Step ID is required');
+      return badRequestResponse('Step ID is required', undefined, request);
     }
 
     context.log('Deleting step', { workflowId, stepId });
@@ -38,10 +39,10 @@ const handler = async (
     const workflow = await deleteStep(workflowId, stepId, userContext.userId);
 
     context.log(`Deleted step ${stepId} from workflow ${workflowId}`);
-    return successResponse(workflow);
+    return successResponse(workflow, request);
   } catch (error) {
     context.error('Error deleting step', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

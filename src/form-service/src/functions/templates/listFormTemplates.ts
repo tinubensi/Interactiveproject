@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { listFormTemplates } from '../../lib/formDefinitionRepository';
 import { jsonResponse, handleError } from '../../lib/httpResponses';
-import { ensureAuthorized } from '../../lib/auth';
+import { ensureAuthorized, requirePermission, FORM_PERMISSIONS } from '../../lib/auth';
 import { handlePreflight } from '../../lib/corsHelper';
 
 const listTemplates = async (
@@ -12,7 +12,8 @@ const listTemplates = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, FORM_PERMISSIONS.FORMS_READ);
     const insuranceLine = request.query.get('insuranceLine') ?? undefined;
     const status = request.query.get('status') ?? undefined;
     const search = request.query.get('search') ?? undefined;

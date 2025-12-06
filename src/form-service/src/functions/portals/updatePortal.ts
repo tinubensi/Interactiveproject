@@ -2,7 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { getPortal, updatePortal } from '../../lib/portalRepository';
 import { jsonResponse, handleError } from '../../lib/httpResponses';
 import { PortalDefinition } from '../../models/portalTypes';
-import { ensureAuthorized } from '../../lib/auth';
+import { ensureAuthorized, requirePermission, FORM_PERMISSIONS } from '../../lib/auth';
 import { handlePreflight } from '../../lib/corsHelper';
 
 const updatePortalHandler = async (
@@ -13,7 +13,8 @@ const updatePortalHandler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, FORM_PERMISSIONS.FORMS_UPDATE);
     const portalId = request.params.portalId;
     if (!portalId) {
       return jsonResponse(400, { error: 'portalId is required' });

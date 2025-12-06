@@ -24,12 +24,12 @@ export async function getOverviewHandler(
     const organizationId = request.query.get('organizationId');
 
     if (!organizationId) {
-      return withCors(badRequestResponse('Organization ID is required'));
+      return withCors(request, badRequestResponse('Organization ID is required', undefined, request));
     }
 
     const periodParam = request.query.get('period') || 'week';
     if (!['day', 'week', 'month'].includes(periodParam)) {
-      return withCors(badRequestResponse('Invalid period. Must be day, week, or month'));
+      return withCors(request, badRequestResponse('Invalid period. Must be day, week, or month', undefined, request));
     }
 
     const period = periodParam as AnalyticsPeriod;
@@ -45,12 +45,12 @@ export async function getOverviewHandler(
 
     telemetry?.trackMetric('analytics.overview.duration', Date.now() - startTime);
 
-    return withCors(successResponse(overview));
+    return withCors(request, successResponse(overview, request));
   } catch (error) {
     telemetry?.trackException(error as Error, {
       operation: 'getAnalyticsOverview',
     });
-    return withCors(handleError(error));
+    return withCors(request, handleError(error, request));
   }
 }
 

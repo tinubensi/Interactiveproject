@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { listUnmappedFields } from '../../lib/unmappedFieldRepository';
 import { jsonResponse, handleError } from '../../lib/httpResponses';
-import { ensureAuthorized } from '../../lib/auth';
+import { ensureAuthorized, requirePermission, FORM_PERMISSIONS } from '../../lib/auth';
 import { handlePreflight } from '../../lib/corsHelper';
 import { UnmappedFieldStatus } from '../../models/portalTypes';
 
@@ -13,7 +13,8 @@ const listUnmappedFieldsHandler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, FORM_PERMISSIONS.FORMS_MANAGE);
     const portalId = request.query.get('portalId') || undefined;
     const status = (request.query.get('status') as UnmappedFieldStatus) || undefined;
     const continuationToken = request.query.get('continuationToken') || undefined;

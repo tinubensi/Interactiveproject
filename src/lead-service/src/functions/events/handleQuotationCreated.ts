@@ -2,11 +2,16 @@
  * Handle Quotation Created Event
  * Updates lead status when quotation is created
  * Listens to quotation.created event from Quotation Service
+ * 
+ * NOTE: If a pipeline is active for this lead, the Pipeline Service
+ * handles stage changes. This handler only updates quotation reference
+ * and falls back to hardcoded stage change when no pipeline is active.
  */
 
 import { app, InvocationContext } from '@azure/functions';
 import { v4 as uuidv4 } from 'uuid';
 import { cosmosService } from '../../services/cosmosService';
+import { isLeadManagedByPipeline } from '../../services/pipelineServiceClient';
 
 interface QuotationCreatedEvent {
   id: string;
@@ -50,6 +55,22 @@ export async function handleQuotationCreated(
     }
 
     const lead = leads[0];
+
+    // Check if this lead is managed by a pipeline
+    const hasPipeline = await isLeadManagedByPipeline(data.leadId);
+    if (hasPipeline) {
+      context.log(`Lead ${data.leadId} is managed by pipeline - skipping hardcoded stage change`);
+      // Still update quotation reference but don't change stage
+      await cosmosService.updateLead(data.leadId, lead.lineOfBusiness, {
+        currentQuotationId: data.quotationId,
+        isQuoteGenerated: true,
+        updatedAt: new Date()
+      });
+      return;
+    }
+
+    // Fallback: No pipeline active - use hardcoded stage change
+    context.log(`Lead ${data.leadId} has no active pipeline - using hardcoded stage change`);
 
     // Update lead status to "Quotation Created"
     await cosmosService.updateLead(data.leadId, lead.lineOfBusiness, {

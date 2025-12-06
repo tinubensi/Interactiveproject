@@ -17,6 +17,8 @@
     "@azure/eventgrid": "^4.0.0",
     "@azure/functions": "^4.0.0",
     "@azure/identity": "^4.0.0",
+    "@nectaria/auth-middleware": "file:../../../packages/@nectaria/auth-middleware",
+    "@nectaria/shared-types": "file:../../../packages/@nectaria/shared-types",
     "@types/nodemailer": "^7.0.4",
     "nodemailer": "^7.0.10",
     "uuid": "^9.0.0"

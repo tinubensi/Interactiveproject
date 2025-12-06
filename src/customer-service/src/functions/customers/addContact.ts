@@ -1,9 +1,12 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { cosmosService } from '../../services/cosmosService';
 import { AddContactRequest, Customer, Contact } from '../../types/customer';
+import { ensureAuthorized, requirePermission, CUSTOMER_PERMISSIONS } from '../../lib/auth';
 
 export async function addContact(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, CUSTOMER_PERMISSIONS.CUSTOMERS_UPDATE);
     const id = request.params.id;
     const body = (await request.json()) as AddContactRequest;
 

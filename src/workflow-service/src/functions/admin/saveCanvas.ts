@@ -8,7 +8,7 @@ import { saveCanvas } from '../../lib/repositories/canvasRepository';
 import { successResponse, handleError, badRequestResponse } from '../../lib/utils/httpResponses';
 import { withCors, handlePreflight } from '../../lib/utils/corsHelper';
 import { getTelemetry } from '../../lib/telemetry';
-import { getUserFromRequest } from '../../lib/utils/auth';
+import { ensureAuthorized, requirePermission, WORKFLOW_PERMISSIONS } from '../../lib/utils/auth';
 import type { SaveCanvasRequest } from '../../models/workflowTypes';
 
 export async function saveCanvasHandler(
@@ -22,22 +22,24 @@ export async function saveCanvasHandler(
   const startTime = Date.now();
 
   try {
-    const user = await getUserFromRequest(request);
+    const user = await ensureAuthorized(request);
+    await requirePermission(user.userId, WORKFLOW_PERMISSIONS.WORKFLOWS_UPDATE);
+
     const workflowId = request.params.workflowId;
 
     if (!workflowId) {
-      return withCors(badRequestResponse('Workflow ID is required'));
+      return withCors(request, badRequestResponse('Workflow ID is required', undefined, request));
     }
 
     const body = (await request.json()) as SaveCanvasRequest;
 
     // Validate request body
     if (!body.nodePositions || typeof body.nodePositions !== 'object') {
-      return withCors(badRequestResponse('nodePositions is required'));
+      return withCors(request, badRequestResponse('nodePositions is required', undefined, request));
     }
 
     if (!body.viewport) {
-      return withCors(badRequestResponse('viewport is required'));
+      return withCors(request, badRequestResponse('viewport is required', undefined, request));
     }
 
     const canvas = await saveCanvas(workflowId, body, user.userId);
@@ -51,13 +53,13 @@ export async function saveCanvasHandler(
 
     telemetry?.trackMetric('canvas.save.duration', Date.now() - startTime);
 
-    return withCors(successResponse(canvas));
+    return withCors(request, successResponse(canvas, request));
   } catch (error) {
     telemetry?.trackException(error as Error, {
       operation: 'saveCanvas',
       workflowId: request.params.workflowId,
     });
-    return withCors(handleError(error));
+    return withCors(request, handleError(error, request));
   }
 }
 

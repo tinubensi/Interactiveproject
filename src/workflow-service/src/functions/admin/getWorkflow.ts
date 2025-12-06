@@ -13,7 +13,7 @@ import {
   handleError,
   badRequestResponse
 } from '../../lib/utils/httpResponses';
-import { ensureAuthorized } from '../../lib/utils/auth';
+import { ensureAuthorized, requirePermission, WORKFLOW_PERMISSIONS } from '../../lib/utils/auth';
 import { handlePreflight } from '../../lib/utils/corsHelper';
 
 const handler = async (
@@ -24,11 +24,12 @@ const handler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, WORKFLOW_PERMISSIONS.WORKFLOWS_READ);
 
     const workflowId = request.params.workflowId;
     if (!workflowId) {
-      return badRequestResponse('Workflow ID is required');
+      return badRequestResponse('Workflow ID is required', undefined, request);
     }
 
     const versionParam = request.query.get('version');
@@ -40,10 +41,10 @@ const handler = async (
       ? await getWorkflowByVersion(workflowId, version)
       : await getWorkflow(workflowId);
 
-    return successResponse(workflow);
+    return successResponse(workflow, request);
   } catch (error) {
     context.error('Error getting workflow', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

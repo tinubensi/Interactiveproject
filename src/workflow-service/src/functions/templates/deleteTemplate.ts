@@ -26,7 +26,7 @@ export async function deleteTemplateHandler(
     const templateId = request.params.templateId;
 
     if (!templateId) {
-      return withCors(badRequestResponse('Template ID is required'));
+      return withCors(request, badRequestResponse('Template ID is required', undefined, request));
     }
 
     await deleteTemplate(templateId);
@@ -37,17 +37,17 @@ export async function deleteTemplateHandler(
 
     telemetry?.trackMetric('templates.delete.duration', Date.now() - startTime);
 
-    return withCors(successResponse({ message: 'Template deleted successfully' }));
+    return withCors(request, successResponse({ message: 'Template deleted successfully' }, request));
   } catch (error) {
     if (error instanceof TemplateNotFoundError) {
-      return withCors(notFoundResponse('Template'));
+      return withCors(request, notFoundResponse('Template', request));
     }
 
     telemetry?.trackException(error as Error, {
       operation: 'deleteTemplate',
       templateId: request.params.templateId,
     });
-    return withCors(handleError(error));
+    return withCors(request, handleError(error, request));
   }
 }
 

@@ -8,6 +8,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { cosmosService } from '../../services/cosmosService';
 import { LeadListRequest } from '../../models/lead';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
+import { ensureAuthorized, requirePermission, LEAD_PERMISSIONS } from '../../lib/auth';
 
 export async function listLeads(
   request: HttpRequest,
@@ -18,6 +19,8 @@ export async function listLeads(
   if (preflightResponse) return preflightResponse;
 
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, LEAD_PERMISSIONS.LEADS_READ);
     const body: LeadListRequest = await request.json() as LeadListRequest;
 
     // Set defaults

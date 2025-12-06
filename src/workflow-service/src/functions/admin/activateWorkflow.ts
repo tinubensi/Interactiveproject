@@ -10,8 +10,9 @@ import {
   handleError,
   badRequestResponse
 } from '../../lib/utils/httpResponses';
-import { ensureAuthorized } from '../../lib/utils/auth';
+import { ensureAuthorized, requirePermission, WORKFLOW_PERMISSIONS } from '../../lib/utils/auth';
 import { handlePreflight } from '../../lib/utils/corsHelper';
+import { logAuditEvent, WORKFLOW_AUDIT_EVENTS } from '../../lib/auditClient';
 
 const handler = async (
   request: HttpRequest,
@@ -21,11 +22,12 @@ const handler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    const userContext = ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, WORKFLOW_PERMISSIONS.WORKFLOWS_MANAGE);
 
     const workflowId = request.params.workflowId;
     if (!workflowId) {
-      return badRequestResponse('Workflow ID is required');
+      return badRequestResponse('Workflow ID is required', undefined, request);
     }
 
     const body = (await request.json().catch(() => ({}))) as {
@@ -40,11 +42,21 @@ const handler = async (
       body.version
     );
 
+    // Log audit event
+    await logAuditEvent(
+      WORKFLOW_AUDIT_EVENTS.WORKFLOW_ACTIVATED,
+      'update',
+      'workflow',
+      workflowId,
+      userContext,
+      { version: workflow.version }
+    );
+
     context.log(`Activated workflow ${workflowId} version ${workflow.version}`);
-    return successResponse(workflow);
+    return successResponse(workflow, request);
   } catch (error) {
     context.error('Error activating workflow', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

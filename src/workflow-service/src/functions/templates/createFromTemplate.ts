@@ -29,18 +29,18 @@ export async function createFromTemplateHandler(
     const templateId = request.params.templateId;
 
     if (!templateId) {
-      return withCors(badRequestResponse('Template ID is required'));
+      return withCors(request, badRequestResponse('Template ID is required', undefined, request));
     }
 
     const body = (await request.json()) as Omit<CreateFromTemplateRequest, 'templateId'>;
 
     // Validate required fields
     if (!body.name?.trim()) {
-      return withCors(badRequestResponse('Workflow name is required'));
+      return withCors(request, badRequestResponse('Workflow name is required', undefined, request));
     }
 
     if (!body.organizationId?.trim()) {
-      return withCors(badRequestResponse('Organization ID is required'));
+      return withCors(request, badRequestResponse('Organization ID is required', undefined, request));
     }
 
     const workflow = await createWorkflowFromTemplate(
@@ -63,17 +63,17 @@ export async function createFromTemplateHandler(
 
     telemetry?.trackMetric('templates.createWorkflow.duration', Date.now() - startTime);
 
-    return withCors(createdResponse(workflow));
+    return withCors(request, createdResponse(workflow, request));
   } catch (error) {
     if (error instanceof TemplateNotFoundError) {
-      return withCors(notFoundResponse('Template'));
+      return withCors(request, notFoundResponse('Template', request));
     }
 
     telemetry?.trackException(error as Error, {
       operation: 'createFromTemplate',
       templateId: request.params.templateId,
     });
-    return withCors(handleError(error));
+    return withCors(request, handleError(error, request));
   }
 }
 
