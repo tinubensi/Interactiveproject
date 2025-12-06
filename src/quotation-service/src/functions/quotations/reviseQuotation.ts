@@ -18,7 +18,7 @@ export async function reviseQuotation(
 ): Promise<HttpResponseInit> {
   try {
     const userContext = await ensureAuthorized(request);
-    await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTES_UPDATE);
+    await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTATIONS_UPDATE);
     const id = request.params.id;
     const body: Partial<ReviseQuotationRequest> = await request.json() as Partial<ReviseQuotationRequest>;
     const leadId = request.query.get('leadId');

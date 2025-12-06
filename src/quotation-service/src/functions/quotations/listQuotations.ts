@@ -19,7 +19,7 @@ export async function listQuotations(
 
   try {
     const userContext = await ensureAuthorized(request);
-    await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTES_READ);
+    await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTATIONS_READ);
     const body: QuotationListRequest = await request.json() as QuotationListRequest;
 
     // Set defaults
