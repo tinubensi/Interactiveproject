@@ -12,7 +12,7 @@ export async function getQuotationById(
 ): Promise<HttpResponseInit> {
   try {
     const userContext = await ensureAuthorized(request);
-    await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTES_READ);
+    await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTATIONS_READ);
     const id = request.params.id;
     const leadId = request.query.get('leadId');
 

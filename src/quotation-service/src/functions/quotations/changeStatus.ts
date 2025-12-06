@@ -15,7 +15,7 @@ export async function changeStatus(
 ): Promise<HttpResponseInit> {
   try {
     const userContext = await ensureAuthorized(request);
-    await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTES_UPDATE);
+    await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTATIONS_UPDATE);
     const id = request.params.id;
     const body: Partial<ChangeStatusRequest> = await request.json() as Partial<ChangeStatusRequest>;
     const leadId = request.query.get('leadId');
