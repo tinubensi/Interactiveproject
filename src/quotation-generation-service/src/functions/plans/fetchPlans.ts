@@ -117,7 +117,7 @@ export async function fetchPlans(
       completedAt: new Date()
     });
 
-    // Publish fetch completed event with plans for Lead Service to save
+    // Publish fetch completed event (for logging in mock Event Grid)
     try {
       await eventGridService.publishPlansFetchCompleted({
         leadId: body.leadId,
@@ -127,35 +127,39 @@ export async function fetchPlans(
         failedVendors,
         plans // Include full plans array for Lead Service
       });
+      context.log('Event published to Event Grid (for logging)');
     } catch (eventError) {
-      context.warn('Event Grid not available, continuing without event publishing:', eventError);
+      context.warn('Event Grid publish failed (non-critical):', eventError);
+    }
+    
+    // HTTP Fallback: Always call Lead Service directly since Event Grid doesn't route events locally
+    try {
+      const leadServiceUrl = process.env.LEAD_SERVICE_URL || 'http://localhost:7075/api';
+      context.log(`Saving plans to Lead Service via HTTP at ${leadServiceUrl}/leads/${body.leadId}/save-plans`);
       
-      // Fallback: Directly call Lead Service to save plans when Event Grid is unavailable
-      try {
-        const leadServiceUrl = process.env.LEAD_SERVICE_URL || 'http://localhost:7075/api';
-        const response = await fetch(`${leadServiceUrl}/leads/${body.leadId}/save-plans`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            leadId: body.leadId,
-            fetchRequestId: fetchRequest.id,
-            totalPlans: plans.length,
-            successfulVendors,
-            failedVendors,
-            plans
-          })
-        });
-        
-        if (!response.ok) {
-          context.warn('Failed to save plans to Lead Service via HTTP fallback');
-        } else {
-          context.log('Plans saved to Lead Service via HTTP fallback');
-        }
-      } catch (httpError) {
-        context.warn('HTTP fallback to Lead Service failed:', httpError);
+      const response = await fetch(`${leadServiceUrl}/leads/${body.leadId}/save-plans`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          leadId: body.leadId,
+          fetchRequestId: fetchRequest.id,
+          totalPlans: plans.length,
+          successfulVendors,
+          failedVendors,
+          plans
+        })
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        context.warn(`Failed to save plans to Lead Service: ${response.status} - ${errorText}`);
+      } else {
+        context.log('Plans saved to Lead Service via HTTP successfully');
       }
+    } catch (httpError: any) {
+      context.error('HTTP fallback to Lead Service failed:', httpError);
     }
 
     context.log(`Plans fetched successfully for lead ${body.leadId}: ${plans.length} plans from ${successfulVendors.length} vendors`);

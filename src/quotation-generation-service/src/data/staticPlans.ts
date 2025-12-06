@@ -4,34 +4,58 @@
  * RPA integration will replace this in production
  */
 
-import { Plan, Vendor, LineOfBusiness } from '../models/plan';
+import { Plan, Vendor, LineOfBusiness, PremiumItem } from '../models/plan';
 
 // ==================== VENDORS ====================
 
 export const STATIC_VENDORS: Omit<Vendor, 'createdAt' | 'updatedAt'>[] = [
   {
-    id: 'vendor-adip',
-    name: 'Al Dhafra Insurance',
-    code: 'ADIP',
+    id: 'vendor-takaful',
+    name: 'Takaful Emarat',
+    code: 'TAKAFUL',
     lineOfBusiness: 'medical',
-    logo: 'https://example.com/logos/adip.png',
-    website: 'https://www.aldhafrainsurance.com',
+    logo: 'https://example.com/logos/takaful.png',
+    website: 'https://www.takafulemarat.ae',
     rpaEnabled: false,
     hasStaticPlans: true,
     isActive: true,
     priority: 1
   },
   {
-    id: 'vendor-oic',
-    name: 'Oman Insurance Company',
-    code: 'OIC',
+    id: 'vendor-daman',
+    name: 'Daman',
+    code: 'DAMAN',
     lineOfBusiness: 'medical',
-    logo: 'https://example.com/logos/oic.png',
-    website: 'https://www.omaninsurance.ae',
+    logo: 'https://example.com/logos/daman.png',
+    website: 'https://www.damanhealth.ae',
     rpaEnabled: false,
     hasStaticPlans: true,
     isActive: true,
     priority: 2
+  },
+  {
+    id: 'vendor-nextcare',
+    name: 'Nextcare',
+    code: 'NEXTCARE',
+    lineOfBusiness: 'medical',
+    logo: 'https://example.com/logos/nextcare.png',
+    website: 'https://www.nextcare.com',
+    rpaEnabled: false,
+    hasStaticPlans: true,
+    isActive: true,
+    priority: 3
+  },
+  {
+    id: 'vendor-adnic',
+    name: 'Abu Dhabi National Insurance Company',
+    code: 'ADNIC',
+    lineOfBusiness: 'medical',
+    logo: 'https://example.com/logos/adnic.png',
+    website: 'https://www.adnic.ae',
+    rpaEnabled: false,
+    hasStaticPlans: true,
+    isActive: true,
+    priority: 4
   },
   {
     id: 'vendor-dic',
@@ -43,69 +67,278 @@ export const STATIC_VENDORS: Omit<Vendor, 'createdAt' | 'updatedAt'>[] = [
     rpaEnabled: false,
     hasStaticPlans: true,
     isActive: true,
-    priority: 3
+    priority: 5
+  },
+  {
+    id: 'vendor-oic',
+    name: 'Oman Insurance Company',
+    code: 'OIC',
+    lineOfBusiness: 'medical',
+    logo: 'https://example.com/logos/oic.png',
+    website: 'https://www.omaninsurance.ae',
+    rpaEnabled: false,
+    hasStaticPlans: true,
+    isActive: true,
+    priority: 6
+  },
+  {
+    id: 'vendor-alsagr',
+    name: 'Al Sagr National Insurance',
+    code: 'ALSAGR',
+    lineOfBusiness: 'medical',
+    logo: 'https://example.com/logos/alsagr.png',
+    website: 'https://www.alsagr.ae',
+    rpaEnabled: false,
+    hasStaticPlans: true,
+    isActive: true,
+    priority: 7
+  },
+  {
+    id: 'vendor-metlife',
+    name: 'MetLife (Alico)',
+    code: 'METLIFE',
+    lineOfBusiness: 'medical',
+    logo: 'https://example.com/logos/metlife.png',
+    website: 'https://www.metlife-gulf.com',
+    rpaEnabled: false,
+    hasStaticPlans: true,
+    isActive: true,
+    priority: 8
   }
 ];
 
-// ==================== MEDICAL (PET) PLANS ====================
+// ==================== MEDICAL (HUMAN) PLANS ====================
 
 export const STATIC_MEDICAL_PLANS: Omit<Plan, 'id' | 'leadId' | 'fetchRequestId' | 'fetchedAt' | 'quotationId'>[] = [
-  // Plan 1: Al Dhafra - Pet Care Essential
+  
+  // Plan 1: Takaful Emarat - Ecare Blue 1 (Essential)
   {
-    vendorId: 'vendor-adip',
-    vendorName: 'Al Dhafra Insurance',
-    vendorCode: 'ADIP',
-    planName: 'Pet Care Essential',
-    planCode: 'PET-ESS-001',
-    planType: 'basic',
-    annualPremium: 1500,
-    monthlyPremium: 130,
+    vendorId: 'vendor-takaful',
+    vendorName: 'Takaful Emarat',
+    vendorCode: 'TAKAFUL',
+    planName: 'Takaful Emarat - Ecare Blue 1',
+    planCode: 'TK-ECB1-2024',
+    planType: 'essential',
+    annualPremium: 2030,
+    monthlyPremium: 169,
     currency: 'AED',
-    annualLimit: 50000,
-    deductible: 500,
+    annualLimit: 150000,
+    deductible: 0,
     deductibleMetric: 'AED',
     coInsurance: 20,
     coInsuranceMetric: 'percentage',
-    waitingPeriod: 14,
+    waitingPeriod: 30,
     waitingPeriodMetric: 'days',
     benefits: [
       {
-        categoryId: 'cat-medical',
-        categoryName: 'Medical Coverage',
+        categoryId: 'cat-inpatient',
+        categoryName: 'Inpatient Coverage',
         benefits: [
           {
-            name: 'Accident Treatment',
+            name: 'Hospital Room & Board',
             covered: true,
-            limit: 50000,
+            limit: 150000,
             limitMetric: 'AED',
-            description: 'Coverage for injuries due to accidents'
-          },
-          {
-            name: 'Illness Treatment',
-            covered: true,
-            limit: 30000,
-            limitMetric: 'AED',
-            description: 'Coverage for illness and diseases'
+            description: 'Semi-private room coverage'
           },
           {
             name: 'Surgery',
             covered: true,
-            limit: 25000,
+            limit: 150000,
             limitMetric: 'AED',
-            description: 'Surgical procedures'
+            description: 'All necessary surgical procedures'
           },
           {
-            name: 'Hospitalization',
+            name: 'ICU/CCU',
             covered: true,
-            limit: 20000,
+            limit: 150000,
             limitMetric: 'AED',
-            description: 'Inpatient hospital stays'
+            description: 'Intensive care unit coverage'
+          },
+          {
+            name: 'Emergency Room',
+            covered: true,
+            limit: 150000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-outpatient',
+        categoryName: 'Outpatient Coverage',
+        benefits: [
+          {
+            name: 'GP Consultation',
+            covered: true,
+            limit: 15000,
+            limitMetric: 'AED',
+            description: '20% copay applies'
+          },
+          {
+            name: 'Specialist Consultation',
+            covered: true,
+            limit: 15000,
+            limitMetric: 'AED',
+            description: '20% copay applies'
+          },
+          {
+            name: 'Diagnostic Tests',
+            covered: true,
+            limit: 15000,
+            limitMetric: 'AED',
+            description: 'Lab tests, X-rays with 20% copay'
+          },
+          {
+            name: 'Pharmacy',
+            covered: true,
+            limit: 15000,
+            limitMetric: 'AED',
+            description: '20% copay on medications'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-maternity',
+        categoryName: 'Maternity Coverage',
+        benefits: [
+          {
+            name: 'Maternity Coverage',
+            covered: false
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-dental',
+        categoryName: 'Dental & Optical',
+        benefits: [
+          {
+            name: 'Dental Coverage',
+            covered: false
+          },
+          {
+            name: 'Optical Coverage',
+            covered: false
+          }
+        ]
+      }
+    ],
+    exclusions: [
+      'Pre-existing conditions (12-month waiting period)',
+      'Cosmetic procedures',
+      'Experimental treatments',
+      'Dental and optical (unless emergency)'
+    ],
+    lineOfBusiness: 'medical',
+    lobSpecificData: {
+      networkProviders: 'eCare Blue',
+      areaOfCover: 'Worldwide',
+      copayTestMedicine: '20% Copay',
+      copayConsultation: '20% Max AED 25'
+    },
+    isAvailable: true,
+    isSelected: false,
+    isRecommended: true,
+    source: 'static'
+  },
+
+  // Plan 2: Daman - Essential Plus
+  {
+    vendorId: 'vendor-daman',
+    vendorName: 'Daman',
+    vendorCode: 'DAMAN',
+    planName: 'Daman - Essential Plus',
+    planCode: 'DM-ESS-PLUS-2024',
+    planType: 'essential',
+    annualPremium: 3500,
+    monthlyPremium: 292,
+    currency: 'AED',
+    annualLimit: 250000,
+    deductible: 0,
+    deductibleMetric: 'AED',
+    coInsurance: 10,
+    coInsuranceMetric: 'percentage',
+    waitingPeriod: 30,
+    waitingPeriodMetric: 'days',
+    benefits: [
+      {
+        categoryId: 'cat-inpatient',
+        categoryName: 'Inpatient Coverage',
+        benefits: [
+          {
+            name: 'Hospital Room & Board',
+            covered: true,
+            limit: 250000,
+            limitMetric: 'AED',
+            description: 'Semi-private room'
+          },
+          {
+            name: 'Surgery',
+            covered: true,
+            limit: 250000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'ICU/CCU',
+            covered: true,
+            limit: 250000,
+            limitMetric: 'AED'
           },
           {
             name: 'Emergency Care',
             covered: true,
-            limit: 15000,
+            limit: 250000,
             limitMetric: 'AED'
+          },
+          {
+            name: 'Ambulance Services',
+            covered: true,
+            limit: 1000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-outpatient',
+        categoryName: 'Outpatient Coverage',
+        benefits: [
+          {
+            name: 'GP Consultation',
+            covered: true,
+            limit: 25000,
+            limitMetric: 'AED',
+            description: 'AED 20 copay per visit'
+          },
+          {
+            name: 'Specialist Consultation',
+            covered: true,
+            limit: 25000,
+            limitMetric: 'AED',
+            description: 'AED 20 copay per visit'
+          },
+          {
+            name: 'Diagnostic Tests',
+            covered: true,
+            limit: 25000,
+            limitMetric: 'AED',
+            description: '10% copay'
+          },
+          {
+            name: 'Pharmacy',
+            covered: true,
+            limit: 25000,
+            limitMetric: 'AED',
+            description: '10% copay'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-maternity',
+        categoryName: 'Maternity Coverage',
+        benefits: [
+          {
+            name: 'Maternity Coverage',
+            covered: false,
+            description: 'Available as addon'
           }
         ]
       },
@@ -114,202 +347,359 @@ export const STATIC_MEDICAL_PLANS: Omit<Plan, 'id' | 'leadId' | 'fetchRequestId'
         categoryName: 'Preventive Care',
         benefits: [
           {
-            name: 'Vaccinations',
+            name: 'Annual Health Checkup',
             covered: true,
             limit: 500,
-            limitMetric: 'AED',
-            description: 'Annual vaccinations'
-          },
-          {
-            name: 'Annual Checkup',
-            covered: true,
-            limit: 300,
             limitMetric: 'AED'
           },
           {
-            name: 'Dental Cleaning',
-            covered: false
-          }
-        ]
-      },
-      {
-        categoryId: 'cat-additional',
-        categoryName: 'Additional Benefits',
-        benefits: [
-          {
-            name: 'Third Party Liability',
-            covered: false
-          },
-          {
-            name: 'Boarding Kennel',
-            covered: false
+            name: 'Vaccinations',
+            covered: true,
+            limit: 500,
+            limitMetric: 'AED'
           }
         ]
       }
     ],
     exclusions: [
-      'Pre-existing conditions',
-      'Breeding and pregnancy',
+      'Pre-existing conditions (12-month waiting period)',
       'Cosmetic procedures',
-      'Behavioral issues',
-      'Elective procedures'
+      'Dental (except emergencies)',
+      'Fertility treatments'
     ],
     lineOfBusiness: 'medical',
+    lobSpecificData: {
+      networkProviders: 'Daman Network',
+      areaOfCover: 'UAE',
+      copayTestMedicine: '10% Copay',
+      copayConsultation: 'AED 20'
+    },
     isAvailable: true,
     isSelected: false,
     isRecommended: false,
     source: 'static'
   },
 
-  // Plan 2: Oman Insurance - Pet Care Premium
+  // Plan 3: Nextcare - Silver Network
   {
-    vendorId: 'vendor-oic',
-    vendorName: 'Oman Insurance Company',
-    vendorCode: 'OIC',
-    planName: 'Pet Care Premium',
-    planCode: 'PET-PREM-001',
-    planType: 'premium',
-    annualPremium: 2500,
-    monthlyPremium: 220,
+    vendorId: 'vendor-nextcare',
+    vendorName: 'Nextcare',
+    vendorCode: 'NEXTCARE',
+    planName: 'Nextcare - Silver Network',
+    planCode: 'NC-SILVER-2024',
+    planType: 'silver',
+    annualPremium: 4850,
+    monthlyPremium: 404,
     currency: 'AED',
-    annualLimit: 100000,
-    deductible: 250,
+    annualLimit: 300000,
+    deductible: 0,
     deductibleMetric: 'AED',
     coInsurance: 10,
     coInsuranceMetric: 'percentage',
-    waitingPeriod: 7,
+    waitingPeriod: 30,
     waitingPeriodMetric: 'days',
     benefits: [
       {
-        categoryId: 'cat-medical',
-        categoryName: 'Medical Coverage',
+        categoryId: 'cat-inpatient',
+        categoryName: 'Inpatient Coverage',
         benefits: [
           {
-            name: 'Accident Treatment',
+            name: 'Hospital Room & Board',
             covered: true,
-            limit: 100000,
-            limitMetric: 'AED'
-          },
-          {
-            name: 'Illness Treatment',
-            covered: true,
-            limit: 75000,
-            limitMetric: 'AED'
+            limit: 300000,
+            limitMetric: 'AED',
+            description: 'Private room'
           },
           {
             name: 'Surgery',
             covered: true,
-            limit: 50000,
+            limit: 300000,
             limitMetric: 'AED'
           },
           {
-            name: 'Hospitalization',
+            name: 'ICU/CCU',
             covered: true,
-            limit: 40000,
+            limit: 300000,
             limitMetric: 'AED'
           },
           {
             name: 'Emergency Care',
             covered: true,
-            limit: 30000,
+            limit: 300000,
             limitMetric: 'AED'
+          },
+          {
+            name: 'Ambulance Services',
+            covered: true,
+            limit: 1500,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-outpatient',
+        categoryName: 'Outpatient Coverage',
+        benefits: [
+          {
+            name: 'GP Consultation',
+            covered: true,
+            limit: 35000,
+            limitMetric: 'AED',
+            description: 'AED 15 copay'
+          },
+          {
+            name: 'Specialist Consultation',
+            covered: true,
+            limit: 35000,
+            limitMetric: 'AED',
+            description: 'AED 20 copay'
           },
           {
             name: 'Diagnostic Tests',
             covered: true,
+            limit: 35000,
+            limitMetric: 'AED',
+            description: '10% copay'
+          },
+          {
+            name: 'Pharmacy',
+            covered: true,
+            limit: 35000,
+            limitMetric: 'AED',
+            description: '10% copay'
+          },
+          {
+            name: 'Physiotherapy',
+            covered: true,
+            limit: 3000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-maternity',
+        categoryName: 'Maternity Coverage',
+        benefits: [
+          {
+            name: 'Normal Delivery',
+            covered: true,
+            limit: 7000,
+            limitMetric: 'AED',
+            description: '12-month waiting period'
+          },
+          {
+            name: 'C-Section',
+            covered: true,
             limit: 10000,
             limitMetric: 'AED',
-            description: 'X-rays, blood tests, MRI, CT scans'
+            description: '12-month waiting period'
           }
         ]
       },
       {
-        categoryId: 'cat-preventive',
-        categoryName: 'Preventive Care',
+        categoryId: 'cat-dental',
+        categoryName: 'Dental Coverage',
         benefits: [
           {
-            name: 'Vaccinations',
+            name: 'Basic Dental',
             covered: true,
             limit: 1000,
+            limitMetric: 'AED',
+            description: 'Cleanings, fillings'
+          }
+        ]
+      }
+    ],
+    exclusions: [
+      'Pre-existing conditions (9-month waiting period)',
+      'Cosmetic procedures',
+      'Fertility treatments'
+    ],
+    lineOfBusiness: 'medical',
+    lobSpecificData: {
+      networkProviders: 'NextCare Network',
+      areaOfCover: 'UAE & GCC',
+      copayTestMedicine: '10% Copay',
+      copayConsultation: 'AED 15-20'
+    },
+    isAvailable: true,
+    isSelected: false,
+    isRecommended: false,
+    source: 'static'
+  },
+
+  // Plan 4: ADNIC - Gold Comprehensive
+  {
+    vendorId: 'vendor-adnic',
+    vendorName: 'Abu Dhabi National Insurance Company',
+    vendorCode: 'ADNIC',
+    planName: 'ADNIC - Gold Comprehensive',
+    planCode: 'AD-GOLD-2024',
+    planType: 'gold',
+    annualPremium: 6200,
+    monthlyPremium: 517,
+    currency: 'AED',
+    annualLimit: 500000,
+    deductible: 0,
+    deductibleMetric: 'AED',
+    coInsurance: 0,
+    coInsuranceMetric: 'percentage',
+    waitingPeriod: 30,
+    waitingPeriodMetric: 'days',
+    benefits: [
+      {
+        categoryId: 'cat-inpatient',
+        categoryName: 'Inpatient Coverage',
+        benefits: [
+          {
+            name: 'Hospital Room & Board',
+            covered: true,
+            limit: 500000,
+            limitMetric: 'AED',
+            description: 'Private room'
+          },
+          {
+            name: 'Surgery',
+            covered: true,
+            limit: 500000,
             limitMetric: 'AED'
           },
           {
-            name: 'Annual Checkup',
+            name: 'ICU/CCU',
             covered: true,
-            limit: 500,
+            limit: 500000,
             limitMetric: 'AED'
           },
           {
-            name: 'Dental Cleaning',
+            name: 'Emergency Care',
             covered: true,
-            limit: 800,
+            limit: 500000,
             limitMetric: 'AED'
           },
           {
-            name: 'Flea & Tick Prevention',
+            name: 'Ambulance Services',
             covered: true,
-            limit: 400,
+            limit: 2000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Home Healthcare',
+            covered: true,
+            limit: 5000,
             limitMetric: 'AED'
           }
         ]
       },
       {
-        categoryId: 'cat-additional',
-        categoryName: 'Additional Benefits',
+        categoryId: 'cat-outpatient',
+        categoryName: 'Outpatient Coverage',
         benefits: [
           {
-            name: 'Third Party Liability',
+            name: 'GP Consultation',
             covered: true,
             limit: 50000,
             limitMetric: 'AED',
-            description: 'Coverage for damages caused by your pet'
+            description: 'No copay'
           },
           {
-            name: 'Boarding Kennel',
+            name: 'Specialist Consultation',
             covered: true,
-            limit: 2000,
+            limit: 50000,
             limitMetric: 'AED',
-            description: 'If owner is hospitalized'
+            description: 'No copay'
           },
           {
-            name: 'Lost Pet Advertising',
+            name: 'Diagnostic Tests',
             covered: true,
-            limit: 500,
+            limit: 50000,
             limitMetric: 'AED'
           },
           {
-            name: 'Death from Accident/Illness',
+            name: 'Pharmacy',
+            covered: true,
+            limit: 50000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Physiotherapy',
             covered: true,
             limit: 5000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-maternity',
+        categoryName: 'Maternity Coverage',
+        benefits: [
+          {
+            name: 'Normal Delivery',
+            covered: true,
+            limit: 10000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'C-Section',
+            covered: true,
+            limit: 15000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Pre & Post Natal Care',
+            covered: true,
+            limit: 3000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-dental',
+        categoryName: 'Dental & Optical',
+        benefits: [
+          {
+            name: 'Dental Coverage',
+            covered: true,
+            limit: 2000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Optical Coverage',
+            covered: true,
+            limit: 500,
             limitMetric: 'AED'
           }
         ]
       }
     ],
     exclusions: [
-      'Pre-existing conditions',
-      'Breeding and pregnancy',
+      'Pre-existing conditions (6-month waiting period)',
       'Cosmetic procedures'
     ],
     lineOfBusiness: 'medical',
+    lobSpecificData: {
+      networkProviders: 'ADNIC Network',
+      areaOfCover: 'Worldwide excl. USA',
+      copayTestMedicine: 'No Copay',
+      copayConsultation: 'No Copay'
+    },
     isAvailable: true,
     isSelected: false,
-    isRecommended: true, // Recommended plan
+    isRecommended: true,
     source: 'static'
   },
 
-  // Plan 3: Dubai Insurance - Pet Care Comprehensive
+  // Plan 5: Dubai Insurance - Platinum Elite
   {
     vendorId: 'vendor-dic',
     vendorName: 'Dubai Insurance Company',
     vendorCode: 'DIC',
-    planName: 'Pet Care Comprehensive',
-    planCode: 'PET-COMP-001',
-    planType: 'comprehensive',
-    annualPremium: 3500,
-    monthlyPremium: 310,
+    planName: 'Dubai Insurance - Platinum Elite',
+    planCode: 'DIC-PLAT-2024',
+    planType: 'platinum',
+    annualPremium: 8500,
+    monthlyPremium: 708,
     currency: 'AED',
-    annualLimit: 150000,
+    annualLimit: 750000,
     deductible: 0,
     deductibleMetric: 'AED',
     coInsurance: 0,
@@ -318,53 +708,122 @@ export const STATIC_MEDICAL_PLANS: Omit<Plan, 'id' | 'leadId' | 'fetchRequestId'
     waitingPeriodMetric: 'days',
     benefits: [
       {
-        categoryId: 'cat-medical',
-        categoryName: 'Medical Coverage',
+        categoryId: 'cat-inpatient',
+        categoryName: 'Inpatient Coverage',
         benefits: [
           {
-            name: 'Accident Treatment',
+            name: 'Hospital Room & Board',
             covered: true,
-            limit: 150000,
-            limitMetric: 'AED'
-          },
-          {
-            name: 'Illness Treatment',
-            covered: true,
-            limit: 100000,
-            limitMetric: 'AED'
+            limit: 750000,
+            limitMetric: 'AED',
+            description: 'Suite room'
           },
           {
             name: 'Surgery',
             covered: true,
-            limit: 75000,
+            limit: 750000,
             limitMetric: 'AED'
           },
           {
-            name: 'Hospitalization',
+            name: 'ICU/CCU',
             covered: true,
-            limit: 60000,
+            limit: 750000,
             limitMetric: 'AED'
           },
           {
             name: 'Emergency Care',
             covered: true,
-            limit: 50000,
+            limit: 750000,
             limitMetric: 'AED'
+          },
+          {
+            name: 'Ambulance Services',
+            covered: true,
+            limit: 3000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Home Healthcare',
+            covered: true,
+            limit: 10000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Cancer Treatment',
+            covered: true,
+            limit: 750000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-outpatient',
+        categoryName: 'Outpatient Coverage',
+        benefits: [
+          {
+            name: 'GP Consultation',
+            covered: true,
+            limit: 75000,
+            limitMetric: 'AED',
+            description: 'Unlimited visits'
+          },
+          {
+            name: 'Specialist Consultation',
+            covered: true,
+            limit: 75000,
+            limitMetric: 'AED',
+            description: 'Unlimited visits'
           },
           {
             name: 'Diagnostic Tests',
             covered: true,
-            limit: 20000,
+            limit: 75000,
             limitMetric: 'AED'
           },
           {
-            name: 'Specialist Consultation',
+            name: 'Pharmacy',
+            covered: true,
+            limit: 75000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Physiotherapy',
+            covered: true,
+            limit: 10000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Mental Health',
+            covered: true,
+            limit: 5000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-maternity',
+        categoryName: 'Maternity Coverage',
+        benefits: [
+          {
+            name: 'Normal Delivery',
             covered: true,
             limit: 15000,
             limitMetric: 'AED'
           },
           {
-            name: 'Rehabilitation/Physical Therapy',
+            name: 'C-Section',
+            covered: true,
+            limit: 20000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Pre & Post Natal Care',
+            covered: true,
+            limit: 5000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Newborn Care',
             covered: true,
             limit: 10000,
             limitMetric: 'AED'
@@ -372,96 +831,1209 @@ export const STATIC_MEDICAL_PLANS: Omit<Plan, 'id' | 'leadId' | 'fetchRequestId'
         ]
       },
       {
-        categoryId: 'cat-preventive',
-        categoryName: 'Preventive Care',
+        categoryId: 'cat-dental',
+        categoryName: 'Dental & Optical',
         benefits: [
           {
-            name: 'Vaccinations',
+            name: 'Dental Coverage',
             covered: true,
-            limit: 1500,
+            limit: 3000,
             limitMetric: 'AED'
           },
           {
-            name: 'Annual Checkup',
+            name: 'Optical Coverage',
             covered: true,
             limit: 1000,
-            limitMetric: 'AED'
-          },
-          {
-            name: 'Dental Cleaning',
-            covered: true,
-            limit: 1200,
-            limitMetric: 'AED'
-          },
-          {
-            name: 'Flea & Tick Prevention',
-            covered: true,
-            limit: 600,
-            limitMetric: 'AED'
-          },
-          {
-            name: 'Deworming',
-            covered: true,
-            limit: 400,
-            limitMetric: 'AED'
-          }
-        ]
-      },
-      {
-        categoryId: 'cat-additional',
-        categoryName: 'Additional Benefits',
-        benefits: [
-          {
-            name: 'Third Party Liability',
-            covered: true,
-            limit: 100000,
-            limitMetric: 'AED'
-          },
-          {
-            name: 'Boarding Kennel',
-            covered: true,
-            limit: 5000,
-            limitMetric: 'AED'
-          },
-          {
-            name: 'Lost Pet Advertising',
-            covered: true,
-            limit: 1000,
-            limitMetric: 'AED'
-          },
-          {
-            name: 'Death from Accident/Illness',
-            covered: true,
-            limit: 10000,
-            limitMetric: 'AED'
-          },
-          {
-            name: 'Travel Cover',
-            covered: true,
-            limit: 5000,
-            limitMetric: 'AED',
-            description: 'Coverage while traveling within UAE'
-          },
-          {
-            name: 'Emergency Euthanasia',
-            covered: true,
-            limit: 2000,
             limitMetric: 'AED'
           }
         ]
       }
     ],
     exclusions: [
-      'Pre-existing conditions',
-      'Breeding and pregnancy'
+      'Cosmetic procedures'
     ],
     lineOfBusiness: 'medical',
+    lobSpecificData: {
+      networkProviders: 'Premier Network',
+      areaOfCover: 'Worldwide',
+      copayTestMedicine: 'No Copay',
+      copayConsultation: 'No Copay'
+    },
     isAvailable: true,
     isSelected: false,
     isRecommended: false,
     source: 'static'
+  },
+
+  // Plan 6: Oman Insurance - Premium Care
+  {
+    vendorId: 'vendor-oic',
+    vendorName: 'Oman Insurance Company',
+    vendorCode: 'OIC',
+    planName: 'Oman Insurance - Premium Care',
+    planCode: 'OIC-PREM-2024',
+    planType: 'gold',
+    annualPremium: 5750,
+    monthlyPremium: 479,
+    currency: 'AED',
+    annualLimit: 400000,
+    deductible: 0,
+    deductibleMetric: 'AED',
+    coInsurance: 10,
+    coInsuranceMetric: 'percentage',
+    waitingPeriod: 30,
+    waitingPeriodMetric: 'days',
+    benefits: [
+      {
+        categoryId: 'cat-inpatient',
+        categoryName: 'Inpatient Coverage',
+        benefits: [
+          {
+            name: 'Hospital Room & Board',
+            covered: true,
+            limit: 400000,
+            limitMetric: 'AED',
+            description: 'Private room'
+          },
+          {
+            name: 'Surgery',
+            covered: true,
+            limit: 400000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'ICU/CCU',
+            covered: true,
+            limit: 400000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Emergency Care',
+            covered: true,
+            limit: 400000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Ambulance Services',
+            covered: true,
+            limit: 1500,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-outpatient',
+        categoryName: 'Outpatient Coverage',
+        benefits: [
+          {
+            name: 'GP Consultation',
+            covered: true,
+            limit: 40000,
+            limitMetric: 'AED',
+            description: 'AED 20 copay'
+          },
+          {
+            name: 'Specialist Consultation',
+            covered: true,
+            limit: 40000,
+            limitMetric: 'AED',
+            description: 'AED 25 copay'
+          },
+          {
+            name: 'Diagnostic Tests',
+            covered: true,
+            limit: 40000,
+            limitMetric: 'AED',
+            description: '10% copay'
+          },
+          {
+            name: 'Pharmacy',
+            covered: true,
+            limit: 40000,
+            limitMetric: 'AED',
+            description: '10% copay'
+          },
+          {
+            name: 'Physiotherapy',
+            covered: true,
+            limit: 4000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-maternity',
+        categoryName: 'Maternity Coverage',
+        benefits: [
+          {
+            name: 'Normal Delivery',
+            covered: true,
+            limit: 8000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'C-Section',
+            covered: true,
+            limit: 12000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-dental',
+        categoryName: 'Dental & Optical',
+        benefits: [
+          {
+            name: 'Dental Coverage',
+            covered: true,
+            limit: 1500,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Optical Coverage',
+            covered: true,
+            limit: 500,
+            limitMetric: 'AED'
+          }
+        ]
+      }
+    ],
+    exclusions: [
+      'Pre-existing conditions (9-month waiting period)',
+      'Cosmetic procedures'
+    ],
+    lineOfBusiness: 'medical',
+    lobSpecificData: {
+      networkProviders: 'Oman Network',
+      areaOfCover: 'GCC Countries',
+      copayTestMedicine: '10% Copay',
+      copayConsultation: 'AED 20-25'
+    },
+    isAvailable: true,
+    isSelected: false,
+    isRecommended: false,
+    source: 'static'
+  },
+
+  // Plan 7: Al Sagr - Family Health Plus
+  {
+    vendorId: 'vendor-alsagr',
+    vendorName: 'Al Sagr National Insurance',
+    vendorCode: 'ALSAGR',
+    planName: 'Al Sagr - Family Health Plus',
+    planCode: 'AS-FAM-2024',
+    planType: 'gold',
+    annualPremium: 7300,
+    monthlyPremium: 608,
+    currency: 'AED',
+    annualLimit: 600000,
+    deductible: 0,
+    deductibleMetric: 'AED',
+    coInsurance: 0,
+    coInsuranceMetric: 'percentage',
+    waitingPeriod: 30,
+    waitingPeriodMetric: 'days',
+    benefits: [
+      {
+        categoryId: 'cat-inpatient',
+        categoryName: 'Inpatient Coverage',
+        benefits: [
+          {
+            name: 'Hospital Room & Board',
+            covered: true,
+            limit: 600000,
+            limitMetric: 'AED',
+            description: 'Private room'
+          },
+          {
+            name: 'Surgery',
+            covered: true,
+            limit: 600000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'ICU/CCU',
+            covered: true,
+            limit: 600000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Emergency Care',
+            covered: true,
+            limit: 600000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Ambulance Services',
+            covered: true,
+            limit: 2500,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Home Healthcare',
+            covered: true,
+            limit: 7500,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-outpatient',
+        categoryName: 'Outpatient Coverage',
+        benefits: [
+          {
+            name: 'GP Consultation',
+            covered: true,
+            limit: 60000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Specialist Consultation',
+            covered: true,
+            limit: 60000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Diagnostic Tests',
+            covered: true,
+            limit: 60000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Pharmacy',
+            covered: true,
+            limit: 60000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Physiotherapy',
+            covered: true,
+            limit: 6000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-maternity',
+        categoryName: 'Maternity Coverage',
+        benefits: [
+          {
+            name: 'Normal Delivery',
+            covered: true,
+            limit: 12000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'C-Section',
+            covered: true,
+            limit: 18000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Pre & Post Natal Care',
+            covered: true,
+            limit: 4000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-dental',
+        categoryName: 'Dental & Optical',
+        benefits: [
+          {
+            name: 'Dental Coverage',
+            covered: true,
+            limit: 2500,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Optical Coverage',
+            covered: true,
+            limit: 750,
+            limitMetric: 'AED'
+          }
+        ]
+      }
+    ],
+    exclusions: [
+      'Pre-existing conditions (6-month waiting period)',
+      'Cosmetic procedures'
+    ],
+    lineOfBusiness: 'medical',
+    lobSpecificData: {
+      networkProviders: 'Al Sagr Network',
+      areaOfCover: 'Worldwide excl. USA',
+      copayTestMedicine: 'No Copay',
+      copayConsultation: 'No Copay'
+    },
+    isAvailable: true,
+    isSelected: false,
+    isRecommended: false,
+    source: 'static'
+  },
+
+  // Plan 8: MetLife - Superior Plan
+  {
+    vendorId: 'vendor-metlife',
+    vendorName: 'MetLife (Alico)',
+    vendorCode: 'METLIFE',
+    planName: 'MetLife - Superior Plan',
+    planCode: 'ML-SUP-2024',
+    planType: 'platinum',
+    annualPremium: 9800,
+    monthlyPremium: 817,
+    currency: 'AED',
+    annualLimit: 1000000,
+    deductible: 0,
+    deductibleMetric: 'AED',
+    coInsurance: 0,
+    coInsuranceMetric: 'percentage',
+    waitingPeriod: 0,
+    waitingPeriodMetric: 'days',
+    benefits: [
+      {
+        categoryId: 'cat-inpatient',
+        categoryName: 'Inpatient Coverage',
+        benefits: [
+          {
+            name: 'Hospital Room & Board',
+            covered: true,
+            limit: 1000000,
+            limitMetric: 'AED',
+            description: 'VIP Suite'
+          },
+          {
+            name: 'Surgery',
+            covered: true,
+            limit: 1000000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'ICU/CCU',
+            covered: true,
+            limit: 1000000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Emergency Care',
+            covered: true,
+            limit: 1000000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Ambulance Services',
+            covered: true,
+            limit: 5000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Home Healthcare',
+            covered: true,
+            limit: 15000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Cancer Treatment',
+            covered: true,
+            limit: 1000000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Organ Transplant',
+            covered: true,
+            limit: 500000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-outpatient',
+        categoryName: 'Outpatient Coverage',
+        benefits: [
+          {
+            name: 'GP Consultation',
+            covered: true,
+            limit: 100000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Specialist Consultation',
+            covered: true,
+            limit: 100000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Diagnostic Tests',
+            covered: true,
+            limit: 100000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Pharmacy',
+            covered: true,
+            limit: 100000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Physiotherapy',
+            covered: true,
+            limit: 15000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Mental Health',
+            covered: true,
+            limit: 10000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-maternity',
+        categoryName: 'Maternity Coverage',
+        benefits: [
+          {
+            name: 'Normal Delivery',
+            covered: true,
+            limit: 20000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'C-Section',
+            covered: true,
+            limit: 30000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Pre & Post Natal Care',
+            covered: true,
+            limit: 8000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Newborn Care',
+            covered: true,
+            limit: 15000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Fertility Treatment',
+            covered: true,
+            limit: 20000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-dental',
+        categoryName: 'Dental & Optical',
+        benefits: [
+          {
+            name: 'Dental Coverage',
+            covered: true,
+            limit: 5000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Optical Coverage',
+            covered: true,
+            limit: 1500,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-preventive',
+        categoryName: 'Preventive & Wellness',
+        benefits: [
+          {
+            name: 'Annual Health Screening',
+            covered: true,
+            limit: 2000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Vaccinations',
+            covered: true,
+            limit: 1000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Health & Wellness Programs',
+            covered: true,
+            limit: 1500,
+            limitMetric: 'AED'
+          }
+        ]
+      }
+    ],
+    exclusions: [
+      'Cosmetic procedures (unless medically necessary)'
+    ],
+    lineOfBusiness: 'medical',
+    lobSpecificData: {
+      networkProviders: 'Global Provider Network',
+      areaOfCover: 'Worldwide',
+      copayTestMedicine: 'No Copay',
+      copayConsultation: 'No Copay'
+    },
+    isAvailable: true,
+    isSelected: false,
+    isRecommended: true,
+    source: 'static'
+  },
+
+  // Plan 9: Takaful Emarat - Global Coverage
+  {
+    vendorId: 'vendor-takaful',
+    vendorName: 'Takaful Emarat',
+    vendorCode: 'TAKAFUL',
+    planName: 'Takaful Emarat - Global Coverage',
+    planCode: 'TK-GLOB-2024',
+    planType: 'platinum',
+    annualPremium: 12000,
+    monthlyPremium: 1000,
+    currency: 'AED',
+    annualLimit: 1500000,
+    deductible: 0,
+    deductibleMetric: 'AED',
+    coInsurance: 0,
+    coInsuranceMetric: 'percentage',
+    waitingPeriod: 0,
+    waitingPeriodMetric: 'days',
+    benefits: [
+      {
+        categoryId: 'cat-inpatient',
+        categoryName: 'Inpatient Coverage',
+        benefits: [
+          {
+            name: 'Hospital Room & Board',
+            covered: true,
+            limit: 1500000,
+            limitMetric: 'AED',
+            description: 'Presidential Suite'
+          },
+          {
+            name: 'Surgery',
+            covered: true,
+            limit: 1500000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'ICU/CCU',
+            covered: true,
+            limit: 1500000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Emergency Care',
+            covered: true,
+            limit: 1500000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Air Ambulance',
+            covered: true,
+            limit: 50000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Home Healthcare',
+            covered: true,
+            limit: 20000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Cancer Treatment',
+            covered: true,
+            limit: 1500000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Organ Transplant',
+            covered: true,
+            limit: 750000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-outpatient',
+        categoryName: 'Outpatient Coverage',
+        benefits: [
+          {
+            name: 'GP Consultation',
+            covered: true,
+            limit: 150000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Specialist Consultation',
+            covered: true,
+            limit: 150000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Diagnostic Tests',
+            covered: true,
+            limit: 150000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Pharmacy',
+            covered: true,
+            limit: 150000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Physiotherapy',
+            covered: true,
+            limit: 20000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Mental Health',
+            covered: true,
+            limit: 15000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Alternative Medicine',
+            covered: true,
+            limit: 5000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-maternity',
+        categoryName: 'Maternity Coverage',
+        benefits: [
+          {
+            name: 'Normal Delivery',
+            covered: true,
+            limit: 25000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'C-Section',
+            covered: true,
+            limit: 35000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Pre & Post Natal Care',
+            covered: true,
+            limit: 10000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Newborn Care',
+            covered: true,
+            limit: 20000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Fertility Treatment',
+            covered: true,
+            limit: 30000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-dental',
+        categoryName: 'Dental & Optical',
+        benefits: [
+          {
+            name: 'Dental Coverage',
+            covered: true,
+            limit: 7500,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Optical Coverage',
+            covered: true,
+            limit: 2000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-preventive',
+        categoryName: 'Preventive & Wellness',
+        benefits: [
+          {
+            name: 'Executive Health Screening',
+            covered: true,
+            limit: 5000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Vaccinations',
+            covered: true,
+            limit: 2000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Wellness Programs',
+            covered: true,
+            limit: 3000,
+            limitMetric: 'AED'
+          }
+        ]
+      }
+    ],
+    exclusions: [],
+    lineOfBusiness: 'medical',
+    lobSpecificData: {
+      networkProviders: 'Global Premier Network',
+      areaOfCover: 'Worldwide Including USA',
+      copayTestMedicine: 'No Copay',
+      copayConsultation: 'No Copay'
+    },
+    isAvailable: true,
+    isSelected: false,
+    isRecommended: false,
+    source: 'static'
+  },
+
+  // Plan 10: Daman - Platinum Worldwide
+  {
+    vendorId: 'vendor-daman',
+    vendorName: 'Daman',
+    vendorCode: 'DAMAN',
+    planName: 'Daman - Platinum Worldwide',
+    planCode: 'DM-PLAT-WW-2024',
+    planType: 'platinum',
+    annualPremium: 14500,
+    monthlyPremium: 1208,
+    currency: 'AED',
+    annualLimit: 2000000,
+    deductible: 0,
+    deductibleMetric: 'AED',
+    coInsurance: 0,
+    coInsuranceMetric: 'percentage',
+    waitingPeriod: 0,
+    waitingPeriodMetric: 'days',
+    benefits: [
+      {
+        categoryId: 'cat-inpatient',
+        categoryName: 'Inpatient Coverage',
+        benefits: [
+          {
+            name: 'Hospital Room & Board',
+            covered: true,
+            limit: 2000000,
+            limitMetric: 'AED',
+            description: 'Royal Suite - Unlimited coverage'
+          },
+          {
+            name: 'Surgery',
+            covered: true,
+            limit: 2000000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'ICU/CCU',
+            covered: true,
+            limit: 2000000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Emergency Care',
+            covered: true,
+            limit: 2000000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Air Ambulance',
+            covered: true,
+            limit: 100000,
+            limitMetric: 'AED',
+            description: 'Worldwide coverage'
+          },
+          {
+            name: 'Home Healthcare',
+            covered: true,
+            limit: 30000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Cancer Treatment',
+            covered: true,
+            limit: 2000000,
+            limitMetric: 'AED',
+            description: 'Including treatment abroad'
+          },
+          {
+            name: 'Organ Transplant',
+            covered: true,
+            limit: 1000000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Chronic Disease Management',
+            covered: true,
+            limit: 2000000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-outpatient',
+        categoryName: 'Outpatient Coverage',
+        benefits: [
+          {
+            name: 'GP Consultation',
+            covered: true,
+            limit: 200000,
+            limitMetric: 'AED',
+            description: 'Unlimited visits'
+          },
+          {
+            name: 'Specialist Consultation',
+            covered: true,
+            limit: 200000,
+            limitMetric: 'AED',
+            description: 'Unlimited visits'
+          },
+          {
+            name: 'Diagnostic Tests',
+            covered: true,
+            limit: 200000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Pharmacy',
+            covered: true,
+            limit: 200000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Physiotherapy',
+            covered: true,
+            limit: 30000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Mental Health',
+            covered: true,
+            limit: 20000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Alternative Medicine',
+            covered: true,
+            limit: 10000,
+            limitMetric: 'AED',
+            description: 'Acupuncture, Chiropractic'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-maternity',
+        categoryName: 'Maternity Coverage',
+        benefits: [
+          {
+            name: 'Normal Delivery',
+            covered: true,
+            limit: 30000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'C-Section',
+            covered: true,
+            limit: 45000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Pre & Post Natal Care',
+            covered: true,
+            limit: 15000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Newborn Care',
+            covered: true,
+            limit: 30000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Fertility Treatment',
+            covered: true,
+            limit: 50000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'High-Risk Pregnancy',
+            covered: true,
+            limit: 100000,
+            limitMetric: 'AED'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-dental',
+        categoryName: 'Dental & Optical',
+        benefits: [
+          {
+            name: 'Comprehensive Dental',
+            covered: true,
+            limit: 10000,
+            limitMetric: 'AED',
+            description: 'Including orthodontics'
+          },
+          {
+            name: 'Optical Coverage',
+            covered: true,
+            limit: 3000,
+            limitMetric: 'AED',
+            description: 'Including LASIK surgery'
+          }
+        ]
+      },
+      {
+        categoryId: 'cat-preventive',
+        categoryName: 'Preventive & Wellness',
+        benefits: [
+          {
+            name: 'Platinum Health Assessment',
+            covered: true,
+            limit: 10000,
+            limitMetric: 'AED',
+            description: 'Annual comprehensive screening'
+          },
+          {
+            name: 'All Vaccinations',
+            covered: true,
+            limit: 5000,
+            limitMetric: 'AED'
+          },
+          {
+            name: 'Wellness & Fitness',
+            covered: true,
+            limit: 5000,
+            limitMetric: 'AED',
+            description: 'Gym membership, nutrition counseling'
+          },
+          {
+            name: 'Second Medical Opinion',
+            covered: true,
+            limit: 10000,
+            limitMetric: 'AED',
+            description: 'International expert consultation'
+          }
+        ]
+      }
+    ],
+    exclusions: [],
+    lineOfBusiness: 'medical',
+    lobSpecificData: {
+      networkProviders: 'Daman Elite Worldwide',
+      areaOfCover: 'Worldwide Including USA',
+      copayTestMedicine: 'No Copay',
+      copayConsultation: 'No Copay'
+    },
+    isAvailable: true,
+    isSelected: false,
+    isRecommended: true,
+    source: 'static'
   }
 ];
+
+// ==================== PREMIUM CALCULATION LOGIC ====================
+
+/**
+ * Calculate age from birthday
+ */
+function calculateAge(birthday: string): number {
+  if (!birthday) return 0;
+  const birthDate = new Date(birthday);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+/**
+ * Extract premium items from lead data based on LOB
+ */
+function extractPremiumItems(
+  leadData: any,
+  lineOfBusiness: LineOfBusiness
+): PremiumItem[] {
+  switch (lineOfBusiness) {
+    case 'medical':
+      return extractMedicalMembers(leadData);
+    case 'motor':
+      return extractMotorVehicles(leadData);
+    case 'marine':
+    case 'general':
+    default:
+      return extractSingleItem(leadData);
+  }
+}
+
+/**
+ * Extract medical insurance members (primary + family members)
+ */
+function extractMedicalMembers(leadData: any): PremiumItem[] {
+  const items: PremiumItem[] = [];
+  
+  // Primary member
+  items.push({
+    itemId: 'primary',
+    itemType: 'person',
+    itemName: `${leadData.firstName || ''} ${leadData.lastName || ''}`.trim() || 'Primary Member',
+    itemDetails: {
+      age: leadData.age || calculateAge(leadData.dateOfBirth) || 30,
+      gender: (leadData.gender || 'male').toLowerCase(),
+      dateOfBirth: leadData.dateOfBirth
+    },
+    isPrimary: true,
+    annualPremium: 0,  // Will be calculated
+    monthlyPremium: 0
+  });
+  
+  // Additional family members from repeatable section
+  const members = leadData.members || leadData.familyMembers || [];
+  members.forEach((member: any, idx: number) => {
+    items.push({
+      itemId: `member-${idx + 1}`,
+      itemType: 'person',
+      itemName: member.name || member.memberName || `Member ${idx + 1}`,
+      itemDetails: {
+        age: member.age || calculateAge(member.dateOfBirth) || 25,
+        gender: (member.gender || 'male').toLowerCase(),
+        dateOfBirth: member.dateOfBirth,
+        relationship: member.relationship
+      },
+      isPrimary: false,
+      annualPremium: 0,
+      monthlyPremium: 0
+    });
+  });
+  
+  return items;
+}
+
+/**
+ * Extract motor insurance vehicles (placeholder for future)
+ */
+function extractMotorVehicles(leadData: any): PremiumItem[] {
+  const items: PremiumItem[] = [];
+  
+  // Primary vehicle
+  items.push({
+    itemId: 'primary-vehicle',
+    itemType: 'vehicle',
+    itemName: `${leadData.make || ''} ${leadData.model || ''}`.trim() || 'Primary Vehicle',
+    itemDetails: {
+      make: leadData.make,
+      model: leadData.model,
+      year: leadData.year,
+      value: leadData.vehicleValue
+    },
+    isPrimary: true,
+    annualPremium: 0,
+    monthlyPremium: 0
+  });
+  
+  // Additional vehicles (if any)
+  const vehicles = leadData.vehicles || [];
+  vehicles.forEach((vehicle: any, idx: number) => {
+    items.push({
+      itemId: `vehicle-${idx + 1}`,
+      itemType: 'vehicle',
+      itemName: `${vehicle.make} ${vehicle.model}`,
+      itemDetails: vehicle,
+      isPrimary: false,
+      annualPremium: 0,
+      monthlyPremium: 0
+    });
+  });
+  
+  return items;
+}
+
+/**
+ * Extract single item for general/marine insurance
+ */
+function extractSingleItem(leadData: any): PremiumItem[] {
+  return [{
+    itemId: 'primary',
+    itemType: 'single',
+    itemName: 'Coverage',
+    itemDetails: leadData,
+    isPrimary: true,
+    annualPremium: 0,
+    monthlyPremium: 0
+  }];
+}
+
+/**
+ * Calculate premium for an individual item based on LOB
+ */
+function calculatePremiumForItem(
+  basePremium: number,
+  item: PremiumItem,
+  lineOfBusiness: LineOfBusiness
+): number {
+  switch (lineOfBusiness) {
+    case 'medical':
+      return calculateMedicalPremium(basePremium, item);
+    case 'motor':
+      return calculateMotorPremium(basePremium, item);
+    case 'marine':
+    case 'general':
+    default:
+      return basePremium; // Single premium
+  }
+}
+
+/**
+ * Calculate medical insurance premium based on age and gender
+ */
+function calculateMedicalPremium(basePremium: number, item: PremiumItem): number {
+  const age = item.itemDetails.age;
+  const gender = item.itemDetails.gender;
+  
+  let multiplier = 1.0;
+  
+  // Age-based multiplier
+  if (age < 18) {
+    multiplier = 0.35;        // Children: 35%
+  } else if (age <= 35) {
+    multiplier = 1.0;         // Young adults: 100%
+  } else if (age <= 50) {
+    multiplier = 1.3;         // Middle age: 130%
+  } else if (age <= 65) {
+    multiplier = 1.8;         // Seniors: 180%
+  } else {
+    multiplier = 2.5;         // Elderly: 250%
+  }
+  
+  // Gender adjustment (optional, some plans have this)
+  if (gender === 'female' && age >= 19 && age <= 45) {
+    multiplier *= 0.95; // 5% adjustment for women of childbearing age
+  }
+  
+  return Math.round(basePremium * multiplier);
+}
+
+/**
+ * Calculate motor insurance premium (placeholder for future)
+ */
+function calculateMotorPremium(basePremium: number, item: PremiumItem): number {
+  // For now, return base premium
+  // Later: calculate based on vehicle value, age, make, etc.
+  return basePremium;
+}
 
 /**
  * Get static plans for a lead
@@ -492,34 +2064,47 @@ export function getStaticPlansForLead(
       break;
   }
 
-  // Transform to Plan model with leadId and timestamps
-  return basePlans.map((plan, index) => ({
-    ...plan,
-    id: `plan-${leadId}-${index + 1}`,
-    leadId,
-    fetchRequestId: '', // Will be set by caller
-    fetchedAt: new Date(),
-    lobSpecificData: {
-      petType: leadData.petType,
-      petAge: calculateAge(leadData.petBirthday),
-      petBreed: leadData.petBreed
-    }
-  })) as Plan[];
-}
-
-/**
- * Calculate age from birthday
- */
-function calculateAge(birthday: string): number {
-  if (!birthday) return 0;
-  const birthDate = new Date(birthday);
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-  return age;
+  // Extract premium items (members, vehicles, etc.) based on LOB
+  const premiumItems = extractPremiumItems(leadData, lineOfBusiness);
+  
+  // Transform to Plan model with calculated member-wise premiums
+  return basePlans.map((plan, index) => {
+    
+    // Calculate premium for each item
+    const itemsWithPremiums = premiumItems.map(item => {
+      const premium = calculatePremiumForItem(
+        plan.annualPremium, // Base premium per adult/vehicle/item
+        item,
+        lineOfBusiness
+      );
+      
+      return {
+        ...item,
+        annualPremium: premium,
+        monthlyPremium: Math.round(premium / 12)
+      };
+    });
+    
+    // Sum total premium from all items
+    const totalAnnual = itemsWithPremiums.reduce((sum, item) => sum + item.annualPremium, 0);
+    const totalMonthly = itemsWithPremiums.reduce((sum, item) => sum + item.monthlyPremium, 0);
+    
+    return {
+      ...plan,
+      id: `plan-${leadId}-${index + 1}`,
+      leadId,
+      fetchRequestId: '', // Will be set by caller
+      fetchedAt: new Date(),
+      annualPremium: totalAnnual,      // Total for all items
+      monthlyPremium: totalMonthly,
+      lobSpecificData: {
+        ...plan.lobSpecificData,
+        itemCount: premiumItems.length,
+        premiumItems: itemsWithPremiums,  // Store breakdown
+        basePremiumPerItem: plan.annualPremium // Store original base premium
+      }
+    } as Plan;
+  });
 }
 
 /**
@@ -528,5 +2113,4 @@ function calculateAge(birthday: string): number {
 export function getVendorsByLOB(lineOfBusiness: LineOfBusiness): Omit<Vendor, 'createdAt' | 'updatedAt'>[] {
   return STATIC_VENDORS.filter(v => v.lineOfBusiness === lineOfBusiness);
 }
-
 

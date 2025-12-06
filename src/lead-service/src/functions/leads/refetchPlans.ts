@@ -65,8 +65,7 @@ export async function refetchPlans(
       timestamp: new Date()
     });
 
-    // Publish lead.created event to trigger plan fetch
-    // The quotation-generation-service listens for this event
+    // Publish lead.created event to trigger plan fetch (for logging in mock Event Grid)
     try {
       await eventGridService.publishLeadCreated({
         leadId: lead.id,
@@ -80,35 +79,38 @@ export async function refetchPlans(
         assignedTo: lead.assignedTo,
         createdAt: lead.createdAt
       });
-      context.log(`Plans refetch triggered for lead ${leadId} via Event Grid`);
+      context.log(`Event published to Event Grid (for logging)`);
     } catch (eventError) {
-      context.warn('Event Grid not available, triggering plan fetch via HTTP:', eventError);
+      context.warn('Event Grid publish failed (non-critical):', eventError);
+    }
+
+    // HTTP Fallback: Always trigger plan fetch directly since Event Grid doesn't route events locally
+    try {
+      const quotationGenUrl = process.env.QUOTATION_GEN_SERVICE_URL || 'http://localhost:7072/api';
+      context.log(`Triggering plan fetch via HTTP at ${quotationGenUrl}/plans/fetch`);
       
-      // Fallback: Directly call quotation-generation-service when Event Grid is unavailable
-      try {
-        const quotationGenUrl = process.env.QUOTATION_GEN_SERVICE_URL || 'http://localhost:7072/api';
-        const response = await fetch(`${quotationGenUrl}/plans/fetch`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            leadId: lead.id,
-            lineOfBusiness: lead.lineOfBusiness,
-            businessType: lead.businessType,
-            leadData: lead.lobData || {},
-            forceRefresh: true
-          })
-        });
-        
-        if (!response.ok) {
-          context.warn('Failed to trigger plan fetch via HTTP fallback');
-        } else {
-          context.log(`Plans refetch triggered for lead ${leadId} via HTTP fallback`);
-        }
-      } catch (httpError) {
-        context.error('HTTP fallback to quotation-generation-service failed:', httpError);
+      const response = await fetch(`${quotationGenUrl}/plans/fetch`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          leadId: lead.id,
+          lineOfBusiness: lead.lineOfBusiness,
+          businessType: lead.businessType,
+          leadData: lead.lobData || {},
+          forceRefresh: true
+        })
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        context.warn(`HTTP plan fetch trigger failed: ${response.status} - ${errorText}`);
+      } else {
+        context.log(`Plans refetch triggered successfully for lead ${leadId} via HTTP`);
       }
+    } catch (httpError: any) {
+      context.error('HTTP fallback to quotation-generation-service failed:', httpError);
     }
 
     return withCors(request, {

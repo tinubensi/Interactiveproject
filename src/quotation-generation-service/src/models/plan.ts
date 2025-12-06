@@ -8,6 +8,39 @@ export type LineOfBusiness = 'medical' | 'motor' | 'general' | 'marine';
 export type PlanSource = 'static' | 'rpa' | 'api';
 
 /**
+ * Premium Item - Individual item (member, vehicle, property) in a plan
+ * Used for member-wise, vehicle-wise premium breakdown
+ */
+export interface PremiumItem {
+  itemId: string;           // "primary", "member-1", "vehicle-1", etc.
+  itemType: string;         // "person", "vehicle", "property", "single"
+  itemName: string;         // Display name
+  itemDetails: any;         // Age, gender, make, model, etc.
+  isPrimary: boolean;
+  annualPremium: number;
+  monthlyPremium: number;
+}
+
+/**
+ * LOB Specific Data structure
+ */
+export interface LobSpecificData {
+  // Network and coverage (Medical)
+  networkProviders?: string;
+  areaOfCover?: string;
+  copayTestMedicine?: string;
+  copayConsultation?: string;
+  
+  // Premium breakdown (All LOBs)
+  premiumItems?: PremiumItem[];
+  itemCount?: number;
+  basePremiumPerItem?: number;
+  
+  // Allow additional properties
+  [key: string]: any;
+}
+
+/**
  * Plan Model - Core insurance plan
  */
 export interface Plan {
@@ -47,7 +80,7 @@ export interface Plan {
   
   // LOB-Specific Data
   lineOfBusiness: LineOfBusiness;
-  lobSpecificData?: any; // Flexible field for LOB-specific information
+  lobSpecificData?: LobSpecificData; // LOB-specific information including premium breakdown
   
   // Status Flags
   isAvailable: boolean;
