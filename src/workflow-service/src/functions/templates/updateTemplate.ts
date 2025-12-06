@@ -29,7 +29,7 @@ export async function updateTemplateHandler(
     const templateId = request.params.templateId;
 
     if (!templateId) {
-      return withCors(badRequestResponse('Template ID is required'));
+      return withCors(request, badRequestResponse('Template ID is required', undefined, request));
     }
 
     const body = (await request.json()) as UpdateTemplateRequest;
@@ -45,17 +45,17 @@ export async function updateTemplateHandler(
 
     telemetry?.trackMetric('templates.update.duration', Date.now() - startTime);
 
-    return withCors(successResponse(template));
+    return withCors(request, successResponse(template, request));
   } catch (error) {
     if (error instanceof TemplateNotFoundError) {
-      return withCors(notFoundResponse('Template'));
+      return withCors(request, notFoundResponse('Template', request));
     }
 
     telemetry?.trackException(error as Error, {
       operation: 'updateTemplate',
       templateId: request.params.templateId,
     });
-    return withCors(handleError(error));
+    return withCors(request, handleError(error, request));
   }
 }
 

@@ -18,8 +18,8 @@
     }
   },
   "cors": {
-    "allowedOrigins": ["*"],
-    "supportCredentials": false
+    "allowedOrigins": ["http://localhost:3000"],
+    "supportCredentials": true
   }
 }
 

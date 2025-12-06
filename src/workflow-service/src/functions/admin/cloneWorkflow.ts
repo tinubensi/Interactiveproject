@@ -31,12 +31,12 @@ const handler = async (
 
     const workflowId = request.params.workflowId;
     if (!workflowId) {
-      return badRequestResponse('Workflow ID is required');
+      return badRequestResponse('Workflow ID is required', undefined, request);
     }
 
     const body = (await request.json()) as CloneRequest;
     if (!body.name || typeof body.name !== 'string') {
-      return badRequestResponse('New workflow name is required');
+      return badRequestResponse('New workflow name is required', undefined, request);
     }
 
     context.log('Cloning workflow', { sourceWorkflowId: workflowId, newName: body.name });
@@ -58,10 +58,10 @@ const handler = async (
     );
 
     context.log(`Cloned workflow ${workflowId} to ${workflow.workflowId}`);
-    return createdResponse(workflow);
+    return createdResponse(workflow, request);
   } catch (error) {
     context.error('Error cloning workflow', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

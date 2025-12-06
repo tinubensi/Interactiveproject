@@ -32,7 +32,17 @@ export type ActionType =
   | 'cosmos_upsert'
   | 'cosmos_delete'
   | 'send_notification'
-  | 'call_function';
+  | 'call_function'
+  // Insurance-specific action types
+  | 'change_lead_stage'
+  | 'assign_lead'
+  | 'mark_hot_lead'
+  | 'refetch_plans'
+  | 'create_quotation'
+  | 'send_quotation'
+  | 'approve_quotation'
+  | 'reject_quotation'
+  | 'create_policy_request';
 
 export type TriggerType = 'event' | 'http' | 'schedule' | 'manual';
 
@@ -250,6 +260,54 @@ export interface CallFunctionConfig {
   input?: Record<string, unknown>;
 }
 
+// Insurance-specific Action Configurations
+export interface ChangeLeadStageConfig {
+  stageId: string;
+  stageName: string;
+  remark?: string;
+}
+
+export interface AssignLeadConfig {
+  assignmentStrategy: 'round-robin' | 'load-balanced' | 'manual';
+  teamFilter?: string;
+  notifyAgent?: boolean;
+}
+
+export interface MarkHotLeadConfig {
+  isHotLead: boolean;
+  notifyManager?: boolean;
+  reason?: string;
+}
+
+export interface RefetchPlansConfig {
+  forceRefresh?: boolean;
+}
+
+export interface CreateQuotationConfig {
+  planSelectionStrategy: string;
+  maxPlans?: number;
+  validityDays?: number;
+  autoSelectRecommended?: boolean;
+}
+
+export interface SendQuotationConfig {
+  recipient: string;
+  template: string;
+  generatePdf?: boolean;
+  includeComparison?: boolean;
+  trackOpens?: boolean;
+  customMessage?: string;
+}
+
+export interface ApproveQuotationConfig {
+  useSelectedPlan?: boolean;
+  notifyUnderwriter?: boolean;
+}
+
+export interface CreatePolicyRequestConfig {
+  autoApprove?: boolean;
+}
+
 export type ActionConfig =
   | HttpRequestConfig
   | PublishEventConfig
@@ -258,7 +316,16 @@ export type ActionConfig =
   | CosmosUpsertConfig
   | CosmosDeleteConfig
   | SendNotificationConfig
-  | CallFunctionConfig;
+  | CallFunctionConfig
+  // Insurance-specific configs
+  | ChangeLeadStageConfig
+  | AssignLeadConfig
+  | MarkHotLeadConfig
+  | RefetchPlansConfig
+  | CreateQuotationConfig
+  | SendQuotationConfig
+  | ApproveQuotationConfig
+  | CreatePolicyRequestConfig;
 
 // ----------------------------------------------------------------------------
 // Step Action
@@ -570,6 +637,49 @@ export interface WorkflowInstance {
 
   // TTL for automatic cleanup
   ttl?: number;
+
+  // =========================================================================
+  // Nectaria Insurance-Specific Fields
+  // =========================================================================
+
+  /** Lead ID this workflow instance is associated with */
+  leadId?: string;
+
+  /** Customer ID */
+  customerId?: string;
+
+  /** Line of Business */
+  lineOfBusiness?: 'medical' | 'motor' | 'general' | 'marine';
+
+  /** Current lead stage name (human-readable) */
+  currentStageName?: string;
+
+  /** Progress percentage (0-100) for progress bar display */
+  progressPercent?: number;
+
+  /** Human-readable activity log */
+  activityLog?: ActivityLogEntry[];
+}
+
+// ----------------------------------------------------------------------------
+// Activity Log Entry (Human-readable audit trail)
+// ----------------------------------------------------------------------------
+
+export interface ActivityLogEntry {
+  /** Timestamp of the activity */
+  timestamp: string;
+  /** Human-readable message describing what happened */
+  message: string;
+  /** Icon identifier (lucide icon name or emoji) */
+  icon?: string;
+  /** Activity type for styling */
+  type: 'success' | 'info' | 'warning' | 'error';
+  /** Step ID that generated this log entry */
+  stepId?: string;
+  /** Step name for display */
+  stepName?: string;
+  /** Additional metadata */
+  metadata?: Record<string, unknown>;
 }
 
 // ----------------------------------------------------------------------------

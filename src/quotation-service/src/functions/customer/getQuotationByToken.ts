@@ -1,6 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { cosmosService } from '../../services/cosmosService';
 import { tokenService } from '../../services/tokenService';
+import { eventGridService } from '../../services/eventGridService';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
 
 /**
@@ -84,6 +85,22 @@ export async function getQuotationByToken(
     const plans = await cosmosService.getQuotationPlans(quotation.id);
 
     context.log(`Found quotation ${quotation.referenceId} with ${plans.length} plans`);
+
+    // Publish customer.responded event for pipeline to advance
+    try {
+      await eventGridService.publishEvent('customer.responded', `quotation/${quotation.id}`, {
+        leadId: quotation.leadId,
+        quotationId: quotation.id,
+        referenceId: quotation.referenceId,
+        responseType: 'viewed',
+        lineOfBusiness: quotation.lineOfBusiness,
+        viewedAt: new Date().toISOString(),
+      });
+      context.log(`Published customer.responded event for quotation ${quotation.referenceId}`);
+    } catch (eventError) {
+      context.warn('Failed to publish customer.responded event:', eventError);
+      // Don't fail the request if event publishing fails
+    }
 
     // Return quotation and plans (sanitized for customer view)
     return withCors(request, {

@@ -36,7 +36,7 @@ const handler = async (
 
     const instanceId = request.params.instanceId;
     if (!instanceId) {
-      return badRequestResponse('Instance ID is required');
+      return badRequestResponse('Instance ID is required', undefined, request);
     }
 
     let body: CancelRequest = {};
@@ -66,13 +66,13 @@ const handler = async (
       instanceId: instance.instanceId,
       status: instance.status,
       message: 'Workflow instance cancelled successfully'
-    });
+    }, request);
   } catch (error) {
     if (error instanceof InstanceNotFoundError) {
-      return notFoundResponse('Workflow instance');
+      return notFoundResponse('Workflow instance', request);
     }
     context.error('Error cancelling instance', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

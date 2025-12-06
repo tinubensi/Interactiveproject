@@ -163,8 +163,7 @@ export async function handlePolicyIssued(
       lineOfBusiness: data.lineOfBusiness,
       startDate,
       endDate,
-      annualPremium: data.annualPremium,
-      issuedAt: now
+      annualPremium: data.annualPremium
     });
 
     context.log(`Policy ${policy.policyNumber} issued successfully`);

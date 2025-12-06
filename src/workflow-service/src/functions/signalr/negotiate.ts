@@ -25,7 +25,8 @@ export async function negotiateHandler(
     
     if (!config.signalr?.connectionString) {
       return withCors(
-        internalErrorResponse('SignalR is not configured')
+        request,
+        internalErrorResponse('SignalR is not configured', request)
       );
     }
 
@@ -39,7 +40,8 @@ export async function negotiateHandler(
     
     if (!endpointMatch || !keyMatch) {
       return withCors(
-        internalErrorResponse('Invalid SignalR connection string')
+        request,
+        internalErrorResponse('Invalid SignalR connection string', request)
       );
     }
 
@@ -69,14 +71,15 @@ export async function negotiateHandler(
     const accessToken = `${header}.${payload}.${signature}`;
 
     return withCors(
+      request,
       successResponse({
         url: `https://${endpoint}/client/?hub=${hubName}`,
         accessToken,
-      })
+      }, request)
     );
   } catch (error) {
     context.log('SignalR negotiate error:', error);
-    return withCors(handleError(error));
+    return withCors(request, handleError(error, request));
   }
 }
 

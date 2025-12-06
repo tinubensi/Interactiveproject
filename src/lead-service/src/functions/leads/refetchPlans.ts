@@ -17,7 +17,7 @@ export async function refetchPlans(
     const leadId = request.params.leadId;
 
     if (!leadId) {
-      return withCors({
+      return withCors(request, {
         status: 400,
         jsonBody: { error: 'Lead ID is required' }
       });
@@ -33,7 +33,7 @@ export async function refetchPlans(
     const { resources: leads } = await container.items.query(querySpec).fetchAll();
 
     if (leads.length === 0) {
-      return withCors({
+      return withCors(request, {
         status: 404,
         jsonBody: { error: 'Lead not found' }
       });
@@ -82,7 +82,7 @@ export async function refetchPlans(
 
     context.log(`Plans refetch triggered for lead ${leadId}`);
 
-    return withCors({
+    return withCors(request, {
       status: 200,
       jsonBody: {
         success: true,
@@ -95,7 +95,7 @@ export async function refetchPlans(
 
   } catch (error: any) {
     context.error('Error refetching plans:', error);
-    return withCors({
+    return withCors(request, {
       status: 500,
       jsonBody: { error: error.message || 'Failed to refetch plans' }
     });

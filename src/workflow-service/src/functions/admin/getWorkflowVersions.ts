@@ -26,7 +26,7 @@ const handler = async (
 
     const workflowId = request.params.workflowId;
     if (!workflowId) {
-      return badRequestResponse('Workflow ID is required');
+      return badRequestResponse('Workflow ID is required', undefined, request);
     }
 
     context.log('Getting workflow versions', { workflowId });
@@ -44,10 +44,10 @@ const handler = async (
         activatedBy: v.activatedBy
       })),
       count: versions.length
-    });
+    }, request);
   } catch (error) {
     context.error('Error getting workflow versions', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

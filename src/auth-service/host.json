@@ -19,6 +19,6 @@
   },
   "cors": {
     "allowedOrigins": ["http://localhost:3000"],
-    "supportCredentials": false
+    "supportCredentials": true
   }
 }

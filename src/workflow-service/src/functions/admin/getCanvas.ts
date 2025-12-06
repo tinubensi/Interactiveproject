@@ -27,7 +27,7 @@ export async function getCanvasHandler(
     const workflowId = request.params.workflowId;
 
     if (!workflowId) {
-      return withCors(badRequestResponse('Workflow ID is required'));
+      return withCors(request, badRequestResponse('Workflow ID is required', undefined, request));
     }
 
     const canvas = await getCanvas(workflowId);
@@ -39,13 +39,13 @@ export async function getCanvasHandler(
 
     telemetry?.trackMetric('canvas.get.duration', Date.now() - startTime);
 
-    return withCors(successResponse(canvas));
+    return withCors(request, successResponse(canvas, request));
   } catch (error) {
     telemetry?.trackException(error as Error, {
       operation: 'getCanvas',
       workflowId: request.params.workflowId,
     });
-    return withCors(handleError(error));
+    return withCors(request, handleError(error, request));
   }
 }
 

@@ -2,12 +2,17 @@
  * Handle Policy Issued Event
  * Listens to policy.issued event from Policy Service
  * Updates lead with policyId and changes stage to "Policy Issued"
+ * 
+ * NOTE: If a pipeline is active for this lead, the Pipeline Service
+ * handles stage changes. This handler only updates policy reference
+ * and falls back to hardcoded stage change when no pipeline is active.
  */
 
 import { app, InvocationContext } from '@azure/functions';
 import { v4 as uuidv4 } from 'uuid';
 import { cosmosService } from '../../services/cosmosService';
 import { PolicyIssuedEvent } from '../../models/events';
+import { isLeadManagedByPipeline } from '../../services/pipelineServiceClient';
 
 export async function handlePolicyIssued(
   eventGridEvent: any,
@@ -35,11 +40,27 @@ export async function handlePolicyIssued(
 
     const lead = leads[0];
 
-    // Update lead
+    // Check if this lead is managed by a pipeline
+    const hasPipeline = await isLeadManagedByPipeline(data.leadId);
+    if (hasPipeline) {
+      context.log(`Lead ${data.leadId} is managed by pipeline - skipping hardcoded stage change`);
+      // Still update policy reference but don't change stage
+      await cosmosService.updateLead(lead.id, lead.lineOfBusiness, {
+        policyId: data.policyId,
+        updatedAt: new Date()
+      });
+      return;
+    }
+
+    // Fallback: No pipeline active - use hardcoded stage change
+    context.log(`Lead ${data.leadId} has no active pipeline - using hardcoded stage change`);
+
+    // Update lead with stage change
     await cosmosService.updateLead(lead.id, lead.lineOfBusiness, {
       policyId: data.policyId,
       currentStage: 'Policy Issued',
-      stageId: 'stage-6'
+      stageId: 'stage-6',
+      updatedAt: new Date()
     });
 
     // Create timeline entry

@@ -2,7 +2,7 @@
   "name": "staff-management-service",
   "version": "1.0.0",
   "description": "Nectaria Staff Management Service - Staff profiles, teams, territories, workload tracking",
-  "main": "dist/src/functions/*.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",

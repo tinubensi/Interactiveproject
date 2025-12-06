@@ -28,7 +28,7 @@ const handler = async (
 
     const workflowId = request.params.workflowId;
     if (!workflowId) {
-      return badRequestResponse('Workflow ID is required');
+      return badRequestResponse('Workflow ID is required', undefined, request);
     }
 
     const body = (await request.json()) as AddStepRequest;
@@ -38,10 +38,10 @@ const handler = async (
     const workflow = await addStep(workflowId, validatedRequest, userContext.userId);
 
     context.log(`Added step to workflow ${workflowId}`);
-    return createdResponse(workflow);
+    return createdResponse(workflow, request);
   } catch (error) {
     context.error('Error adding step', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

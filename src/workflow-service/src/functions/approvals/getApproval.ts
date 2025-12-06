@@ -23,20 +23,20 @@ const getApprovalHandler = async (
     const approvalId = request.params.approvalId;
 
     if (!approvalId) {
-      return jsonResponse(400, { message: 'Approval ID is required' });
+      return jsonResponse(400, { message: 'Approval ID is required' }, request);
     }
 
     context.log(`Getting approval: ${approvalId}`);
 
     const approval = await getApproval(approvalId);
 
-    return jsonResponse(200, approval);
+    return jsonResponse(200, approval, request);
   } catch (error) {
     context.error('Error getting approval:', error);
     if (error instanceof ApprovalNotFoundError) {
-      return jsonResponse(404, { message: error.message });
+      return jsonResponse(404, { message: error.message }, request);
     }
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

@@ -75,7 +75,7 @@ export function loadConfig(): AuthenticationConfig {
     cookies: {
       domain: process.env.COOKIE_DOMAIN || 'localhost',
       secure: process.env.COOKIE_SECURE === 'true',
-      sameSite: 'strict',
+      sameSite: 'lax',  // Required for OAuth redirect flows from Azure AD
     },
     rateLimit: {
       maxLoginAttempts: 5,

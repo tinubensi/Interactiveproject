@@ -6,7 +6,9 @@ import {
   InstanceStatus,
   InstanceFilters,
   StepExecution,
-  TriggerType
+  TriggerType,
+  ActivityLogEntry,
+  ExecutionError
 } from '../../models/workflowTypes';
 
 export class InstanceNotFoundError extends Error {
@@ -28,6 +30,31 @@ export interface CreateInstanceParams {
   correlationId?: string;
   parentInstanceId?: string;
   initiatedBy?: string;
+  // Lead-specific fields for insurance workflows
+  leadId?: string;
+  customerId?: string;
+  lineOfBusiness?: 'medical' | 'motor' | 'general' | 'marine';
+}
+
+/**
+ * Lead workflow status summary for UI display
+ */
+export interface LeadWorkflowStatus {
+  instanceId: string;
+  status: InstanceStatus;
+  currentStageName: string;
+  progressPercent: number;
+  currentStepId?: string;
+  currentStepName?: string;
+  completedSteps: number;
+  totalSteps: number;
+  lastActivity?: ActivityLogEntry;
+  recentActivities: ActivityLogEntry[];
+  startedAt: string;
+  isWaiting: boolean;
+  hasFailed: boolean;
+  isCompleted: boolean;
+  lastError?: ExecutionError & { stepId: string; timestamp: string };
 }
 
 /**
@@ -40,6 +67,18 @@ export const createInstance = async (
   const config = getConfig();
   const instanceId = `inst-${uuidv4().slice(0, 12)}`;
   const now = new Date().toISOString();
+
+  // Initialize activity log with workflow start entry
+  const initialActivityLog: ActivityLogEntry[] = [
+    {
+      timestamp: now,
+      message: params.leadId 
+        ? `Workflow "${params.workflowName}" started for lead`
+        : `Workflow "${params.workflowName}" started`,
+      icon: 'play',
+      type: 'info'
+    }
+  ];
 
   const instance: WorkflowInstance = {
     id: instanceId,
@@ -59,7 +98,14 @@ export const createInstance = async (
     parentInstanceId: params.parentInstanceId,
     createdAt: now,
     initiatedBy: params.initiatedBy,
-    ttl: config.settings.instanceTtlSeconds
+    ttl: config.settings.instanceTtlSeconds,
+    // Lead-specific fields
+    leadId: params.leadId,
+    customerId: params.customerId,
+    lineOfBusiness: params.lineOfBusiness,
+    currentStageName: params.leadId ? 'Lead Created' : undefined,
+    progressPercent: 0,
+    activityLog: initialActivityLog
   };
 
   const { resource } = await containers.workflowInstances.items.create(instance);
@@ -374,5 +420,235 @@ export const getInstanceStats = async (
   }
 
   return stats as Record<InstanceStatus, number>;
+};
+
+// ============================================================================
+// Lead-Specific Methods
+// ============================================================================
+
+/**
+ * Get workflow instance by Lead ID
+ * Returns the most recent instance for a lead
+ */
+export const getInstanceByLeadId = async (
+  leadId: string
+): Promise<WorkflowInstance | null> => {
+  const containers = await getCosmosContainers();
+
+  const query = {
+    query: `
+      SELECT * FROM c 
+      WHERE c.leadId = @leadId 
+      ORDER BY c.createdAt DESC
+    `,
+    parameters: [{ name: '@leadId', value: leadId }]
+  };
+
+  const { resources } = await containers.workflowInstances.items
+    .query<WorkflowInstance>(query)
+    .fetchAll();
+
+  return resources.length > 0 ? resources[0] : null;
+};
+
+/**
+ * Get active (non-completed) workflow instance for a lead
+ * Returns null if no active instance exists
+ */
+export const getActiveInstanceByLeadId = async (
+  leadId: string
+): Promise<WorkflowInstance | null> => {
+  const containers = await getCosmosContainers();
+
+  const query = {
+    query: `
+      SELECT * FROM c 
+      WHERE c.leadId = @leadId 
+      AND c.status NOT IN ('completed', 'failed', 'cancelled', 'timed_out')
+      ORDER BY c.createdAt DESC
+    `,
+    parameters: [{ name: '@leadId', value: leadId }]
+  };
+
+  const { resources } = await containers.workflowInstances.items
+    .query<WorkflowInstance>(query)
+    .fetchAll();
+
+  return resources.length > 0 ? resources[0] : null;
+};
+
+/**
+ * Get all workflow instances for a Lead ID (history)
+ */
+export const getInstanceHistoryByLeadId = async (
+  leadId: string
+): Promise<WorkflowInstance[]> => {
+  const containers = await getCosmosContainers();
+
+  const query = {
+    query: `
+      SELECT * FROM c 
+      WHERE c.leadId = @leadId 
+      ORDER BY c.createdAt DESC
+    `,
+    parameters: [{ name: '@leadId', value: leadId }]
+  };
+
+  const { resources } = await containers.workflowInstances.items
+    .query<WorkflowInstance>(query)
+    .fetchAll();
+
+  return resources;
+};
+
+/**
+ * Update lead stage and progress
+ */
+export const updateLeadProgress = async (
+  instanceId: string,
+  stageName: string,
+  progressPercent: number,
+  logMessage: string,
+  logType: 'success' | 'info' | 'warning' | 'error' = 'success',
+  icon?: string
+): Promise<WorkflowInstance> => {
+  const current = await getInstance(instanceId);
+  
+  const newLogEntry: ActivityLogEntry = {
+    timestamp: new Date().toISOString(),
+    message: logMessage,
+    type: logType,
+    icon: icon || (logType === 'success' ? 'check-circle' : logType === 'error' ? 'x-circle' : 'info'),
+    stepId: current.currentStepId,
+    stepName: current.stepExecutions.find(s => s.stepId === current.currentStepId)?.stepName
+  };
+
+  return updateInstance(instanceId, {
+    currentStageName: stageName,
+    progressPercent: Math.min(100, Math.max(0, progressPercent)),
+    activityLog: [...(current.activityLog || []), newLogEntry]
+  });
+};
+
+/**
+ * Add an activity log entry without changing stage/progress
+ */
+export const addActivityLogEntry = async (
+  instanceId: string,
+  message: string,
+  type: 'success' | 'info' | 'warning' | 'error',
+  icon?: string,
+  metadata?: Record<string, unknown>
+): Promise<WorkflowInstance> => {
+  const current = await getInstance(instanceId);
+  
+  const newLogEntry: ActivityLogEntry = {
+    timestamp: new Date().toISOString(),
+    message,
+    type,
+    icon,
+    stepId: current.currentStepId,
+    stepName: current.stepExecutions.find(s => s.stepId === current.currentStepId)?.stepName,
+    metadata
+  };
+
+  return updateInstance(instanceId, {
+    activityLog: [...(current.activityLog || []), newLogEntry]
+  });
+};
+
+/**
+ * Get lead workflow status summary
+ * Returns a concise status object for displaying in Lead UI
+ */
+export const getLeadWorkflowStatus = async (
+  leadId: string
+): Promise<LeadWorkflowStatus | null> => {
+  const instance = await getInstanceByLeadId(leadId);
+  
+  if (!instance) {
+    return null;
+  }
+
+  const currentStepExecution = instance.stepExecutions.find(
+    s => s.stepId === instance.currentStepId
+  );
+
+  // Count total steps from step executions + pending (estimate)
+  const totalSteps = Math.max(
+    instance.stepExecutions.length,
+    instance.completedStepIds.length + 1
+  );
+
+  return {
+    instanceId: instance.instanceId,
+    status: instance.status,
+    currentStageName: instance.currentStageName || 'Unknown',
+    progressPercent: instance.progressPercent || 0,
+    currentStepId: instance.currentStepId,
+    currentStepName: currentStepExecution?.stepName,
+    completedSteps: instance.completedStepIds.length,
+    totalSteps,
+    lastActivity: instance.activityLog?.[instance.activityLog.length - 1],
+    recentActivities: (instance.activityLog || []).slice(-5).reverse(),
+    startedAt: instance.startedAt || instance.createdAt,
+    isWaiting: instance.status === 'waiting',
+    hasFailed: instance.status === 'failed',
+    isCompleted: instance.status === 'completed',
+    lastError: instance.lastError
+  };
+};
+
+/**
+ * List all active lead workflow instances
+ * Useful for dashboard views
+ */
+export const listActiveLeadInstances = async (
+  organizationId: string,
+  lineOfBusiness?: 'medical' | 'motor' | 'general' | 'marine'
+): Promise<WorkflowInstance[]> => {
+  const containers = await getCosmosContainers();
+
+  let query = `
+    SELECT * FROM c 
+    WHERE c.organizationId = @organizationId 
+    AND c.leadId != null
+    AND c.status NOT IN ('completed', 'failed', 'cancelled', 'timed_out')
+  `;
+  const parameters: Array<{ name: string; value: string }> = [
+    { name: '@organizationId', value: organizationId }
+  ];
+
+  if (lineOfBusiness) {
+    query += ' AND c.lineOfBusiness = @lineOfBusiness';
+    parameters.push({ name: '@lineOfBusiness', value: lineOfBusiness });
+  }
+
+  query += ' ORDER BY c.createdAt DESC';
+
+  const { resources } = await containers.workflowInstances.items
+    .query<WorkflowInstance>({ query, parameters })
+    .fetchAll();
+
+  return resources;
+};
+
+/**
+ * Update workflow instance with lead context from variables
+ * Call this when trigger data contains lead information
+ */
+export const updateInstanceLeadContext = async (
+  instanceId: string,
+  leadId: string,
+  customerId?: string,
+  lineOfBusiness?: 'medical' | 'motor' | 'general' | 'marine'
+): Promise<WorkflowInstance> => {
+  return updateInstance(instanceId, {
+    leadId,
+    customerId,
+    lineOfBusiness,
+    currentStageName: 'Lead Created',
+    progressPercent: 0
+  });
 };
 

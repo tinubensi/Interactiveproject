@@ -37,10 +37,10 @@ const handler = async (
     await logWorkflowCreated(workflow.workflowId, workflow.name, userContext);
 
     context.log(`Created workflow ${workflow.workflowId}`);
-    return createdResponse(workflow);
+    return createdResponse(workflow, request);
   } catch (error) {
     context.error('Error creating workflow', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

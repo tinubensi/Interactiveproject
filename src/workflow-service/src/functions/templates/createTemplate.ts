@@ -27,15 +27,15 @@ export async function createTemplateHandler(
 
     // Validate required fields
     if (!body.name?.trim()) {
-      return withCors(badRequestResponse('Template name is required'));
+      return withCors(request, badRequestResponse('Template name is required', undefined, request));
     }
 
     if (!body.category?.trim()) {
-      return withCors(badRequestResponse('Template category is required'));
+      return withCors(request, badRequestResponse('Template category is required', undefined, request));
     }
 
     if (!body.baseWorkflow) {
-      return withCors(badRequestResponse('Base workflow configuration is required'));
+      return withCors(request, badRequestResponse('Base workflow configuration is required', undefined, request));
     }
 
     const template = await createTemplate(body, user.userId);
@@ -48,12 +48,12 @@ export async function createTemplateHandler(
 
     telemetry?.trackMetric('templates.create.duration', Date.now() - startTime);
 
-    return withCors(createdResponse(template));
+    return withCors(request, createdResponse(template, request));
   } catch (error) {
     telemetry?.trackException(error as Error, {
       operation: 'createTemplate',
     });
-    return withCors(handleError(error));
+    return withCors(request, handleError(error, request));
   }
 }
 
