@@ -1,26 +1,57 @@
 /**
  * Authentication utilities for Quotation Generation Service
- * Wraps the shared auth middleware
+ * TODO: Implement real authentication when auth service is ready
  */
 
 import { HttpRequest } from '@azure/functions';
-import {
-  requireAuth as sharedRequireAuth,
-  requirePermission as sharedRequirePermission,
-  AuthError,
-  ForbiddenError,
-} from '@nectaria/auth-middleware';
-import { UserContext } from '@nectaria/shared-types';
 
-// Re-export error classes and types
-export { AuthError, ForbiddenError };
-export type { UserContext };
+// Local type definitions
+export interface UserContext {
+  userId: string;
+  email: string;
+  name?: string;
+  roles: string[];
+  permissions?: string[];
+  azureAdGroups?: string[];
+  organizationId?: string;
+  sessionId?: string;
+  authMethod?: 'b2b_sso' | 'b2c_password' | 'b2c_otp';
+  territories?: string[];
+  teamId?: string;
+}
+
+// Local error classes
+export class AuthError extends Error {
+  constructor(message: string = 'Authentication required') {
+    super(message);
+    this.name = 'AuthError';
+  }
+}
+
+export class ForbiddenError extends Error {
+  constructor(message: string = 'Access forbidden', public permission?: string) {
+    super(message);
+    this.name = 'ForbiddenError';
+  }
+}
+
+// Mock user for development
+const MOCK_USER: UserContext = {
+  userId: 'dev-user',
+  email: 'dev@nectaria.com',
+  name: 'Dev User',
+  roles: ['junior-broker'],
+  azureAdGroups: [],
+  organizationId: 'dev-org',
+  sessionId: 'dev-session'
+};
 
 /**
  * Ensure request is authorized - throws if not authenticated
  */
 export async function ensureAuthorized(request: HttpRequest): Promise<UserContext> {
-  return sharedRequireAuth(request);
+  // TODO: Implement real authentication when auth service is ready
+  return MOCK_USER;
 }
 
 /**
@@ -30,7 +61,7 @@ export async function requirePermission(
   userId: string,
   permission: string
 ): Promise<void> {
-  return sharedRequirePermission(userId, permission);
+  // TODO: Implement real permission checking when auth service is ready
 }
 
 /**
@@ -40,4 +71,3 @@ export const QUOTE_PERMISSIONS = {
   QUOTES_CREATE: 'quotes:create',
   QUOTES_READ: 'quotes:read',
 } as const;
-

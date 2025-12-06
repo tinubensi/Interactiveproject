@@ -10,7 +10,7 @@ src/*/.env
 src/*/.env.*
 src/*/dist/
 src/*/build/
-src/*/.gitignore
+# src/*/.gitignore
 src/*/package-lock.json
 src/*/yarn.lock
 src/*/logs/
