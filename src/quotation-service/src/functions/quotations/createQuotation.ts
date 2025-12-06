@@ -178,7 +178,7 @@ async function fetchPlansFromPlanService(planIds: string[], leadId: string): Pro
       const response = await fetch(`${QUOTATION_GEN_SERVICE_URL}/plans/${planId}?leadId=${leadId}`);
       
       if (response.ok) {
-        const result = await response.json() as { success: boolean; data?: { plan: any } };
+        const result = await response.json() as { success?: boolean; data?: { plan?: any } };
         if (result.success && result.data?.plan) {
           plans.push(result.data.plan);
         }

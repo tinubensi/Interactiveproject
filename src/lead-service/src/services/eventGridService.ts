@@ -72,10 +72,8 @@ class EventGridService {
       console.log(`Event published: ${eventType} for ${subject}`);
     } catch (error) {
       console.error(`Failed to publish event ${eventType}:`, error);
-      // Don't throw in local development
-      if (this.topicEndpoint && !this.topicEndpoint.includes('localhost')) {
-        throw error;
-      }
+      // Throw error so callers can implement fallback logic
+      throw error;
     }
   }
 
