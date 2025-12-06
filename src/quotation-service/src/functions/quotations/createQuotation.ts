@@ -23,7 +23,7 @@ export async function createQuotation(
 
   try {
     const userContext = await ensureAuthorized(request);
-    await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTES_CREATE);
+    await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTATIONS_CREATE);
     const body: CreateQuotationRequest = await request.json() as CreateQuotationRequest;
 
     if (!body.leadId || !body.customerId || !body.planIds || body.planIds.length === 0) {
