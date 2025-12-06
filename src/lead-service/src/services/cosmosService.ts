@@ -508,10 +508,13 @@ class CosmosService {
     const createdPlans: Plan[] = [];
     for (const plan of plans) {
       try {
+        console.log(`Creating plan ${plan.id} with leadId: ${plan.leadId}`);
         const created = await this.createPlan(plan);
         createdPlans.push(created);
-      } catch (error) {
+        console.log(`Successfully created plan ${created.id}`);
+      } catch (error: any) {
         console.error(`Error creating plan ${plan.id}:`, error);
+        console.error(`Plan data:`, JSON.stringify({id: plan.id, leadId: plan.leadId, vendorName: plan.vendorName}));
       }
     }
     return createdPlans;

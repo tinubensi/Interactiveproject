@@ -317,6 +317,7 @@ export interface UpdateLeadRequest {
   };
   emirate?: string;
   lobData?: any; // Partial update of LOB data
+  formData?: any; // Form data to update (synced with lobData)
   assignedTo?: string;
   ambassador?: any;
   agent?: any;
