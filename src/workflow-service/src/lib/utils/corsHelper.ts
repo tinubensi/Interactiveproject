@@ -1,11 +1,19 @@
 import { HttpRequest, HttpResponseInit } from '@azure/functions';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Max-Age': '86400'
-};
+/**
+ * Get CORS headers for a given request
+ * Echoes back the origin header to support credentials
+ */
+export function getCorsHeaders(request: HttpRequest): Record<string, string> {
+  const origin = request.headers.get('origin') || 'http://localhost:3000';
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Max-Age': '86400',
+  };
+}
 
 export const handlePreflight = (
   request: HttpRequest
@@ -13,7 +21,7 @@ export const handlePreflight = (
   if (request.method === 'OPTIONS') {
     return {
       status: 204,
-      headers: corsHeaders
+      headers: getCorsHeaders(request)
     };
   }
   return null;
@@ -22,13 +30,12 @@ export const handlePreflight = (
 /**
  * Wraps an HTTP response with CORS headers
  */
-export const withCors = (response: HttpResponseInit): HttpResponseInit => {
+export const withCors = (request: HttpRequest, response: HttpResponseInit): HttpResponseInit => {
   return {
     ...response,
     headers: {
-      ...corsHeaders,
+      ...getCorsHeaders(request),
       ...response.headers
     }
   };
 };
-

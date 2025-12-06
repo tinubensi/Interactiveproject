@@ -1,9 +1,12 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { ensureAuthorized, requirePermission, CUSTOMER_PERMISSIONS } from '../../lib/auth';
 
 const POLICY_SERVICE_URL = process.env.POLICY_SERVICE_URL || 'http://localhost:7071/api';
 
 export async function getPolicies(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, CUSTOMER_PERMISSIONS.POLICIES_READ);
     const id = request.params.id;
 
     if (!id) {

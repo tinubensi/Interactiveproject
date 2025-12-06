@@ -4,7 +4,7 @@ import { updatePortal } from '../../lib/portalRepository';
 import { getPortal } from '../../lib/portalRepository';
 import { jsonResponse, handleError } from '../../lib/httpResponses';
 import { FieldMapping } from '../../models/portalTypes';
-import { ensureAuthorized } from '../../lib/auth';
+import { ensureAuthorized, requirePermission, FORM_PERMISSIONS } from '../../lib/auth';
 import { handlePreflight } from '../../lib/corsHelper';
 
 const resolveUnmappedFieldHandler = async (
@@ -15,7 +15,9 @@ const resolveUnmappedFieldHandler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, FORM_PERMISSIONS.FORMS_MANAGE);
+
     const fieldId = request.params.fieldId;
     if (!fieldId) {
       return jsonResponse(400, { error: 'fieldId is required' });
@@ -31,8 +33,8 @@ const resolveUnmappedFieldHandler = async (
       return jsonResponse(400, { error: 'portalId and resolvedMapping are required' });
     }
 
-    // Get user from auth token (simplified)
-    const resolvedBy = 'system'; // TODO: Extract from auth token
+    // Get user from auth token
+    const resolvedBy = userContext.userId;
 
     context.log('Resolving unmapped field', { fieldId, portalId: body.portalId });
 

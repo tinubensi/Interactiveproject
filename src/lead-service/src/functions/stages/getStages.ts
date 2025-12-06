@@ -5,12 +5,15 @@
 
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { cosmosService } from '../../services/cosmosService';
+import { ensureAuthorized, requirePermission, LEAD_PERMISSIONS } from '../../lib/auth';
 
 export async function getStages(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, LEAD_PERMISSIONS.LEADS_READ);
     const lineOfBusiness = request.query.get('lineOfBusiness');
 
     let stages;

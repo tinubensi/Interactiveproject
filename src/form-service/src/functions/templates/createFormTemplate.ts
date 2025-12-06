@@ -3,7 +3,7 @@ import { createFormTemplate } from '../../lib/formDefinitionRepository';
 import { jsonResponse, handleError } from '../../lib/httpResponses';
 import { validateFormTemplate } from '../../lib/validation';
 import { FormTemplate } from '../../models/formTypes';
-import { ensureAuthorized } from '../../lib/auth';
+import { ensureAuthorized, requirePermission, FORM_PERMISSIONS } from '../../lib/auth';
 import { handlePreflight } from '../../lib/corsHelper';
 
 type TemplatePayload = Partial<FormTemplate>;
@@ -16,7 +16,8 @@ const createTemplate = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, FORM_PERMISSIONS.FORMS_CREATE);
     const body = (await request.json()) as TemplatePayload;
     context.log('Creating template', {
       name: body.name,

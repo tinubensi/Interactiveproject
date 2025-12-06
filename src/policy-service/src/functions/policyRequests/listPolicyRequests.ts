@@ -5,12 +5,15 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { cosmosService } from '../../services/cosmosService';
 import { PolicyRequestListRequest } from '../../models/policy';
+import { ensureAuthorized, requirePermission, POLICY_PERMISSIONS } from '../../lib/auth';
 
 export async function listPolicyRequests(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, POLICY_PERMISSIONS.POLICIES_READ);
     const body: PolicyRequestListRequest = await request.json() as PolicyRequestListRequest;
 
     const listRequest: PolicyRequestListRequest = {

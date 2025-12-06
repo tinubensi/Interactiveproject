@@ -24,12 +24,12 @@ export async function getWorkflowAnalyticsHandler(
     const workflowId = request.params.workflowId;
 
     if (!workflowId) {
-      return withCors(badRequestResponse('Workflow ID is required'));
+      return withCors(request, badRequestResponse('Workflow ID is required', undefined, request));
     }
 
     const periodParam = request.query.get('period') || 'week';
     if (!['day', 'week', 'month'].includes(periodParam)) {
-      return withCors(badRequestResponse('Invalid period. Must be day, week, or month'));
+      return withCors(request, badRequestResponse('Invalid period. Must be day, week, or month', undefined, request));
     }
 
     const period = periodParam as AnalyticsPeriod;
@@ -44,13 +44,13 @@ export async function getWorkflowAnalyticsHandler(
 
     telemetry?.trackMetric('analytics.workflow.duration', Date.now() - startTime);
 
-    return withCors(successResponse(analytics));
+    return withCors(request, successResponse(analytics, request));
   } catch (error) {
     telemetry?.trackException(error as Error, {
       operation: 'getWorkflowAnalytics',
       workflowId: request.params.workflowId,
     });
-    return withCors(handleError(error));
+    return withCors(request, handleError(error, request));
   }
 }
 

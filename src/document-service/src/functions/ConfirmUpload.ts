@@ -2,7 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { CosmosService } from '../services/CosmosService';
 import { EventGridService } from '../services/EventGridService';
 import { ConfirmUploadRequest } from '../models/Document';
-import { CustomerDocumentUploadedEvent } from '../models/Events';
+import { CustomerDocumentUploadedEvent, PipelineDocumentUploadedEvent } from '../models/Events';
 import {
   parseJsonBody,
   badRequest,
@@ -10,6 +10,7 @@ import {
   success,
   internalServerError,
 } from '../utils/httpHelpers';
+import { ensureAuthorized, requirePermission, DOCUMENT_PERMISSIONS } from '../lib/auth';
 
 /**
  * POST /api/documents/{docId}/confirm-upload
@@ -23,6 +24,8 @@ export async function confirmUpload(
   context.log('Processing ConfirmUpload request');
 
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, DOCUMENT_PERMISSIONS.DOCUMENTS_UPLOAD);
     // Extract docId from route parameters
     const docId = request.params.docId;
     if (!docId) {
@@ -67,6 +70,20 @@ export async function confirmUpload(
 
     await eventGridService.publishDocumentUploadedEvent(uploadEvent);
     context.log(`Published CustomerDocumentUploadedEvent for ${docId}`);
+
+    // If leadId is provided, also publish pipeline event
+    const leadId = request.query.get('leadId');
+    if (leadId) {
+      const pipelineEvent: PipelineDocumentUploadedEvent = {
+        documentId: document.id,
+        leadId,
+        customerId: document.customerId,
+        documentType: document.documentType,
+        uploadedAt: new Date().toISOString(),
+      };
+      await eventGridService.publishPipelineDocumentUploadedEvent(pipelineEvent);
+      context.log(`Published document.uploaded event for lead ${leadId}`);
+    }
 
     return success({
       message: 'Document upload confirmed',

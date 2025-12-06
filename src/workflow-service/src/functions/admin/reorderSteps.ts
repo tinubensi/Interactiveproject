@@ -10,7 +10,7 @@ import {
   handleError,
   badRequestResponse
 } from '../../lib/utils/httpResponses';
-import { ensureAuthorized } from '../../lib/utils/auth';
+import { ensureAuthorized, requirePermission, WORKFLOW_PERMISSIONS } from '../../lib/utils/auth';
 import { handlePreflight } from '../../lib/utils/corsHelper';
 import { ReorderStepsRequest } from '../../models/workflowTypes';
 
@@ -22,16 +22,17 @@ const handler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    const userContext = ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, WORKFLOW_PERMISSIONS.WORKFLOWS_UPDATE);
 
     const workflowId = request.params.workflowId;
     if (!workflowId) {
-      return badRequestResponse('Workflow ID is required');
+      return badRequestResponse('Workflow ID is required', undefined, request);
     }
 
     const body = (await request.json()) as ReorderStepsRequest;
     if (!body.stepOrder || !Array.isArray(body.stepOrder)) {
-      return badRequestResponse('stepOrder array is required');
+      return badRequestResponse('stepOrder array is required', undefined, request);
     }
 
     context.log('Reordering steps', { workflowId, count: body.stepOrder.length });
@@ -39,10 +40,10 @@ const handler = async (
     const workflow = await reorderSteps(workflowId, body, userContext.userId);
 
     context.log(`Reordered steps in workflow ${workflowId}`);
-    return successResponse(workflow);
+    return successResponse(workflow, request);
   } catch (error) {
     context.error('Error reordering steps', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

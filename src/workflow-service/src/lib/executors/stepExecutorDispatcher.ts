@@ -34,6 +34,11 @@ import {
   executeScript,
   scriptResultToStepResult
 } from './scriptExecutor';
+import {
+  executeInsuranceAction,
+  isInsuranceActionType,
+  InsuranceExecutionContext
+} from './insuranceExecutor';
 
 /**
  * Execute a single workflow step
@@ -61,7 +66,7 @@ export const executeStep = async (
   try {
     switch (step.type) {
       case 'action':
-        return await executeActionStep(step, exprContext);
+        return await executeActionStep(step, exprContext, executionContext);
 
       case 'decision':
         return executeDecisionStep(step, exprContext);
@@ -125,7 +130,8 @@ export const executeStep = async (
  */
 const executeActionStep = async (
   step: WorkflowStep,
-  context: ExpressionContext
+  context: ExpressionContext,
+  executionContext: ExecutionContext
 ): Promise<StepResult> => {
   if (!step.action) {
     return {
@@ -214,6 +220,28 @@ const executeActionStep = async (
       };
 
     default:
+      // Check if it's an insurance-specific action
+      if (isInsuranceActionType(actionType)) {
+        // Build insurance execution context for progress tracking
+        const insuranceExecContext: InsuranceExecutionContext = {
+          instanceId: executionContext.instanceId,
+          leadId: executionContext.variables.leadId as string | undefined
+        };
+
+        const insuranceResult = await executeInsuranceAction(
+          actionType,
+          config,
+          context,
+          insuranceExecContext
+        );
+        if (step.action.outputVariable && insuranceResult.output) {
+          insuranceResult.variableUpdates = {
+            [step.action.outputVariable]: insuranceResult.output
+          };
+        }
+        return insuranceResult;
+      }
+
       return {
         success: false,
         error: {

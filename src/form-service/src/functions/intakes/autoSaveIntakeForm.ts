@@ -7,7 +7,7 @@ import {
 import { jsonResponse, handleError } from '../../lib/httpResponses';
 import { validateFormIntake } from '../../lib/validation';
 import { FormIntake } from '../../models/formTypes';
-import { ensureAuthorized } from '../../lib/auth';
+import { ensureAuthorized, requirePermission, FORM_PERMISSIONS } from '../../lib/auth';
 import { handlePreflight } from '../../lib/corsHelper';
 
 const autoSaveIntake = async (
@@ -18,7 +18,8 @@ const autoSaveIntake = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, FORM_PERMISSIONS.FORMS_SUBMIT);
     const body = (await request.json()) as Partial<FormIntake>;
     context.log('Autosaving intake', { intakeId: body.intakeId });
     if (!body.templateId || !body.insuranceLine) {

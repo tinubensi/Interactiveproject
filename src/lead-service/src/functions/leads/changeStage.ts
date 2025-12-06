@@ -7,6 +7,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { v4 as uuidv4 } from 'uuid';
 import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
+import { ensureAuthorized, requirePermission, LEAD_PERMISSIONS } from '../../lib/auth';
 
 interface ChangeStageRequest {
   stageId: number;
@@ -19,6 +20,8 @@ export async function changeStage(
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, LEAD_PERMISSIONS.LEADS_UPDATE);
     const id = request.params.id;
     const lineOfBusiness = request.query.get('lineOfBusiness');
     const body: ChangeStageRequest = await request.json() as ChangeStageRequest;
