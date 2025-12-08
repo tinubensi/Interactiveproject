@@ -63,6 +63,27 @@ import {
 } from '../constants/predefined';
 
 // =============================================================================
+// Stage Mapping Constants
+// =============================================================================
+
+/**
+ * Map Pipeline Service stage names to Lead Service stage IDs
+ * This ensures correct stage IDs are sent to Lead Service API
+ */
+const STAGE_NAME_TO_LEAD_SERVICE_ID: Record<string, string> = {
+  'Plans Fetching': 'stage-1',
+  'Plans Available': 'stage-2',
+  'Quotation Created': 'stage-3',
+  'Quotation Sent': 'stage-4',
+  'Pending Review': 'stage-5',
+  'Policy Issued': 'stage-6',
+  'Rejected': 'stage-7',
+  'Lost': 'stage-8',
+  // Note: 'Lead Created', 'Approved', 'Policy Requested', 'Cancelled'
+  // don't have direct mappings in Lead Service
+};
+
+// =============================================================================
 // Types
 // =============================================================================
 
@@ -353,9 +374,28 @@ async function executeStageStep(
 ): Promise<void> {
   log(`Updating lead ${instance.leadId} to stage ${step.stageName}`);
 
-  // Map our predefined stage ID to the Lead Service's stage ID format
-  const stageDefinition = getStageById(step.stageId);
-  const leadServiceStageId = `stage-${stageDefinition?.order || 1}`;
+  // Map pipeline stage name to Lead Service stage ID
+  const leadServiceStageId = STAGE_NAME_TO_LEAD_SERVICE_ID[step.stageName];
+
+  if (!leadServiceStageId) {
+    log(`Warning: No Lead Service stage ID mapping found for stage "${step.stageName}" (stageId: ${step.stageId}). Using fallback.`);
+    // Fallback: try to get from stage definition order (for unmapped stages)
+    const stageDefinition = getStageById(step.stageId);
+    const fallbackId = `stage-${stageDefinition?.order || 1}`;
+    log(`Warning: Using fallback stage ID: ${fallbackId}`);
+    // Continue with fallback, but log the issue
+    const success = await updateLeadStage(instance.leadId, instance.lineOfBusiness, {
+      stageId: fallbackId,
+      stageName: step.stageName,
+      remark: `Pipeline: ${instance.pipelineName} (unmapped stage)`,
+      changedBy: 'pipeline-service',
+    });
+
+    if (!success) {
+      log(`Warning: Failed to update lead stage for ${instance.leadId}`);
+    }
+    return;
+  }
 
   const success = await updateLeadStage(instance.leadId, instance.lineOfBusiness, {
     stageId: leadServiceStageId,
