@@ -59,16 +59,17 @@ export async function listTemplatesHandler(
     telemetry?.trackMetric('templates.list.duration', Date.now() - startTime);
 
     return withCors(
+      request,
       successResponse({
         templates,
         count: templates.length,
-      })
+      }, request)
     );
   } catch (error) {
     telemetry?.trackException(error as Error, {
       operation: 'listTemplates',
     });
-    return withCors(handleError(error));
+    return withCors(request, handleError(error, request));
   }
 }
 

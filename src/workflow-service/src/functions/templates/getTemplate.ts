@@ -26,7 +26,7 @@ export async function getTemplateHandler(
     const templateId = request.params.templateId;
 
     if (!templateId) {
-      return withCors(badRequestResponse('Template ID is required'));
+      return withCors(request, badRequestResponse('Template ID is required', undefined, request));
     }
 
     const template = await getTemplate(templateId);
@@ -38,17 +38,17 @@ export async function getTemplateHandler(
 
     telemetry?.trackMetric('templates.get.duration', Date.now() - startTime);
 
-    return withCors(successResponse(template));
+    return withCors(request, successResponse(template, request));
   } catch (error) {
     if (error instanceof TemplateNotFoundError) {
-      return withCors(notFoundResponse('Template'));
+      return withCors(request, notFoundResponse('Template', request));
     }
 
     telemetry?.trackException(error as Error, {
       operation: 'getTemplate',
       templateId: request.params.templateId,
     });
-    return withCors(handleError(error));
+    return withCors(request, handleError(error, request));
   }
 }
 

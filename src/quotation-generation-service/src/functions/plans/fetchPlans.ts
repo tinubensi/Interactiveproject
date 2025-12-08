@@ -10,6 +10,7 @@ import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
 import { planFetchingService } from '../../services/planFetchingService';
 import { FetchPlansRequest, PlanFetchRequest } from '../../models/plan';
+import { ensureAuthorized, requirePermission, QUOTE_PERMISSIONS } from '../../lib/auth';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
 
 export async function fetchPlans(
@@ -21,6 +22,8 @@ export async function fetchPlans(
   if (preflightResponse) return preflightResponse;
 
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, QUOTE_PERMISSIONS.QUOTES_CREATE);
     const body: FetchPlansRequest = await request.json() as FetchPlansRequest;
 
     if (!body.leadId || !body.lineOfBusiness) {

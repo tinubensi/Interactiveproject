@@ -1,10 +1,13 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { cosmosService } from '../../services/cosmosService';
+import { ensureAuthorized, requirePermission, CUSTOMER_PERMISSIONS } from '../../lib/auth';
 
 export async function listCustomers(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   context.log('HTTP trigger function processed a request to list customers.');
 
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, CUSTOMER_PERMISSIONS.CUSTOMERS_READ);
     // Get query parameters for pagination (optional)
     const limit = request.query.get('limit') || '100';
     const offset = request.query.get('offset') || '0';

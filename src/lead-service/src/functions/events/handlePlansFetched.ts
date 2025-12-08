@@ -2,11 +2,16 @@
  * Handle Plans Fetched Event
  * Updates lead status and saves plans when fetched
  * Listens to plans.fetch_completed event from Quotation Generation Service
+ * 
+ * NOTE: If a pipeline is active for this lead, the Pipeline Service
+ * handles stage changes. This handler only saves plans and falls back
+ * to hardcoded stage change when no pipeline is active.
  */
 
 import { app, InvocationContext } from '@azure/functions';
 import { v4 as uuidv4 } from 'uuid';
 import { cosmosService, Plan } from '../../services/cosmosService';
+import { isLeadManagedByPipeline } from '../../services/pipelineServiceClient';
 
 interface PlansFetchedEvent {
   id: string;
@@ -99,7 +104,7 @@ export async function handlePlansFetched(
 
     const lead = leads[0];
 
-    // Save plans to Lead Service DB
+    // Save plans to Lead Service DB (always do this regardless of pipeline)
     if (eventData.plans && eventData.plans.length > 0) {
       try {
         // First, delete any existing plans for this lead (in case of re-fetch)
@@ -113,6 +118,22 @@ export async function handlePlansFetched(
         // Continue to update status even if plan saving fails
       }
     }
+
+    // Check if this lead is managed by a pipeline
+    const hasPipeline = await isLeadManagedByPipeline(data.leadId);
+    if (hasPipeline) {
+      context.log(`Lead ${data.leadId} is managed by pipeline - skipping hardcoded stage change`);
+      // Still update plan count but don't change stage
+      await cosmosService.updateLead(data.leadId, lead.lineOfBusiness, {
+        planFetchRequestId: data.fetchRequestId,
+        plansCount: data.plans?.length || data.totalPlans,
+        updatedAt: new Date()
+      });
+      return;
+    }
+
+    // Fallback: No pipeline active - use hardcoded stage change
+    context.log(`Lead ${data.leadId} has no active pipeline - using hardcoded stage change`);
 
     // Update lead status to "Plans Available"
     try {

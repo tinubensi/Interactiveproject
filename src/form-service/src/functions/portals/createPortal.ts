@@ -2,7 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { createPortal } from '../../lib/portalRepository';
 import { jsonResponse, handleError } from '../../lib/httpResponses';
 import { PortalDefinition } from '../../models/portalTypes';
-import { ensureAuthorized } from '../../lib/auth';
+import { ensureAuthorized, requirePermission, FORM_PERMISSIONS } from '../../lib/auth';
 import { handlePreflight } from '../../lib/corsHelper';
 
 const createPortalHandler = async (
@@ -13,7 +13,8 @@ const createPortalHandler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, FORM_PERMISSIONS.FORMS_CREATE);
     const body = (await request.json()) as Omit<PortalDefinition, 'createdAt' | 'updatedAt'>;
 
     if (!body.portalId || !body.name) {

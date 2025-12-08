@@ -11,7 +11,7 @@ import {
   badRequestResponse
 } from '../../lib/utils/httpResponses';
 import { validateAddStepRequest } from '../../lib/validation';
-import { ensureAuthorized } from '../../lib/utils/auth';
+import { ensureAuthorized, requirePermission, WORKFLOW_PERMISSIONS } from '../../lib/utils/auth';
 import { handlePreflight } from '../../lib/utils/corsHelper';
 import { AddStepRequest } from '../../models/workflowTypes';
 
@@ -23,11 +23,12 @@ const handler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    const userContext = ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, WORKFLOW_PERMISSIONS.WORKFLOWS_UPDATE);
 
     const workflowId = request.params.workflowId;
     if (!workflowId) {
-      return badRequestResponse('Workflow ID is required');
+      return badRequestResponse('Workflow ID is required', undefined, request);
     }
 
     const body = (await request.json()) as AddStepRequest;
@@ -37,10 +38,10 @@ const handler = async (
     const workflow = await addStep(workflowId, validatedRequest, userContext.userId);
 
     context.log(`Added step to workflow ${workflowId}`);
-    return createdResponse(workflow);
+    return createdResponse(workflow, request);
   } catch (error) {
     context.error('Error adding step', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

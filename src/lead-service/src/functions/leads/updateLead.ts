@@ -11,6 +11,7 @@ import { eventGridService } from '../../services/eventGridService';
 import { validateUpdateLeadRequest, sanitizeInput } from '../../utils/validation';
 import { UpdateLeadRequest } from '../../models/lead';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
+import { ensureAuthorized, requirePermission, LEAD_PERMISSIONS } from '../../lib/auth';
 
 export async function updateLead(
   request: HttpRequest,
@@ -21,6 +22,8 @@ export async function updateLead(
   if (preflightResponse) return preflightResponse;
 
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, LEAD_PERMISSIONS.LEADS_UPDATE);
     const id = request.params.id;
     const lineOfBusiness = request.query.get('lineOfBusiness');
     

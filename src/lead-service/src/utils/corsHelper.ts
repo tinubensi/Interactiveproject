@@ -17,6 +17,7 @@ const ALLOWED_ORIGINS = [
  * Get CORS headers for a given request
  */
 export function getCorsHeaders(request: HttpRequest): Record<string, string> {
+<<<<<<< HEAD
   const requestOrigin = request.headers.get('origin');
 
   // If no origin header, check referer as fallback (for same-origin requests that might be proxied)
@@ -50,8 +51,12 @@ export function getCorsHeaders(request: HttpRequest): Record<string, string> {
   // Use the origin if it's allowed or localhost, otherwise use the first allowed origin
   const allowedOrigin = (isAllowed || isLocalhost) ? origin : ALLOWED_ORIGINS[0];
 
+=======
+  const origin = request.headers.get('origin') || 'http://localhost:3000';
+
+>>>>>>> feat/auth
   return {
-    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-ms-client-request-id',
     'Access-Control-Allow-Credentials': 'true',

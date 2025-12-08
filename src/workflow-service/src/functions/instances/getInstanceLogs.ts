@@ -14,7 +14,7 @@ import {
   badRequestResponse,
   notFoundResponse
 } from '../../lib/utils/httpResponses';
-import { ensureAuthorized } from '../../lib/utils/auth';
+import { ensureAuthorized, requirePermission, WORKFLOW_PERMISSIONS } from '../../lib/utils/auth';
 import { handlePreflight } from '../../lib/utils/corsHelper';
 
 const handler = async (
@@ -25,11 +25,12 @@ const handler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, WORKFLOW_PERMISSIONS.WORKFLOWS_READ);
 
     const instanceId = request.params.instanceId;
     if (!instanceId) {
-      return badRequestResponse('Instance ID is required');
+      return badRequestResponse('Instance ID is required', undefined, request);
     }
 
     context.log('Getting instance logs', { instanceId });
@@ -40,13 +41,13 @@ const handler = async (
       instanceId,
       logs,
       count: logs.length
-    });
+    }, request);
   } catch (error) {
     if (error instanceof InstanceNotFoundError) {
-      return notFoundResponse('Workflow instance');
+      return notFoundResponse('Workflow instance', request);
     }
     context.error('Error getting instance logs', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

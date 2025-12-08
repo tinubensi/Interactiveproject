@@ -126,6 +126,23 @@ export async function selectPlan(
 
     context.log('Quotation updated to pending_approval status');
 
+    // Publish customer.responded event for pipeline to advance
+    try {
+      await eventGridService.publishEvent('customer.responded', `quotation/${quotation.id}`, {
+        leadId: quotation.leadId,
+        quotationId: quotation.id,
+        referenceId: quotation.referenceId,
+        responseType: 'plan_selected',
+        lineOfBusiness: quotation.lineOfBusiness,
+        selectedPlanId: selectedPlan.id,
+        selectedPlanName: selectedPlan.planName,
+        selectedAt: new Date().toISOString(),
+      });
+      context.log('Published customer.responded event (plan_selected)');
+    } catch (eventError) {
+      context.warn('Failed to publish customer.responded event:', eventError);
+    }
+
     // Publish event for pending approval
     try {
       await eventGridService.publishQuotationPendingApproval({

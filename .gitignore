@@ -1,3 +1,7 @@
+# Ignore general node modules and environment files
+node_modules/
+.env
+.env.*
 logs/
 
 # Ignore build and log files in all service subfolders inside src/

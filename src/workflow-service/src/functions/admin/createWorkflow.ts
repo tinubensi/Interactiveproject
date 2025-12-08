@@ -10,9 +10,10 @@ import {
   handleError
 } from '../../lib/utils/httpResponses';
 import { validateCreateWorkflowRequest } from '../../lib/validation';
-import { ensureAuthorized } from '../../lib/utils/auth';
+import { ensureAuthorized, requirePermission, WORKFLOW_PERMISSIONS } from '../../lib/utils/auth';
 import { handlePreflight } from '../../lib/utils/corsHelper';
 import { CreateWorkflowRequest } from '../../models/workflowTypes';
+import { logWorkflowCreated } from '../../lib/auditClient';
 
 const handler = async (
   request: HttpRequest,
@@ -22,7 +23,9 @@ const handler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    const userContext = ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, WORKFLOW_PERMISSIONS.WORKFLOWS_CREATE);
+
     const body = (await request.json()) as CreateWorkflowRequest;
 
     context.log('Creating workflow', { name: body.name });
@@ -30,11 +33,14 @@ const handler = async (
     const validatedRequest = validateCreateWorkflowRequest(body);
     const workflow = await createWorkflow(validatedRequest, userContext.userId);
 
+    // Log audit event
+    await logWorkflowCreated(workflow.workflowId, workflow.name, userContext);
+
     context.log(`Created workflow ${workflow.workflowId}`);
-    return createdResponse(workflow);
+    return createdResponse(workflow, request);
   } catch (error) {
     context.error('Error creating workflow', error);
-    return handleError(error);
+    return handleError(error, request);
   }
 };
 

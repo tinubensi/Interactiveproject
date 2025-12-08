@@ -24,6 +24,10 @@
       "maxConcurrentActivityFunctions": 10,
       "maxConcurrentOrchestratorFunctions": 5
     }
+  },
+  "cors": {
+    "allowedOrigins": ["http://localhost:3000"],
+    "supportCredentials": true
   }
 }
 

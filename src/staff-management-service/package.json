@@ -1,0 +1,35 @@
+{
+  "name": "staff-management-service",
+  "version": "1.0.0",
+  "description": "Nectaria Staff Management Service - Staff profiles, teams, territories, workload tracking",
+  "main": "dist/src/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "clean": "rimraf dist",
+    "prestart": "npm run build",
+    "start": "func start",
+    "pretest": "npm run build",
+    "test": "node --test --experimental-test-coverage dist/src/tests/**/*.test.js",
+    "test:watch": "tsc -w & node --test --watch dist/src/tests/**/*.test.js",
+    "seed:territories": "node dist/scripts/seedTerritories.js"
+  },
+  "dependencies": {
+    "@azure/cosmos": "^4.2.0",
+    "@azure/functions": "^4.5.1",
+    "@azure/eventgrid": "^5.5.1",
+    "@nectaria/shared-types": "file:../../../packages/@nectaria/shared-types",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@types/uuid": "^10.0.0",
+    "azure-functions-core-tools": "^4.x",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
+

@@ -1221,6 +1221,918 @@ This workflow automates the new business process from intake form submission to 
   },
 ];
 
+// ============================================================================
+// NECTARIA PET/MEDICAL INSURANCE TEMPLATES
+// ============================================================================
+
+export const PET_INSURANCE_TEMPLATES: SeedTemplate[] = [
+  // ============================================================================
+  // STANDARD PET INSURANCE LEAD FLOW
+  // ============================================================================
+  {
+    templateId: 'tpl-pet-insurance-flow',
+    name: 'Standard Pet Insurance Lead Flow',
+    description:
+      'Complete pet insurance workflow from lead creation to policy issuance. Includes automatic plan fetching, quotation generation, and customer follow-ups.',
+    category: 'lead-flow',
+    tags: ['pet-insurance', 'medical', 'lead', 'quotation', 'policy', 'automation'],
+    baseWorkflow: {
+      triggers: [
+        {
+          id: 'lead-created-trigger',
+          type: 'event',
+          config: {
+            eventType: 'lead.created',
+            eventFilter: 'data.lineOfBusiness == "medical"',
+            extractVariables: {
+              leadId: '$.data.leadId',
+              referenceId: '$.data.referenceId',
+              customerId: '$.data.customerId',
+              email: '$.data.email',
+              firstName: '$.data.firstName',
+              lineOfBusiness: '$.data.lineOfBusiness',
+              lobData: '$.data.lobData',
+            },
+          },
+          isActive: true,
+        },
+      ],
+      steps: [
+        // Step 1: Initialize workflow
+        {
+          id: 'step-init',
+          name: 'Initialize Lead Flow',
+          type: 'setVariable',
+          order: 1,
+          setVariables: {
+            workflowStartedAt: '{{fn.now()}}',
+            currentStage: 'Plans Fetching',
+          },
+        },
+        // Step 2: Wait for plans to be fetched
+        {
+          id: 'step-wait-plans',
+          name: 'Wait for Plans',
+          type: 'wait',
+          order: 2,
+          waitConfig: {
+            type: 'event',
+            eventType: 'plans.fetch_completed',
+            eventFilter: 'data.leadId == "{{$.leadId}}"',
+            extractVariables: {
+              plansCount: '$.data.totalPlans',
+              fetchRequestId: '$.data.fetchRequestId',
+            },
+          },
+          timeout: 300, // 5 minutes
+        },
+        // Step 3: Check if plans are available
+        {
+          id: 'step-check-plans',
+          name: 'Check Plans Availability',
+          type: 'decision',
+          order: 3,
+          conditions: [
+            {
+              targetStepId: 'step-no-plans',
+              condition: {
+                left: '$.plansCount',
+                operator: 'eq',
+                right: 0,
+              },
+            },
+            {
+              targetStepId: 'step-change-to-plans-available',
+              isDefault: true,
+            },
+          ],
+        },
+        // Step 4: Change stage to Plans Available
+        {
+          id: 'step-change-to-plans-available',
+          name: 'Move to Plans Available',
+          type: 'action',
+          order: 4,
+          action: {
+            type: 'change_lead_stage',
+            config: {
+              stageId: 'stage-2',
+              stageName: 'Plans Available',
+              remark: 'Plans fetched successfully',
+            },
+          },
+        },
+        // Step 5: Create quotation
+        {
+          id: 'step-create-quotation',
+          name: 'Create Quotation',
+          type: 'action',
+          order: 5,
+          action: {
+            type: 'create_quotation',
+            config: {
+              planSelectionStrategy: 'best-value',
+              maxPlans: 5,
+              validityDays: 30,
+              autoSelectRecommended: true,
+            },
+            outputVariable: 'quotation',
+          },
+        },
+        // Step 6: Change stage to Quotation Created
+        {
+          id: 'step-change-to-quotation-created',
+          name: 'Move to Quotation Created',
+          type: 'action',
+          order: 6,
+          action: {
+            type: 'change_lead_stage',
+            config: {
+              stageId: 'stage-3',
+              stageName: 'Quotation Created',
+              remark: 'Quotation generated with {{$.quotation.planCount}} plans',
+            },
+          },
+        },
+        // Step 7: Send quotation to customer
+        {
+          id: 'step-send-quotation',
+          name: 'Send Quotation to Customer',
+          type: 'action',
+          order: 7,
+          action: {
+            type: 'send_quotation',
+            config: {
+              recipient: '{{$.email}}',
+              template: 'quotation-email',
+              generatePdf: true,
+              includeComparison: true,
+              trackOpens: true,
+            },
+          },
+        },
+        // Step 8: Change stage to Quotation Sent
+        {
+          id: 'step-change-to-quotation-sent',
+          name: 'Move to Quotation Sent',
+          type: 'action',
+          order: 8,
+          action: {
+            type: 'change_lead_stage',
+            config: {
+              stageId: 'stage-4',
+              stageName: 'Quotation Sent',
+            },
+          },
+        },
+        // Step 9: Wait for customer response (3 days)
+        {
+          id: 'step-wait-customer',
+          name: 'Wait for Customer Response',
+          type: 'wait',
+          order: 9,
+          waitConfig: {
+            type: 'event',
+            eventType: 'quotation.plan_selected',
+            eventFilter: 'data.leadId == "{{$.leadId}}"',
+            extractVariables: {
+              selectedPlanId: '$.data.selectedPlanId',
+            },
+          },
+          timeout: 259200, // 3 days
+        },
+        // Step 10: Send reminder if no response
+        {
+          id: 'step-send-reminder',
+          name: 'Send Reminder',
+          type: 'action',
+          order: 10,
+          action: {
+            type: 'send_notification',
+            config: {
+              channel: 'email',
+              template: 'quote-reminder',
+              to: '{{$.email}}',
+              subject: 'Your Pet Insurance Quote is Waiting!',
+              data: {
+                firstName: '{{$.firstName}}',
+                quotationId: '{{$.quotation.id}}',
+              },
+            },
+          },
+        },
+        // Step 11: Wait another 3 days
+        {
+          id: 'step-wait-final',
+          name: 'Final Wait for Response',
+          type: 'wait',
+          order: 11,
+          waitConfig: {
+            type: 'event',
+            eventType: 'quotation.plan_selected',
+            eventFilter: 'data.leadId == "{{$.leadId}}"',
+            extractVariables: {
+              selectedPlanId: '$.data.selectedPlanId',
+            },
+          },
+          timeout: 259200, // 3 more days
+        },
+        // Step 12: Check if customer responded
+        {
+          id: 'step-check-response',
+          name: 'Check Customer Response',
+          type: 'decision',
+          order: 12,
+          conditions: [
+            {
+              targetStepId: 'step-mark-lost',
+              condition: {
+                left: '$.selectedPlanId',
+                operator: 'notExists',
+                right: true,
+              },
+            },
+            {
+              targetStepId: 'step-change-to-pending-review',
+              isDefault: true,
+            },
+          ],
+        },
+        // Step 13: Move to Pending Review
+        {
+          id: 'step-change-to-pending-review',
+          name: 'Move to Pending Review',
+          type: 'action',
+          order: 13,
+          action: {
+            type: 'change_lead_stage',
+            config: {
+              stageId: 'stage-5',
+              stageName: 'Pending Review',
+            },
+          },
+        },
+        // Step 14: Create policy request
+        {
+          id: 'step-create-policy-request',
+          name: 'Create Policy Request',
+          type: 'action',
+          order: 14,
+          action: {
+            type: 'create_policy_request',
+            config: {
+              useSelectedPlan: true,
+              notifyUnderwriter: true,
+            },
+            outputVariable: 'policyRequest',
+          },
+        },
+        // Step 15: Wait for policy issuance
+        {
+          id: 'step-wait-policy',
+          name: 'Wait for Policy Issuance',
+          type: 'wait',
+          order: 15,
+          waitConfig: {
+            type: 'event',
+            eventType: 'policy.issued',
+            eventFilter: 'data.leadId == "{{$.leadId}}"',
+            extractVariables: {
+              policyId: '$.data.policyId',
+              policyNumber: '$.data.policyNumber',
+            },
+          },
+          timeout: 604800, // 7 days
+        },
+        // Step 16: Move to Policy Issued (Success!)
+        {
+          id: 'step-policy-issued',
+          name: 'Policy Issued Successfully',
+          type: 'action',
+          order: 16,
+          action: {
+            type: 'change_lead_stage',
+            config: {
+              stageId: 'stage-6',
+              stageName: 'Policy Issued',
+              remark: 'Policy {{$.policyNumber}} issued successfully',
+            },
+          },
+        },
+        // Step 17: Send welcome email
+        {
+          id: 'step-welcome-email',
+          name: 'Send Welcome Email',
+          type: 'action',
+          order: 17,
+          action: {
+            type: 'send_notification',
+            config: {
+              channel: 'email',
+              template: 'welcome-email',
+              to: '{{$.email}}',
+              subject: 'Welcome to Pet Insurance - Your Policy is Active!',
+              data: {
+                firstName: '{{$.firstName}}',
+                policyNumber: '{{$.policyNumber}}',
+              },
+            },
+          },
+        },
+        // Alternative paths
+        {
+          id: 'step-no-plans',
+          name: 'Handle No Plans',
+          type: 'action',
+          order: 100,
+          action: {
+            type: 'change_lead_stage',
+            config: {
+              stageId: 'stage-8',
+              stageName: 'Lost',
+              remark: 'No insurance plans available for this profile',
+            },
+          },
+        },
+        {
+          id: 'step-mark-lost',
+          name: 'Mark Lead as Lost',
+          type: 'action',
+          order: 101,
+          action: {
+            type: 'change_lead_stage',
+            config: {
+              stageId: 'stage-8',
+              stageName: 'Lost',
+              remark: 'Customer did not respond within the allowed time',
+            },
+          },
+        },
+      ],
+      variables: {
+        leadId: { type: 'string', required: true },
+        referenceId: { type: 'string' },
+        customerId: { type: 'string', required: true },
+        email: { type: 'string', required: true },
+        firstName: { type: 'string' },
+        lineOfBusiness: { type: 'string', defaultValue: 'medical' },
+        lobData: { type: 'object' },
+        plansCount: { type: 'number', defaultValue: 0 },
+        selectedPlanId: { type: 'string' },
+      },
+      settings: {
+        maxExecutionDurationSeconds: 1209600, // 14 days
+        enableAuditLogging: true,
+        enableMetrics: true,
+      },
+    },
+    requiredVariables: ['leadId', 'customerId', 'email'],
+    isPublic: true,
+    createdBy: 'system',
+    version: 1,
+    documentation: `
+# Standard Pet Insurance Lead Flow
+
+Automates the complete pet insurance journey from lead creation to policy issuance.
+
+## Flow Steps
+1. Lead created → Wait for plans
+2. Plans fetched → Create quotation
+3. Send quotation to customer
+4. Wait for response (with reminder)
+5. Customer selects plan → Create policy request
+6. Policy issued → Send welcome email
+
+## Configurable Parameters
+- Quotation validity (default: 30 days)
+- Wait times for customer response
+- Email templates
+
+## Triggers
+- Event: lead.created (filtered for medical/pet insurance)
+    `,
+  },
+
+  // ============================================================================
+  // HIGH-VALUE QUOTE APPROVAL WORKFLOW
+  // ============================================================================
+  {
+    templateId: 'tpl-high-value-approval',
+    name: 'High-Value Quote Approval',
+    description:
+      'Manager approval workflow for high-value pet insurance quotes. Automatically routes quotes above threshold for manual approval before sending to customer.',
+    category: 'approval',
+    tags: ['pet-insurance', 'approval', 'high-value', 'manager', 'medical'],
+    baseWorkflow: {
+      triggers: [
+        {
+          id: 'quotation-trigger',
+          type: 'event',
+          config: {
+            eventType: 'quotation.created',
+            extractVariables: {
+              quotationId: '$.data.quotationId',
+              leadId: '$.data.leadId',
+              customerId: '$.data.customerId',
+              totalPremium: '$.data.totalPremium',
+              email: '$.data.email',
+            },
+          },
+          isActive: true,
+        },
+      ],
+      steps: [
+        // Step 1: Check premium threshold
+        {
+          id: 'step-check-premium',
+          name: 'Check Premium Threshold',
+          type: 'decision',
+          order: 1,
+          conditions: [
+            {
+              targetStepId: 'step-require-approval',
+              condition: {
+                left: '$.totalPremium',
+                operator: 'gt',
+                right: 10000,
+              },
+            },
+            {
+              targetStepId: 'step-auto-send',
+              isDefault: true,
+            },
+          ],
+        },
+        // Step 2a: Require manager approval
+        {
+          id: 'step-require-approval',
+          name: 'Request Manager Approval',
+          type: 'human',
+          order: 2,
+          humanConfig: {
+            approverRoles: ['manager', 'underwriter'],
+            requiredApprovals: 1,
+            expiresInSeconds: 86400, // 24 hours
+            context: {
+              displayFields: ['quotationId', 'totalPremium', 'email'],
+              instructions: 'High-value quote requires manager approval before sending to customer.',
+            },
+          },
+          transitions: [
+            {
+              targetStepId: 'step-notify-rejection',
+              condition: {
+                left: 'steps.step-require-approval.approvalResult.status',
+                operator: 'eq',
+                right: 'rejected',
+              },
+            },
+            {
+              targetStepId: 'step-send-to-customer',
+              isDefault: true,
+            },
+          ],
+        },
+        // Step 2b: Auto-send for low-value quotes
+        {
+          id: 'step-auto-send',
+          name: 'Auto-Send Quotation',
+          type: 'action',
+          order: 3,
+          action: {
+            type: 'send_quotation',
+            config: {
+              recipient: '{{$.email}}',
+              template: 'quotation-email',
+              generatePdf: true,
+              trackOpens: true,
+            },
+          },
+        },
+        // Step 3: Send to customer (after approval)
+        {
+          id: 'step-send-to-customer',
+          name: 'Send Approved Quotation',
+          type: 'action',
+          order: 4,
+          action: {
+            type: 'send_quotation',
+            config: {
+              recipient: '{{$.email}}',
+              template: 'quotation-email-premium',
+              generatePdf: true,
+              customMessage: 'This quote has been personally reviewed by our team.',
+              trackOpens: true,
+            },
+          },
+        },
+        // Step 4: Notify sales rep of rejection
+        {
+          id: 'step-notify-rejection',
+          name: 'Notify Sales Rep of Rejection',
+          type: 'action',
+          order: 100,
+          action: {
+            type: 'send_notification',
+            config: {
+              channel: 'email',
+              template: 'quote-rejected-internal',
+              to: '{{env.SALES_TEAM_EMAIL}}',
+              subject: 'Quote Rejected - {{$.quotationId}}',
+              data: {
+                quotationId: '{{$.quotationId}}',
+                reason: '{{steps.step-require-approval.approvalResult.comment}}',
+              },
+            },
+          },
+        },
+      ],
+      variables: {
+        quotationId: { type: 'string', required: true },
+        leadId: { type: 'string', required: true },
+        customerId: { type: 'string' },
+        totalPremium: { type: 'number', required: true },
+        email: { type: 'string', required: true },
+      },
+      settings: {
+        maxExecutionDurationSeconds: 172800, // 48 hours
+        enableAuditLogging: true,
+      },
+    },
+    requiredVariables: ['quotationId', 'leadId', 'totalPremium', 'email'],
+    configurationSchema: {
+      type: 'object',
+      properties: {
+        premiumThreshold: {
+          type: 'number',
+          description: 'Minimum premium requiring approval (AED)',
+          default: 10000,
+        },
+        approvalExpirationHours: {
+          type: 'number',
+          description: 'Hours before approval request expires',
+          default: 24,
+        },
+      },
+    },
+    isPublic: true,
+    createdBy: 'system',
+    version: 1,
+  },
+
+  // ============================================================================
+  // FOLLOW-UP AUTOMATION WORKFLOW
+  // ============================================================================
+  {
+    templateId: 'tpl-followup-automation',
+    name: 'Quote Follow-up Automation',
+    description:
+      'Scheduled workflow that finds pending quotes older than 3 days and sends automated reminder emails to customers.',
+    category: 'communication',
+    tags: ['pet-insurance', 'follow-up', 'automation', 'reminder', 'scheduled'],
+    baseWorkflow: {
+      triggers: [
+        {
+          id: 'schedule-trigger',
+          type: 'schedule',
+          config: {
+            cronExpression: '0 9 * * *', // Daily at 9 AM
+            timezone: 'Asia/Dubai',
+          },
+          isActive: true,
+        },
+      ],
+      steps: [
+        // Step 1: Query pending quotes
+        {
+          id: 'step-find-pending',
+          name: 'Find Pending Quotes',
+          type: 'action',
+          order: 1,
+          action: {
+            type: 'cosmos_query',
+            config: {
+              container: 'quotations',
+              query: "SELECT * FROM c WHERE c.status = 'sent' AND c.sentAt < @cutoffDate AND c.lineOfBusiness = 'medical'",
+              parameters: {
+                cutoffDate: '{{fn.addDays(fn.now(), -3)}}',
+              },
+            },
+            outputVariable: 'pendingQuotes',
+          },
+        },
+        // Step 2: Loop through pending quotes
+        {
+          id: 'step-process-quotes',
+          name: 'Process Each Quote',
+          type: 'loop',
+          order: 2,
+          loopConfig: {
+            collection: '{{$.pendingQuotes}}',
+            itemVariable: 'quote',
+            steps: [
+              {
+                id: 'step-send-reminder',
+                name: 'Send Reminder Email',
+                type: 'action',
+                order: 1,
+                action: {
+                  type: 'send_notification',
+                  config: {
+                    channel: 'email',
+                    template: 'quote-reminder',
+                    to: '{{$.quote.customerEmail}}',
+                    subject: 'Don\'t miss out on your pet insurance quote!',
+                    data: {
+                      firstName: '{{$.quote.customerName}}',
+                      quotationId: '{{$.quote.id}}',
+                      validUntil: '{{$.quote.validUntil}}',
+                    },
+                  },
+                },
+              },
+              {
+                id: 'step-log-activity',
+                name: 'Log Reminder Sent',
+                type: 'action',
+                order: 2,
+                action: {
+                  type: 'publish_event',
+                  config: {
+                    eventType: 'quotation.reminder_sent',
+                    subject: 'quotation/{{$.quote.id}}',
+                    data: {
+                      quotationId: '{{$.quote.id}}',
+                      leadId: '{{$.quote.leadId}}',
+                      sentAt: '{{fn.now()}}',
+                    },
+                  },
+                },
+              },
+            ],
+            maxIterations: 100,
+          },
+        },
+        // Step 3: Complete with summary
+        {
+          id: 'step-complete',
+          name: 'Follow-up Complete',
+          type: 'setVariable',
+          order: 3,
+          setVariables: {
+            completedAt: '{{fn.now()}}',
+            processedCount: '{{fn.length($.pendingQuotes)}}',
+          },
+        },
+      ],
+      variables: {
+        pendingQuotes: { type: 'array', defaultValue: [] },
+        processedCount: { type: 'number', defaultValue: 0 },
+      },
+      settings: {
+        maxExecutionDurationSeconds: 3600, // 1 hour
+        enableAuditLogging: true,
+      },
+    },
+    requiredVariables: [],
+    isPublic: true,
+    createdBy: 'system',
+    version: 1,
+  },
+
+  // ============================================================================
+  // NEW LEAD ASSIGNMENT WORKFLOW
+  // ============================================================================
+  {
+    templateId: 'tpl-lead-assignment',
+    name: 'New Lead Auto-Assignment',
+    description:
+      'Automatically assigns new leads to agents based on line of business, sends welcome email, and marks high-value leads.',
+    category: 'lead-flow',
+    tags: ['pet-insurance', 'lead', 'assignment', 'automation', 'welcome'],
+    baseWorkflow: {
+      triggers: [
+        {
+          id: 'lead-trigger',
+          type: 'event',
+          config: {
+            eventType: 'lead.created',
+            extractVariables: {
+              leadId: '$.data.leadId',
+              referenceId: '$.data.referenceId',
+              email: '$.data.email',
+              firstName: '$.data.firstName',
+              lineOfBusiness: '$.data.lineOfBusiness',
+              source: '$.data.source',
+              estimatedPremium: '$.data.estimatedPremium',
+            },
+          },
+          isActive: true,
+        },
+      ],
+      steps: [
+        // Step 1: Determine team based on LOB
+        {
+          id: 'step-check-lob',
+          name: 'Check Line of Business',
+          type: 'decision',
+          order: 1,
+          conditions: [
+            {
+              targetStepId: 'step-assign-pet-team',
+              condition: {
+                left: '$.lineOfBusiness',
+                operator: 'eq',
+                right: 'medical',
+              },
+            },
+            {
+              targetStepId: 'step-assign-motor-team',
+              condition: {
+                left: '$.lineOfBusiness',
+                operator: 'eq',
+                right: 'motor',
+              },
+            },
+            {
+              targetStepId: 'step-assign-general-team',
+              isDefault: true,
+            },
+          ],
+        },
+        // Step 2a: Assign to Pet Insurance Team
+        {
+          id: 'step-assign-pet-team',
+          name: 'Assign to Pet Insurance Team',
+          type: 'action',
+          order: 2,
+          action: {
+            type: 'assign_lead',
+            config: {
+              assignmentStrategy: 'round-robin',
+              teamFilter: 'pet-insurance',
+              notifyAgent: true,
+            },
+            outputVariable: 'assignment',
+          },
+          transitions: [
+            {
+              targetStepId: 'step-check-high-value',
+              isDefault: true,
+            },
+          ],
+        },
+        // Step 2b: Assign to Motor Team
+        {
+          id: 'step-assign-motor-team',
+          name: 'Assign to Motor Team',
+          type: 'action',
+          order: 3,
+          action: {
+            type: 'assign_lead',
+            config: {
+              assignmentStrategy: 'round-robin',
+              teamFilter: 'motor',
+              notifyAgent: true,
+            },
+            outputVariable: 'assignment',
+          },
+          transitions: [
+            {
+              targetStepId: 'step-check-high-value',
+              isDefault: true,
+            },
+          ],
+        },
+        // Step 2c: Assign to General Team
+        {
+          id: 'step-assign-general-team',
+          name: 'Assign to General Team',
+          type: 'action',
+          order: 4,
+          action: {
+            type: 'assign_lead',
+            config: {
+              assignmentStrategy: 'round-robin',
+              teamFilter: 'sales',
+              notifyAgent: true,
+            },
+            outputVariable: 'assignment',
+          },
+          transitions: [
+            {
+              targetStepId: 'step-check-high-value',
+              isDefault: true,
+            },
+          ],
+        },
+        // Step 3: Check if high-value
+        {
+          id: 'step-check-high-value',
+          name: 'Check if High-Value Lead',
+          type: 'decision',
+          order: 5,
+          conditions: [
+            {
+              targetStepId: 'step-mark-hot',
+              condition: {
+                operator: 'or',
+                conditions: [
+                  { left: '$.estimatedPremium', operator: 'gt', right: 10000 },
+                  { left: '$.source', operator: 'eq', right: 'referral' },
+                ],
+              },
+            },
+            {
+              targetStepId: 'step-send-welcome',
+              isDefault: true,
+            },
+          ],
+        },
+        // Step 4: Mark as hot lead
+        {
+          id: 'step-mark-hot',
+          name: 'Mark as Hot Lead',
+          type: 'action',
+          order: 6,
+          action: {
+            type: 'mark_hot_lead',
+            config: {
+              isHotLead: true,
+              notifyManager: true,
+              reason: 'High-value or referral lead',
+            },
+          },
+        },
+        // Step 5: Send welcome email
+        {
+          id: 'step-send-welcome',
+          name: 'Send Welcome Email',
+          type: 'action',
+          order: 7,
+          action: {
+            type: 'send_notification',
+            config: {
+              channel: 'email',
+              template: 'welcome-email',
+              to: '{{$.email}}',
+              subject: 'Welcome to Our Insurance Services!',
+              data: {
+                firstName: '{{$.firstName}}',
+                agentName: '{{$.assignment.agentName}}',
+                agentEmail: '{{$.assignment.agentEmail}}',
+              },
+            },
+          },
+        },
+        // Step 6: Complete
+        {
+          id: 'step-complete',
+          name: 'Assignment Complete',
+          type: 'action',
+          order: 8,
+          action: {
+            type: 'publish_event',
+            config: {
+              eventType: 'lead.assignment_completed',
+              subject: 'lead/{{$.leadId}}',
+              data: {
+                leadId: '{{$.leadId}}',
+                assignedTo: '{{$.assignment.agentId}}',
+                isHotLead: '{{$.isHotLead}}',
+              },
+            },
+          },
+        },
+      ],
+      variables: {
+        leadId: { type: 'string', required: true },
+        referenceId: { type: 'string' },
+        email: { type: 'string', required: true },
+        firstName: { type: 'string' },
+        lineOfBusiness: { type: 'string', required: true },
+        source: { type: 'string' },
+        estimatedPremium: { type: 'number', defaultValue: 0 },
+        isHotLead: { type: 'boolean', defaultValue: false },
+      },
+      settings: {
+        maxExecutionDurationSeconds: 300, // 5 minutes
+        enableAuditLogging: true,
+      },
+    },
+    requiredVariables: ['leadId', 'email', 'lineOfBusiness'],
+    isPublic: true,
+    createdBy: 'system',
+    version: 1,
+  },
+];
+
+// Combine all templates
+export const ALL_TEMPLATES: SeedTemplate[] = [
+  ...INSURANCE_TEMPLATES,
+  ...PET_INSURANCE_TEMPLATES,
+];
+
 /**
  * Seed templates into the database
  * Run this once during initial setup
@@ -1228,6 +2140,8 @@ This workflow automates the new business process from intake form submission to 
 export async function seedTemplates(): Promise<void> {
   // This would be called during initialization
   // Implementation would use templateRepository.createTemplate for each
-  console.log(`Ready to seed ${INSURANCE_TEMPLATES.length} templates`);
+  console.log(`Ready to seed ${ALL_TEMPLATES.length} templates`);
+  console.log(`- General insurance templates: ${INSURANCE_TEMPLATES.length}`);
+  console.log(`- Pet/Medical insurance templates: ${PET_INSURANCE_TEMPLATES.length}`);
 }
 

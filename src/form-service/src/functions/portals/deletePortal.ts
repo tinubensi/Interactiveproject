@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { softDeletePortal } from '../../lib/portalRepository';
 import { jsonResponse, handleError } from '../../lib/httpResponses';
-import { ensureAuthorized } from '../../lib/auth';
+import { ensureAuthorized, requirePermission, FORM_PERMISSIONS } from '../../lib/auth';
 import { handlePreflight } from '../../lib/corsHelper';
 
 const deletePortalHandler = async (
@@ -12,7 +12,9 @@ const deletePortalHandler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, FORM_PERMISSIONS.FORMS_DELETE);
+
     const portalId = request.params.portalId;
     if (!portalId) {
       return jsonResponse(400, { 
@@ -21,8 +23,8 @@ const deletePortalHandler = async (
       });
     }
 
-    // Get user from auth token (simplified - adjust based on your auth implementation)
-    const deletedBy = 'system'; // TODO: Extract from auth token
+    // Get user from auth token
+    const deletedBy = userContext.userId;
 
     context.log('Deleting portal', { portalId });
     await softDeletePortal(portalId, deletedBy);

@@ -2,9 +2,12 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
 import { UpdateProfileRequest, Customer } from '../../types/customer';
+import { ensureAuthorized, requirePermission, CUSTOMER_PERMISSIONS } from '../../lib/auth';
 
 export async function updateProfile(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, CUSTOMER_PERMISSIONS.CUSTOMERS_UPDATE);
     const id = request.params.id;
     const body = (await request.json()) as UpdateProfileRequest;
 

@@ -8,6 +8,7 @@ import { getCanvas } from '../../lib/repositories/canvasRepository';
 import { successResponse, handleError, badRequestResponse } from '../../lib/utils/httpResponses';
 import { withCors, handlePreflight } from '../../lib/utils/corsHelper';
 import { getTelemetry } from '../../lib/telemetry';
+import { ensureAuthorized, requirePermission, WORKFLOW_PERMISSIONS } from '../../lib/utils/auth';
 
 export async function getCanvasHandler(
   request: HttpRequest,
@@ -20,10 +21,13 @@ export async function getCanvasHandler(
   const startTime = Date.now();
 
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, WORKFLOW_PERMISSIONS.WORKFLOWS_READ);
+
     const workflowId = request.params.workflowId;
 
     if (!workflowId) {
-      return withCors(badRequestResponse('Workflow ID is required'));
+      return withCors(request, badRequestResponse('Workflow ID is required', undefined, request));
     }
 
     const canvas = await getCanvas(workflowId);
@@ -35,13 +39,13 @@ export async function getCanvasHandler(
 
     telemetry?.trackMetric('canvas.get.duration', Date.now() - startTime);
 
-    return withCors(successResponse(canvas));
+    return withCors(request, successResponse(canvas, request));
   } catch (error) {
     telemetry?.trackException(error as Error, {
       operation: 'getCanvas',
       workflowId: request.params.workflowId,
     });
-    return withCors(handleError(error));
+    return withCors(request, handleError(error, request));
   }
 }
 

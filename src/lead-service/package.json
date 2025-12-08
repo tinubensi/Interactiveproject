@@ -10,12 +10,15 @@
     "prestart": "npm run build",
     "clean": "rimraf dist",
     "setup": "npm run build && node dist/scripts/setup-database.js",
+    "test": "node --import tsx --test src/tests/**/*.test.ts",
     "test:api": "bash scripts/test-api.sh"
   },
   "dependencies": {
     "@azure/cosmos": "^4.0.0",
     "@azure/eventgrid": "^5.0.0",
     "@azure/functions": "^4.0.0",
+    "@nectaria/auth-middleware": "file:../../../packages/@nectaria/auth-middleware",
+    "@nectaria/shared-types": "file:../../../packages/@nectaria/shared-types",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
@@ -23,6 +26,7 @@
     "@types/uuid": "^9.0.0",
     "azure-functions-core-tools": "^4.5.0",
     "rimraf": "^5.0.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.0.0"
   }
 }

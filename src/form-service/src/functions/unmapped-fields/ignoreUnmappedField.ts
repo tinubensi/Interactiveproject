@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { ignoreUnmappedField } from '../../lib/unmappedFieldRepository';
 import { jsonResponse, handleError } from '../../lib/httpResponses';
-import { ensureAuthorized } from '../../lib/auth';
+import { ensureAuthorized, requirePermission, FORM_PERMISSIONS } from '../../lib/auth';
 import { handlePreflight } from '../../lib/corsHelper';
 
 const ignoreUnmappedFieldHandler = async (
@@ -12,7 +12,9 @@ const ignoreUnmappedFieldHandler = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, FORM_PERMISSIONS.FORMS_MANAGE);
+
     const fieldId = request.params.fieldId;
     if (!fieldId) {
       return jsonResponse(400, { 
@@ -29,8 +31,8 @@ const ignoreUnmappedFieldHandler = async (
       });
     }
 
-    // Get user from auth token (simplified)
-    const ignoredBy = 'system'; // TODO: Extract from auth token
+    // Get user from auth token
+    const ignoredBy = userContext.userId;
 
     context.log('Ignoring unmapped field', { fieldId, portalId: body.portalId });
 

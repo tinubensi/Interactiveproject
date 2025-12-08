@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { softDeleteFormTemplate } from '../../lib/formDefinitionRepository';
 import { jsonResponse, handleError } from '../../lib/httpResponses';
-import { ensureAuthorized } from '../../lib/auth';
+import { ensureAuthorized, requirePermission, FORM_PERMISSIONS } from '../../lib/auth';
 import { handlePreflight } from '../../lib/corsHelper';
 
 const deleteTemplate = async (
@@ -12,7 +12,8 @@ const deleteTemplate = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, FORM_PERMISSIONS.FORMS_DELETE);
     const templateId = request.params.templateId;
     const insuranceLine = request.query.get('insuranceLine');
     const deletedBy = request.query.get('deletedBy') ?? 'system';

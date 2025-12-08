@@ -10,7 +10,7 @@ import { validateFormIntake } from '../../lib/validation';
 import { normalizeFormDataForConnectors } from '../../lib/connectorMapper';
 import { FormIntake } from '../../models/formTypes';
 import { publishIntakeFormSubmittedEvent } from '../../lib/eventGridPublisher';
-import { ensureAuthorized } from '../../lib/auth';
+import { ensureAuthorized, requirePermission, FORM_PERMISSIONS } from '../../lib/auth';
 import { handlePreflight } from '../../lib/corsHelper';
 
 type SubmitIntakePayload = Partial<FormIntake> & {
@@ -27,7 +27,8 @@ const submitIntake = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, FORM_PERMISSIONS.FORMS_SUBMIT);
     const body = (await request.json()) as SubmitIntakePayload;
     context.log('Submitting intake form', {
       templateId: body.templateId,

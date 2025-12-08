@@ -7,12 +7,15 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
 import { ChangeStatusRequest, QuotationStatus } from '../../models/quotation';
+import { ensureAuthorized, requirePermission, QUOTATION_PERMISSIONS } from '../../lib/auth';
 
 export async function changeStatus(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTATIONS_UPDATE);
     const id = request.params.id;
     const body: Partial<ChangeStatusRequest> = await request.json() as Partial<ChangeStatusRequest>;
     const leadId = request.query.get('leadId');

@@ -7,7 +7,7 @@ import {
 import { jsonResponse, handleError } from '../../lib/httpResponses';
 import { validateFormTemplate } from '../../lib/validation';
 import { FormTemplate } from '../../models/formTypes';
-import { ensureAuthorized } from '../../lib/auth';
+import { ensureAuthorized, requirePermission, FORM_PERMISSIONS } from '../../lib/auth';
 import { handlePreflight } from '../../lib/corsHelper';
 
 const autoSaveTemplate = async (
@@ -18,7 +18,8 @@ const autoSaveTemplate = async (
   if (preflightResponse) return preflightResponse;
 
   try {
-    ensureAuthorized(request);
+    const userContext = await ensureAuthorized(request);
+    await requirePermission(userContext.userId, FORM_PERMISSIONS.FORMS_UPDATE);
     const body = (await request.json()) as Partial<FormTemplate>;
     context.log('Autosaving template', { templateId: body.templateId });
     if (body.templateId) {
