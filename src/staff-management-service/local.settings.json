@@ -1,0 +1,31 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "",
+    "AzureWebJobsSecretStorageType": "files",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+
+    "COSMOS_ENDPOINT": "https://cosmos-nectaria-dev.documents.azure.com:443/",
+    "COSMOS_KEY": "<from-key-vault>",
+    "COSMOS_DATABASE_ID": "staff-db",
+
+    "EVENT_GRID_TOPIC_ENDPOINT": "<your-event-grid-endpoint>",
+    "EVENT_GRID_TOPIC_KEY": "<from-key-vault>",
+
+    "INTERNAL_SERVICE_KEY": "dev-internal-service-key-nectaria-2024",
+
+    "WORKLOAD_DEFAULT_MAX_LEADS": "20",
+    "WORKLOAD_DEFAULT_MAX_CUSTOMERS": "60",
+    "WORKLOAD_WARNING_THRESHOLD": "0.8",
+    "WORKLOAD_BLOCK_THRESHOLD": "1.0",
+
+    "LICENSE_ALERT_DAYS": "30,14,7,3,1",
+    "LICENSE_RESTRICT_ON_EXPIRY": "true"
+  },
+  "Host": {
+    "CORS": "http://localhost:3000",
+    "CORSCredentials": true,
+    "LocalHttpPort": 7074
+  }
+}
+
