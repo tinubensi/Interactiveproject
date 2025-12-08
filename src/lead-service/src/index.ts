@@ -4,11 +4,12 @@
  */
 
 // Import all function modules to register them
+// Order matters for route registration - GET should come first to avoid conflicts
 import './functions/leads/createLead';
 import './functions/leads/listLeads';
-import './functions/leads/getLeadById';
-import './functions/leads/updateLead';
-import './functions/leads/deleteLead';
+import './functions/leads/getLeadById'; // GET - register first
+import './functions/leads/updateLead'; // PUT
+import './functions/leads/deleteLead'; // DELETE
 import './functions/leads/changeStage';
 import './functions/leads/refetchPlans';
 

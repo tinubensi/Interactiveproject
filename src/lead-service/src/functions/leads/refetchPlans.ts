@@ -6,20 +6,27 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
-import { withCors } from '../../utils/corsHelper';
+import { handlePreflight, withCors } from '../../utils/corsHelper';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function refetchPlans(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
+  // Handle CORS preflight
+  const preflightResponse = handlePreflight(request);
+  if (preflightResponse) return preflightResponse;
+
   try {
     const leadId = request.params.leadId;
 
     if (!leadId) {
       return withCors(request, {
         status: 400,
-        jsonBody: { error: 'Lead ID is required' }
+        jsonBody: { 
+          success: false,
+          error: 'Lead ID is required' 
+        }
       });
     }
 
@@ -35,17 +42,32 @@ export async function refetchPlans(
     if (leads.length === 0) {
       return withCors(request, {
         status: 404,
-        jsonBody: { error: 'Lead not found' }
+        jsonBody: { 
+          success: false,
+          error: 'Lead not found' 
+        }
       });
     }
 
     const lead = leads[0];
+    
+    // Get the latest lead data to ensure we have the most recent lobData
+    const latestLead = await cosmosService.getLeadById(leadId, lead.lineOfBusiness);
+    if (!latestLead) {
+      return withCors(request, {
+        status: 404,
+        jsonBody: { 
+          success: false,
+          error: 'Lead not found after initial query' 
+        }
+      });
+    }
 
     // Delete existing plans for this lead
     await cosmosService.deletePlansForLead(leadId);
 
     // Update lead status to "Plans Fetching"
-    const updatedLead = await cosmosService.updateLead(leadId, lead.lineOfBusiness, {
+    const updatedLead = await cosmosService.updateLead(leadId, latestLead.lineOfBusiness, {
       currentStage: 'Plans Fetching',
       stageId: 'stage-1',
       plansCount: 0,
@@ -65,52 +87,101 @@ export async function refetchPlans(
       timestamp: new Date()
     });
 
-    // Publish lead.created event to trigger plan fetch (for logging in mock Event Grid)
+    // Publish lead.created event to Event Grid (primary communication method)
+    // Use latestLead to ensure we have the most recent data including updated lobData
+    let eventPublished = false;
     try {
       await eventGridService.publishLeadCreated({
-        leadId: lead.id,
-        referenceId: lead.referenceId,
-        customerId: lead.customerId,
-        lineOfBusiness: lead.lineOfBusiness,
-        businessType: lead.businessType,
-        formId: lead.formId,
-        formData: lead.formData,
-        lobData: lead.lobData,
-        assignedTo: lead.assignedTo,
-        createdAt: lead.createdAt
+        leadId: latestLead.id,
+        referenceId: latestLead.referenceId,
+        customerId: latestLead.customerId,
+        lineOfBusiness: latestLead.lineOfBusiness,
+        businessType: latestLead.businessType,
+        formId: latestLead.formId,
+        formData: latestLead.formData,
+        lobData: latestLead.lobData, // Use latest lobData from updated lead
+        assignedTo: latestLead.assignedTo,
+        createdAt: latestLead.createdAt
       });
-      context.log(`Event published to Event Grid (for logging)`);
-    } catch (eventError) {
-      context.warn('Event Grid publish failed (non-critical):', eventError);
-    }
-
-    // HTTP Fallback: Always trigger plan fetch directly since Event Grid doesn't route events locally
-    try {
-      const quotationGenUrl = process.env.QUOTATION_GEN_SERVICE_URL || 'http://localhost:7072/api';
-      context.log(`Triggering plan fetch via HTTP at ${quotationGenUrl}/plans/fetch`);
+      eventPublished = true;
+      context.log('lead.created event published successfully to Event Grid');
       
-      const response = await fetch(`${quotationGenUrl}/plans/fetch`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          leadId: lead.id,
-          lineOfBusiness: lead.lineOfBusiness,
-          businessType: lead.businessType,
-          leadData: lead.lobData || {},
-          forceRefresh: true
-        })
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        context.warn(`HTTP plan fetch trigger failed: ${response.status} - ${errorText}`);
-      } else {
-        context.log(`Plans refetch triggered successfully for lead ${leadId} via HTTP`);
+      // Delayed HTTP fallback check: Verify status was updated after Event Grid event
+      if (eventPublished) {
+        setTimeout(async () => {
+          try {
+            const leadServiceUrl = process.env.LEAD_SERVICE_URL || 'https://lead-service.azurewebsites.net/api';
+            const leadCheckResponse = await fetch(`${leadServiceUrl}/leads/get/${leadId}?lineOfBusiness=${latestLead.lineOfBusiness}`);
+            if (leadCheckResponse.ok) {
+              const leadData: any = await leadCheckResponse.json();
+              const currentLead = leadData.data?.lead || leadData;
+              if (currentLead.currentStage === 'Plans Fetching') {
+                context.warn(`Lead ${leadId} still in "Plans Fetching" after Event Grid event - using HTTP fallback`);
+                
+                // HTTP Fallback: Trigger plan fetch directly
+                const quotationGenUrl = process.env.QUOTATION_GEN_SERVICE_URL || 'https://quotation-gen-service-74e1210c.azurewebsites.net/api';
+                context.log(`Using HTTP fallback to trigger plan fetch at ${quotationGenUrl}/plans/fetch`);
+                
+                const response = await fetch(`${quotationGenUrl}/plans/fetch`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    leadId: latestLead.id,
+                    lineOfBusiness: latestLead.lineOfBusiness,
+                    businessType: latestLead.businessType,
+                    leadData: latestLead.lobData || {}, // Use latest lobData
+                    forceRefresh: true
+                  })
+                });
+              
+                if (!response.ok) {
+                  const errorText = await response.text();
+                  context.warn(`HTTP plan fetch trigger failed: ${response.status} - ${errorText}`);
+                } else {
+                  context.log(`Plans refetch triggered successfully for lead ${leadId} via HTTP fallback`);
+                }
+              } else {
+                context.log(`Lead ${leadId} status updated successfully to "${currentLead.currentStage}" via Event Grid`);
+              }
+            }
+          } catch (checkError: any) {
+            context.warn('Status check failed, but Event Grid event was published:', checkError);
+          }
+        }, 5000); // 5 second delay
       }
-    } catch (httpError: any) {
-      context.error('HTTP fallback to quotation-generation-service failed:', httpError);
+    } catch (eventError: any) {
+      context.warn('Failed to publish lead.created event to Event Grid:', eventError.message);
+      
+      // HTTP Fallback: Only trigger plan fetch directly if Event Grid fails
+      try {
+        const quotationGenUrl = process.env.QUOTATION_GEN_SERVICE_URL || 'https://quotation-gen-service-74e1210c.azurewebsites.net/api';
+        context.log(`Event Grid failed, using HTTP fallback to trigger plan fetch at ${quotationGenUrl}/plans/fetch`);
+        
+        const response = await fetch(`${quotationGenUrl}/plans/fetch`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            leadId: latestLead.id,
+            lineOfBusiness: latestLead.lineOfBusiness,
+            businessType: latestLead.businessType,
+            leadData: latestLead.lobData || {}, // Use latest lobData
+            forceRefresh: true
+          })
+        });
+      
+        if (!response.ok) {
+          const errorText = await response.text();
+          context.warn(`HTTP plan fetch trigger failed: ${response.status} - ${errorText}`);
+        } else {
+          context.log(`Plans refetch triggered successfully for lead ${leadId} via HTTP fallback`);
+        }
+      } catch (httpError: any) {
+        context.error('HTTP fallback to quotation-generation-service also failed:', httpError.message);
+      }
     }
 
     return withCors(request, {
@@ -128,13 +199,16 @@ export async function refetchPlans(
     context.error('Error refetching plans:', error);
     return withCors(request, {
       status: 500,
-      jsonBody: { error: error.message || 'Failed to refetch plans' }
+      jsonBody: { 
+        success: false,
+        error: error.message || 'Failed to refetch plans' 
+      }
     });
   }
 }
 
 app.http('refetchPlans', {
-  methods: ['POST'],
+  methods: ['POST', 'OPTIONS'],
   authLevel: 'anonymous',
   route: 'leads/{leadId}/refetch-plans',
   handler: refetchPlans

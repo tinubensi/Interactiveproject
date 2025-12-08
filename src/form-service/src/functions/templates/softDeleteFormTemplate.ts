@@ -19,6 +19,7 @@ const deleteTemplate = async (
     const deletedBy = request.query.get('deletedBy') ?? 'system';
     if (!templateId || !insuranceLine) {
       return jsonResponse(400, {
+        success: false,
         error: 'templateId and insuranceLine are required'
       });
     }

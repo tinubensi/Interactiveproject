@@ -1848,16 +1848,44 @@ export const STATIC_MEDICAL_PLANS: Omit<Plan, 'id' | 'leadId' | 'fetchRequestId'
 /**
  * Calculate age from birthday
  */
-function calculateAge(birthday: string): number {
-  if (!birthday) return 0;
-  const birthDate = new Date(birthday);
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
+function calculateAge(birthday: string): number | null {
+  if (!birthday || typeof birthday !== 'string' || birthday.trim() === '') {
+    return null;
   }
-  return age;
+  
+  try {
+    const birthDate = new Date(birthday);
+    
+    // Check if date is valid
+    if (isNaN(birthDate.getTime())) {
+      console.warn(`[calculateAge] Invalid date format: ${birthday}`);
+      return null;
+    }
+    
+    // Check if date is not in the future
+    const today = new Date();
+    if (birthDate > today) {
+      console.warn(`[calculateAge] Date is in the future: ${birthday}`);
+      return null;
+    }
+    
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    // Validate age is reasonable (0-150)
+    if (age < 0 || age > 150) {
+      console.warn(`[calculateAge] Calculated age is out of range: ${age} for DOB: ${birthday}`);
+      return null;
+    }
+    
+    return age;
+  } catch (error) {
+    console.warn(`[calculateAge] Error calculating age from ${birthday}:`, error);
+    return null;
+  }
 }
 
 /**
@@ -1881,36 +1909,188 @@ function extractPremiumItems(
 
 /**
  * Extract medical insurance members (primary + family members)
+ * Supports both old format (members/familyMembers) and new format (repeatable sections)
  */
 function extractMedicalMembers(leadData: any): PremiumItem[] {
   const items: PremiumItem[] = [];
   
   // Primary member
+  // Always calculate age from DOB if available (more accurate than stored age)
+  const primaryDOB = leadData.dateOfBirth || leadData.dateofbirth || leadData.dob;
+  let primaryAge = null;
+  
+  if (primaryDOB) {
+    primaryAge = calculateAge(primaryDOB);
+    console.log(`[extractMedicalMembers] Primary DOB: ${primaryDOB}, Calculated age: ${primaryAge}`);
+  }
+  
+  // Fallback to stored age or default
+  if (primaryAge === null) {
+    primaryAge = leadData.age || 30;
+    console.log(`[extractMedicalMembers] Using stored/default age for primary: ${primaryAge}`);
+  }
+  
   items.push({
     itemId: 'primary',
     itemType: 'person',
     itemName: `${leadData.firstName || ''} ${leadData.lastName || ''}`.trim() || 'Primary Member',
     itemDetails: {
-      age: leadData.age || calculateAge(leadData.dateOfBirth) || 30,
+      age: primaryAge,
       gender: (leadData.gender || 'male').toLowerCase(),
-      dateOfBirth: leadData.dateOfBirth
+      dateOfBirth: primaryDOB
     },
     isPrimary: true,
     annualPremium: 0,  // Will be calculated
     monthlyPremium: 0
   });
   
-  // Additional family members from repeatable section
-  const members = leadData.members || leadData.familyMembers || [];
+  // Find members from repeatable sections or old format
+  let members: any[] = [];
+  
+  // Check for old format first
+  if (leadData.members && Array.isArray(leadData.members)) {
+    members = leadData.members;
+  } else if (leadData.familyMembers && Array.isArray(leadData.familyMembers)) {
+    members = leadData.familyMembers;
+  } else {
+    // Check for repeatable sections (new format)
+    // Look for keys that might be section IDs containing member data
+    // Common patterns: section-member-info, member-info, members, etc.
+    const sectionKeys = Object.keys(leadData).filter(key => 
+      !key.startsWith('_') && 
+      Array.isArray(leadData[key]) && 
+      leadData[key].length > 0 &&
+      typeof leadData[key][0] === 'object'
+    );
+    
+    // Find the most likely member section (contains age, gender, name, etc.)
+    for (const sectionKey of sectionKeys) {
+      const sectionData = leadData[sectionKey];
+      if (Array.isArray(sectionData) && sectionData.length > 0) {
+        const firstItem = sectionData[0];
+        // Check if this looks like member data (has age, gender, name, dateOfBirth, etc.)
+        if (firstItem.age || firstItem.dateOfBirth || firstItem.gender || 
+            firstItem.memberName || firstItem.name || firstItem.firstName) {
+          members = sectionData;
+          break;
+        }
+      }
+    }
+  }
+  
+  // Process members
   members.forEach((member: any, idx: number) => {
+    // Extract name from various possible fields - try all keys that might contain a name
+    let memberName = null;
+    
+    // Try common name field patterns
+    const nameFields = ['name', 'memberName', 'fullName', 'customerName', 'memberName'];
+    for (const field of nameFields) {
+      if (member[field] && typeof member[field] === 'string' && member[field].trim()) {
+        memberName = member[field].trim();
+        break;
+      }
+    }
+    
+    // Try combining first + last name
+    if (!memberName) {
+      const firstName = member.firstName || member.first_name || '';
+      const lastName = member.lastName || member.last_name || '';
+      const combined = `${firstName} ${lastName}`.trim();
+      if (combined) {
+        memberName = combined;
+      }
+    }
+    
+    // If still no name, check all string fields that look like names
+    if (!memberName) {
+      for (const [key, value] of Object.entries(member)) {
+        if (typeof value === 'string' && value.trim()) {
+          // Check if this looks like a name (not a date, number, gender, or short code)
+          if (value.length > 2 && value.length < 100 && 
+              !/^\d+$/.test(value) && 
+              !/^\d{4}-\d{2}-\d{2}/.test(value) &&
+              !['male', 'female', 'm', 'f', 'other'].includes(value.toLowerCase()) &&
+              !key.toLowerCase().includes('email') &&
+              !key.toLowerCase().includes('phone')) {
+            memberName = value.trim();
+            break;
+          }
+        }
+      }
+    }
+    
+    // Final fallback
+    if (!memberName) {
+      memberName = `Member ${idx + 1}`;
+    }
+    
+    // Extract DOB - check all possible field name patterns
+    let memberDOB = null;
+    
+    // Try common DOB field names
+    const dobFields = [
+      'dateOfBirth', 'dateofbirth', 'dob', 'birthDate', 'birthdate',
+      'date_of_birth', 'dateOfBirth', 'memberDateOfBirth', 'memberDOB',
+      'birthday', 'birthDay', 'memberBirthday'
+    ];
+    
+    for (const field of dobFields) {
+      if (member[field] && typeof member[field] === 'string' && member[field].trim()) {
+        memberDOB = member[field].trim();
+        console.log(`[extractMedicalMembers] Member ${idx + 1} found DOB in field "${field}": ${memberDOB}`);
+        break;
+      }
+    }
+    
+    // If not found, check all keys for date-like values
+    if (!memberDOB) {
+      for (const [key, value] of Object.entries(member)) {
+        if (typeof value === 'string' && value.trim()) {
+          const lowerKey = key.toLowerCase();
+          // Check if key contains date/birth/dob related terms
+          if ((lowerKey.includes('date') || lowerKey.includes('birth') || lowerKey.includes('dob')) &&
+              // Check if value looks like a date (YYYY-MM-DD or similar)
+              (/^\d{4}-\d{2}-\d{2}/.test(value) || /^\d{2}\/\d{2}\/\d{4}/.test(value) || /^\d{4}\/\d{2}\/\d{2}/.test(value))) {
+            memberDOB = value.trim();
+            console.log(`[extractMedicalMembers] Member ${idx + 1} found DOB in field "${key}": ${memberDOB}`);
+            break;
+          }
+        }
+      }
+    }
+    
+    // Log all member fields for debugging if DOB not found
+    if (!memberDOB) {
+      console.log(`[extractMedicalMembers] Member ${idx + 1} DOB not found. Available fields:`, Object.keys(member));
+      console.log(`[extractMedicalMembers] Member ${idx + 1} full data:`, JSON.stringify(member, null, 2));
+    }
+    
+    // Always calculate age from DOB if available (more accurate than stored age)
+    let age = null;
+    
+    if (memberDOB) {
+      age = calculateAge(memberDOB);
+      console.log(`[extractMedicalMembers] Member ${idx + 1} DOB: ${memberDOB}, Calculated age: ${age}`);
+    }
+    
+    // Fallback to stored age or default
+    if (age === null) {
+      age = member.age || 25;
+      console.log(`[extractMedicalMembers] Using stored/default age for member ${idx + 1}: ${age}`);
+    }
+    
+    // Extract gender
+    const gender = (member.gender || 'male').toLowerCase();
+    
     items.push({
       itemId: `member-${idx + 1}`,
       itemType: 'person',
-      itemName: member.name || member.memberName || `Member ${idx + 1}`,
+      itemName: memberName,
       itemDetails: {
-        age: member.age || calculateAge(member.dateOfBirth) || 25,
-        gender: (member.gender || 'male').toLowerCase(),
-        dateOfBirth: member.dateOfBirth,
+        age,
+        gender,
+        dateOfBirth: memberDOB,
         relationship: member.relationship
       },
       isPrimary: false,

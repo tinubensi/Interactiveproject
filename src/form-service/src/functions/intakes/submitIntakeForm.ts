@@ -37,12 +37,16 @@ const submitIntake = async (
     const templateId = body.templateId;
     if (!templateId || !body.insuranceLine) {
       return jsonResponse(400, {
+        success: false,
         error: 'templateId and insuranceLine are required for submission'
       });
     }
     const template = await getFormTemplate(templateId, body.insuranceLine);
     if (!template) {
-      return jsonResponse(404, { error: 'Template not found' });
+      return jsonResponse(404, { 
+        success: false,
+        error: 'Template not found' 
+      });
     }
 
     let intake: FormIntake | null = null;

@@ -16,6 +16,8 @@ class EventGridService {
     this.topicEndpoint = process.env.EVENT_GRID_TOPIC_ENDPOINT || '';
     const topicKey = process.env.EVENT_GRID_TOPIC_KEY || '';
 
+    console.log(`[Event Grid] Initializing... Endpoint: ${this.topicEndpoint ? 'Set' : 'Missing'}, Key: ${topicKey ? 'Set' : 'Missing'}`);
+
     // Only initialize if endpoint is configured
     if (this.topicEndpoint && topicKey) {
       try {
@@ -31,14 +33,14 @@ class EventGridService {
           clientOptions
         );
         this.enabled = true;
-        console.log('Event Grid client initialized');
+        console.log(`✅ Event Grid client initialized successfully. Endpoint: ${this.topicEndpoint}`);
       } catch (error) {
-        console.warn('Event Grid initialization failed, running without events:', error);
+        console.error('❌ Event Grid initialization failed:', error);
         this.client = null;
         this.enabled = false;
       }
     } else {
-      console.log('Event Grid not configured, running in local mode without events');
+      console.warn(`⚠️  Event Grid not configured - Endpoint: ${this.topicEndpoint || 'MISSING'}, Key: ${topicKey ? 'Set' : 'MISSING'}`);
       this.client = null;
       this.enabled = false;
     }
@@ -54,8 +56,10 @@ class EventGridService {
     dataVersion: string = '1.0'
   ): Promise<void> {
     if (!this.enabled || !this.client) {
-      console.log(`[LOCAL MODE] Event would be published: ${eventType} for ${subject}`);
-      return;
+      const errorMsg = `Event Grid not enabled or client not initialized. Cannot publish ${eventType} for ${subject}`;
+      console.warn(`[EVENT GRID DISABLED] ${errorMsg}`);
+      // Throw error to trigger HTTP fallback
+      throw new Error(errorMsg);
     }
 
     try {
@@ -69,9 +73,9 @@ class EventGridService {
       };
 
       await this.client.send([event] as any);
-      console.log(`Event published: ${eventType} for ${subject}`);
+      console.log(`✅ Event published successfully: ${eventType} for ${subject}`);
     } catch (error) {
-      console.error(`Failed to publish event ${eventType}:`, error);
+      console.error(`❌ Failed to publish event ${eventType} for ${subject}:`, error);
       // Throw error so callers can implement fallback logic
       throw error;
     }
@@ -82,19 +86,18 @@ class EventGridService {
    */
   async publishEvents(events: EventGridEvent[]): Promise<void> {
     if (!this.enabled || !this.client) {
-      console.log(`[LOCAL MODE] Batch of ${events.length} events would be published`);
-      return;
+      const errorMsg = `Event Grid not enabled or client not initialized. Cannot publish batch of ${events.length} events`;
+      console.warn(`[EVENT GRID DISABLED] ${errorMsg}`);
+      // Throw error to trigger HTTP fallback
+      throw new Error(errorMsg);
     }
 
     try {
       await this.client.send(events as any);
-      console.log(`Batch of ${events.length} events published`);
+      console.log(`✅ Batch of ${events.length} events published successfully`);
     } catch (error) {
-      console.error('Failed to publish batch events:', error);
-      // Don't throw in local development
-      if (this.topicEndpoint && !this.topicEndpoint.includes('localhost')) {
-        throw error;
-      }
+      console.error(`❌ Failed to publish batch of ${events.length} events:`, error);
+      throw error;
     }
   }
 

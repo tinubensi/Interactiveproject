@@ -10,67 +10,101 @@ import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
 import { validateUpdateLeadRequest, sanitizeInput } from '../../utils/validation';
 import { UpdateLeadRequest } from '../../models/lead';
+import { handlePreflight, withCors } from '../../utils/corsHelper';
 import { ensureAuthorized, requirePermission, LEAD_PERMISSIONS } from '../../lib/auth';
 
 export async function updateLead(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
+  // Handle CORS preflight
+  const preflightResponse = handlePreflight(request);
+  if (preflightResponse) return preflightResponse;
+
   try {
     const userContext = await ensureAuthorized(request);
     await requirePermission(userContext.userId, LEAD_PERMISSIONS.LEADS_UPDATE);
     const id = request.params.id;
     const lineOfBusiness = request.query.get('lineOfBusiness');
-    const body: UpdateLeadRequest = await request.json() as UpdateLeadRequest;
-
-    if (!id) {
-      return {
+    
+    // Parse request body, handle empty or invalid JSON
+    let body: UpdateLeadRequest;
+    try {
+      const requestBody = await request.text();
+      if (!requestBody) {
+        return withCors(request, {
+          status: 400,
+          jsonBody: {
+            success: false,
+            error: 'Request body is required'
+          }
+        });
+      }
+      body = JSON.parse(requestBody) as UpdateLeadRequest;
+    } catch (parseError: any) {
+      return withCors(request, {
         status: 400,
         jsonBody: {
+          success: false,
+          error: 'Invalid JSON in request body',
+          details: parseError.message
+        }
+      });
+    }
+
+    if (!id) {
+      return withCors(request, {
+        status: 400,
+        jsonBody: {
+          success: false,
           error: 'Lead ID is required'
         }
-      };
+      });
     }
 
     if (!lineOfBusiness) {
-      return {
+      return withCors(request, {
         status: 400,
         jsonBody: {
+          success: false,
           error: 'lineOfBusiness query parameter is required'
         }
-      };
+      });
     }
 
     // Validate request
     const validation = validateUpdateLeadRequest(body);
     if (!validation.valid) {
-      return {
+      return withCors(request, {
         status: 400,
         jsonBody: {
+          success: false,
           error: 'Validation failed',
           details: validation.errors
         }
-      };
+      });
     }
 
     // Get existing lead
     const existingLead = await cosmosService.getLeadById(id, lineOfBusiness);
     if (!existingLead) {
-      return {
+      return withCors(request, {
         status: 404,
         jsonBody: {
+          success: false,
           error: 'Lead not found'
         }
-      };
+      });
     }
 
     if (existingLead.deletedAt) {
-      return {
+      return withCors(request, {
         status: 410,
         jsonBody: {
+          success: false,
           error: 'Cannot update deleted lead'
         }
-      };
+      });
     }
 
     // Track changes for event
@@ -207,7 +241,7 @@ export async function updateLead(
 
     context.log(`Lead updated successfully: ${updatedLead.referenceId}`);
 
-    return {
+    return withCors(request, {
       status: 200,
       jsonBody: {
         success: true,
@@ -217,24 +251,24 @@ export async function updateLead(
           changes
         }
       }
-    };
+    });
   } catch (error: any) {
     context.error('Update lead error:', error);
-    return {
+    return withCors(request, {
       status: 500,
       jsonBody: {
         success: false,
         error: 'Failed to update lead',
         details: error.message
       }
-    };
+    });
   }
 }
 
 app.http('updateLead', {
-  methods: ['PUT'],
+  methods: ['PUT', 'OPTIONS'],
   authLevel: 'anonymous',
-  route: 'leads/{id}',
+  route: 'leads/update/{id}',
   handler: updateLead
 });
 
