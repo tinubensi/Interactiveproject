@@ -18,8 +18,14 @@ export const jsonResponse = (
 
 export const handleError = (error: unknown): HttpResponseInit => {
   if (error instanceof Error) {
-    return jsonResponse(400, { error: error.message });
+    return jsonResponse(400, { 
+      success: false,
+      error: error.message 
+    });
   }
-  return jsonResponse(500, { error: 'Unexpected error' });
+  return jsonResponse(500, { 
+    success: false,
+    error: 'Unexpected error' 
+  });
 };
 

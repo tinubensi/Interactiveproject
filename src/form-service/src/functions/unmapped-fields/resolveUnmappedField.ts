@@ -18,7 +18,10 @@ const resolveUnmappedFieldHandler = async (
     ensureAuthorized(request);
     const fieldId = request.params.fieldId;
     if (!fieldId) {
-      return jsonResponse(400, { error: 'fieldId is required' });
+      return jsonResponse(400, { 
+        success: false,
+        error: 'fieldId is required' 
+      });
     }
 
     const body = (await request.json()) as {
@@ -28,7 +31,10 @@ const resolveUnmappedFieldHandler = async (
     };
 
     if (!body.portalId || !body.resolvedMapping) {
-      return jsonResponse(400, { error: 'portalId and resolvedMapping are required' });
+      return jsonResponse(400, { 
+        success: false,
+        error: 'portalId and resolvedMapping are required' 
+      });
     }
 
     // Get user from auth token (simplified)

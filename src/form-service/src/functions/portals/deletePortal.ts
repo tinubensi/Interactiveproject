@@ -15,7 +15,10 @@ const deletePortalHandler = async (
     ensureAuthorized(request);
     const portalId = request.params.portalId;
     if (!portalId) {
-      return jsonResponse(400, { error: 'portalId is required' });
+      return jsonResponse(400, { 
+        success: false,
+        error: 'portalId is required' 
+      });
     }
 
     // Get user from auth token (simplified - adjust based on your auth implementation)

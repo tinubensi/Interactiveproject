@@ -22,7 +22,30 @@ export async function createLead(
   if (preflightResponse) return preflightResponse;
 
   try {
-    const body: CreateLeadRequest = await request.json() as CreateLeadRequest;
+    // Parse request body, handle empty or invalid JSON
+    let body: CreateLeadRequest;
+    try {
+      const requestBody = await request.text();
+      if (!requestBody) {
+        return withCors(request, {
+          status: 400,
+          jsonBody: {
+            success: false,
+            error: 'Request body is required'
+          }
+        });
+      }
+      body = JSON.parse(requestBody) as CreateLeadRequest;
+    } catch (parseError: any) {
+      return withCors(request, {
+        status: 400,
+        jsonBody: {
+          success: false,
+          error: 'Invalid JSON in request body',
+          details: parseError.message
+        }
+      });
+    }
 
     // Validate request
     // TEMPORARILY DISABLED FOR TESTING
@@ -110,7 +133,7 @@ export async function createLead(
       timestamp: new Date()
     });
 
-    // Publish lead.created event (non-blocking)
+    // Publish lead.created event to Event Grid (primary communication method)
     let eventPublished = false;
     try {
       await eventGridService.publishLeadCreated({
@@ -126,40 +149,40 @@ export async function createLead(
         createdAt: createdLead.createdAt
       });
       eventPublished = true;
+      context.log('lead.created event published successfully to Event Grid');
     } catch (eventError: any) {
-      // Log error but don't fail the request
-      context.warn('Failed to publish lead.created event (non-critical):', eventError.message);
-    }
-
-    // HTTP Fallback: Trigger plan fetching directly if Event Grid isn't working properly
-    // This ensures plans are fetched even if Event Grid subscriptions aren't set up
-    try {
-      const quotationGenServiceUrl = process.env.QUOTATION_GEN_SERVICE_URL || 'http://localhost:7072/api';
-      context.log(`Triggering plan fetch via HTTP at ${quotationGenServiceUrl}/plans/fetch`);
+      context.warn('Failed to publish lead.created event to Event Grid:', eventError.message);
       
-      const fetchResponse = await fetch(`${quotationGenServiceUrl}/plans/fetch`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          leadId: createdLead.id,
-          lineOfBusiness: createdLead.lineOfBusiness,
-          businessType: createdLead.businessType,
-          leadData: createdLead.lobData,
-          forceRefresh: true
-        })
-      });
-      
-      if (fetchResponse.ok) {
-        context.log('Plan fetching triggered successfully via HTTP fallback');
-      } else {
-        const errorText = await fetchResponse.text();
-        context.warn(`Plan fetching HTTP trigger failed: ${fetchResponse.status} - ${errorText}`);
+      // HTTP Fallback: Only trigger plan fetching directly if Event Grid fails
+      // This ensures plans are fetched even if Event Grid is unavailable
+      try {
+        const quotationGenServiceUrl = process.env.QUOTATION_GEN_SERVICE_URL || 'http://localhost:7082/api';
+        context.log(`Event Grid failed, using HTTP fallback to trigger plan fetch at ${quotationGenServiceUrl}/plans/fetch`);
+        
+        const fetchResponse = await fetch(`${quotationGenServiceUrl}/plans/fetch`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            leadId: createdLead.id,
+            lineOfBusiness: createdLead.lineOfBusiness,
+            businessType: createdLead.businessType,
+            leadData: createdLead.lobData,
+            forceRefresh: true
+          })
+        });
+        
+        if (fetchResponse.ok) {
+          context.log('Plan fetching triggered successfully via HTTP fallback');
+        } else {
+          const errorText = await fetchResponse.text();
+          context.warn(`Plan fetching HTTP trigger failed: ${fetchResponse.status} - ${errorText}`);
+        }
+      } catch (httpError: any) {
+        // Log but don't fail - plan fetching can be triggered manually later
+        context.error('HTTP fallback to trigger plan fetching also failed:', httpError.message);
       }
-    } catch (httpError: any) {
-      // Log but don't fail - plan fetching can be triggered manually later
-      context.warn('HTTP fallback to trigger plan fetching failed (non-critical):', httpError.message);
     }
 
     context.log(`Lead created successfully: ${createdLead.referenceId}`);

@@ -24,27 +24,29 @@ export async function getLeadById(
       return withCors(request, {
         status: 400,
         jsonBody: {
+          success: false,
           error: 'Lead ID is required'
         }
       });
     }
 
-    if (!lineOfBusiness) {
-      return withCors(request, {
-        status: 400,
-        jsonBody: {
-          error: 'lineOfBusiness query parameter is required'
-        }
-      });
+    let lead: any = null;
+
+    // If lineOfBusiness is provided, use direct partition key lookup (faster)
+    if (lineOfBusiness) {
+      lead = await cosmosService.getLeadById(id, lineOfBusiness);
+    } else {
+      // If not provided, query across partitions to find the lead
+      lead = await cosmosService.getLeadByIdWithoutPartition(id);
     }
 
     // Get lead from Cosmos DB
-    const lead = await cosmosService.getLeadById(id, lineOfBusiness);
 
     if (!lead) {
       return withCors(request, {
         status: 404,
         jsonBody: {
+          success: false,
           error: 'Lead not found'
         }
       });
@@ -55,6 +57,7 @@ export async function getLeadById(
       return withCors(request, {
         status: 410,
         jsonBody: {
+          success: false,
           error: 'Lead has been deleted',
           deletedAt: lead.deletedAt
         }
@@ -92,7 +95,7 @@ export async function getLeadById(
 app.http('getLeadById', {
   methods: ['GET', 'OPTIONS'],
   authLevel: 'anonymous',
-  route: 'leads/{id}',
+  route: 'leads/get/{id}',
   handler: getLeadById
 });
 

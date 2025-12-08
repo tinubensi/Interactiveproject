@@ -18,18 +18,25 @@ const configureConnectors = async (
     const insuranceLine = request.query.get('insuranceLine');
     if (!templateId || !insuranceLine) {
       return jsonResponse(400, {
+        success: false,
         error: 'templateId and insuranceLine are required'
       });
     }
     context.log('Configuring connectors', { templateId });
     const template = await getFormTemplate(templateId, insuranceLine);
     if (!template) {
-      return jsonResponse(404, { error: 'Template not found' });
+      return jsonResponse(404, { 
+        success: false,
+        error: 'Template not found' 
+      });
     }
     const body = (await request.json()) as Partial<FormTemplate>;
     const connectors = body.connectors;
     if (!Array.isArray(connectors)) {
-      return jsonResponse(400, { error: 'connectors array is required' });
+      return jsonResponse(400, { 
+        success: false,
+        error: 'connectors array is required' 
+      });
     }
     const updated: FormTemplate = {
       ...template,

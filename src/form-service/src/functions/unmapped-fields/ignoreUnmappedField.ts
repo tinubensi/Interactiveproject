@@ -15,12 +15,18 @@ const ignoreUnmappedFieldHandler = async (
     ensureAuthorized(request);
     const fieldId = request.params.fieldId;
     if (!fieldId) {
-      return jsonResponse(400, { error: 'fieldId is required' });
+      return jsonResponse(400, { 
+        success: false,
+        error: 'fieldId is required' 
+      });
     }
 
     const body = (await request.json()) as { portalId: string };
     if (!body.portalId) {
-      return jsonResponse(400, { error: 'portalId is required' });
+      return jsonResponse(400, { 
+        success: false,
+        error: 'portalId is required' 
+      });
     }
 
     // Get user from auth token (simplified)

@@ -16,11 +16,17 @@ const getIntakeHandler = async (
     const intakeId = request.params.intakeId;
     context.log('Fetching intake', { intakeId });
     if (!intakeId) {
-      return jsonResponse(400, { error: 'intakeId is required' });
+      return jsonResponse(400, { 
+        success: false,
+        error: 'intakeId is required' 
+      });
     }
     const intake = await getIntake(intakeId);
     if (!intake) {
-      return jsonResponse(404, { error: 'Intake not found' });
+      return jsonResponse(404, { 
+        success: false,
+        error: 'Intake not found' 
+      });
     }
     return jsonResponse(200, intake);
   } catch (error) {

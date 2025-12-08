@@ -18,7 +18,23 @@ export async function listLeads(
   if (preflightResponse) return preflightResponse;
 
   try {
-    const body: LeadListRequest = await request.json() as LeadListRequest;
+    // Parse request body, handle empty or invalid JSON
+    let body: Partial<LeadListRequest> = {};
+    try {
+      const requestBody = await request.text();
+      if (requestBody) {
+        body = JSON.parse(requestBody) as Partial<LeadListRequest>;
+      }
+    } catch (parseError: any) {
+      return withCors(request, {
+        status: 400,
+        jsonBody: {
+          success: false,
+          error: 'Invalid JSON in request body',
+          details: parseError.message
+        }
+      });
+    }
 
     // Set defaults
     const listRequest: LeadListRequest = {
@@ -37,6 +53,7 @@ export async function listLeads(
       return withCors(request, {
         status: 400,
         jsonBody: {
+          success: false,
           error: 'Invalid page number. Must be >= 1'
         }
       });
@@ -46,6 +63,7 @@ export async function listLeads(
       return withCors(request, {
         status: 400,
         jsonBody: {
+          success: false,
           error: 'Invalid limit. Must be between 1 and 100'
         }
       });

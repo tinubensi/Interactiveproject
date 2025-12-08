@@ -23,6 +23,7 @@ export async function getTimeline(
       return withCors(request, {
         status: 400,
         jsonBody: {
+          success: false,
           error: 'Lead ID is required'
         }
       });
@@ -56,7 +57,7 @@ export async function getTimeline(
   }
 }
 
-app.http('getTimeline', {
+app.http('getLeadTimeline', {
   methods: ['GET', 'OPTIONS'],
   authLevel: 'anonymous',
   route: 'leads/{id}/timeline',

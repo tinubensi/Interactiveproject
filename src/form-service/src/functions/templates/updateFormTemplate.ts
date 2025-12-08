@@ -20,13 +20,17 @@ const updateTemplate = async (
     const insuranceLine = request.query.get('insuranceLine');
     if (!templateId || !insuranceLine) {
       return jsonResponse(400, {
+        success: false,
         error: 'templateId and insuranceLine are required'
       });
     }
 
     const existing = await getFormTemplate(templateId, insuranceLine);
     if (!existing) {
-      return jsonResponse(404, { error: 'Template not found' });
+      return jsonResponse(404, { 
+        success: false,
+        error: 'Template not found' 
+      });
     }
 
     const body = (await request.json()) as Partial<FormTemplate>;

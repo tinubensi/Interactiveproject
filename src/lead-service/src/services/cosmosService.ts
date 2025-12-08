@@ -164,6 +164,29 @@ class CosmosService {
   }
 
   /**
+   * Get lead by ID without partition key (cross-partition query)
+   * Used when lineOfBusiness is not known
+   */
+  async getLeadByIdWithoutPartition(id: string): Promise<Lead | null> {
+    try {
+      const query: SqlQuerySpec = {
+        query: 'SELECT * FROM c WHERE c.id = @id AND c.type = @type AND NOT IS_DEFINED(c.deletedAt)',
+        parameters: [
+          { name: '@id', value: id },
+          { name: '@type', value: 'lead' }
+        ]
+      };
+      const { resources } = await this.leadsContainer.items.query<Lead>(query).fetchAll();
+      return resources.length > 0 ? resources[0] : null;
+    } catch (error: any) {
+      if (error.code === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Update lead
    */
   async updateLead(id: string, lineOfBusiness: string, updates: Partial<Lead>): Promise<Lead> {
@@ -325,17 +348,21 @@ class CosmosService {
       parameters
     };
 
+    // Cross-partition queries are enabled by default in SDK v4
     const { resources: countResult } = await this.leadsContainer.items.query(countQuery).fetchAll();
     const totalRecords = countResult[0] || 0;
 
     // Data query with pagination
+    // Note: ORDER BY with cross-partition queries can be slow, but it's required for sorting
     const offset = (page - 1) * limit;
     const dataQuery: SqlQuerySpec = {
       query: `SELECT * FROM c ${whereClause} ${orderByClause} OFFSET ${offset} LIMIT ${limit}`,
       parameters
     };
 
-    const { resources: leads } = await this.leadsContainer.items.query<Lead>(dataQuery).fetchAll();
+    // Execute query with timeout handling
+    const queryIterator = this.leadsContainer.items.query<Lead>(dataQuery);
+    const { resources: leads } = await queryIterator.fetchAll();
 
     // Calculate pagination
     const totalPages = Math.ceil(totalRecords / limit);

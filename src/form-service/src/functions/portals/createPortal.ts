@@ -17,7 +17,10 @@ const createPortalHandler = async (
     const body = (await request.json()) as Omit<PortalDefinition, 'createdAt' | 'updatedAt'>;
 
     if (!body.portalId || !body.name) {
-      return jsonResponse(400, { error: 'portalId and name are required' });
+      return jsonResponse(400, { 
+        success: false,
+        error: 'portalId and name are required' 
+      });
     }
 
     context.log('Creating portal', { portalId: body.portalId });

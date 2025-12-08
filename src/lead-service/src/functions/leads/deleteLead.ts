@@ -7,52 +7,61 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
+import { handlePreflight, withCors } from '../../utils/corsHelper';
 
 export async function deleteLead(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
+  // Handle CORS preflight
+  const preflightResponse = handlePreflight(request);
+  if (preflightResponse) return preflightResponse;
+
   try {
     const id = request.params.id;
     const lineOfBusiness = request.query.get('lineOfBusiness');
 
     if (!id) {
-      return {
+      return withCors(request, {
         status: 400,
         jsonBody: {
+          success: false,
           error: 'Lead ID is required'
         }
-      };
+      });
     }
 
     if (!lineOfBusiness) {
-      return {
+      return withCors(request, {
         status: 400,
         jsonBody: {
+          success: false,
           error: 'lineOfBusiness query parameter is required'
         }
-      };
+      });
     }
 
     // Get existing lead
     const existingLead = await cosmosService.getLeadById(id, lineOfBusiness);
     if (!existingLead) {
-      return {
+      return withCors(request, {
         status: 404,
         jsonBody: {
+          success: false,
           error: 'Lead not found'
         }
-      };
+      });
     }
 
     if (existingLead.deletedAt) {
-      return {
+      return withCors(request, {
         status: 410,
         jsonBody: {
+          success: false,
           error: 'Lead already deleted',
           deletedAt: existingLead.deletedAt
         }
-      };
+      });
     }
 
     // Soft delete
@@ -69,7 +78,7 @@ export async function deleteLead(
 
     context.log(`Lead deleted successfully: ${deletedLead.referenceId}`);
 
-    return {
+    return withCors(request, {
       status: 200,
       jsonBody: {
         success: true,
@@ -78,22 +87,22 @@ export async function deleteLead(
           lead: deletedLead
         }
       }
-    };
+    });
   } catch (error: any) {
     context.error('Delete lead error:', error);
-    return {
+    return withCors(request, {
       status: 500,
       jsonBody: {
         success: false,
         error: 'Failed to delete lead',
         details: error.message
       }
-    };
+    });
   }
 }
 
 app.http('deleteLead', {
-  methods: ['DELETE'],
+  methods: ['DELETE', 'OPTIONS'],
   authLevel: 'anonymous',
   route: 'leads/{id}',
   handler: deleteLead

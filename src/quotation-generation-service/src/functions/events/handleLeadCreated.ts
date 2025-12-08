@@ -17,7 +17,22 @@ export async function handleLeadCreated(
   context: InvocationContext
 ): Promise<void> {
   try {
-    const event = eventGridEvent as LeadCreatedEvent;
+    context.log('Received Event Grid event:', JSON.stringify(eventGridEvent, null, 2));
+    
+    // Handle both direct event data and wrapped Event Grid event
+    let event: LeadCreatedEvent;
+    if (eventGridEvent.data && eventGridEvent.eventType) {
+      // Event Grid wrapped format
+      event = eventGridEvent as LeadCreatedEvent;
+    } else if (eventGridEvent.eventType) {
+      // Direct Event Grid event
+      event = eventGridEvent as LeadCreatedEvent;
+    } else {
+      // Array of events (Event Grid can send arrays)
+      const events = Array.isArray(eventGridEvent) ? eventGridEvent : [eventGridEvent];
+      event = events[0] as LeadCreatedEvent;
+    }
+    
     const data = event.data;
 
     context.log(`Received lead.created event for lead ${data.leadId}`);
