@@ -25,12 +25,16 @@ const autoSaveTemplate = async (
     if (body.templateId) {
       if (!body.insuranceLine) {
         return jsonResponse(400, {
+          success: false,
           error: 'insuranceLine is required when templateId is provided'
         });
       }
       const existing = await getFormTemplate(body.templateId, body.insuranceLine);
       if (!existing) {
-        return jsonResponse(404, { error: 'Template not found for autosave' });
+        return jsonResponse(404, { 
+          success: false,
+          error: 'Template not found for autosave' 
+        });
       }
       const merged: FormTemplate = {
         ...existing,

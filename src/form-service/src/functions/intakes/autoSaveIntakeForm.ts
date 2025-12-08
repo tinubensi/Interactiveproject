@@ -24,6 +24,7 @@ const autoSaveIntake = async (
     context.log('Autosaving intake', { intakeId: body.intakeId });
     if (!body.templateId || !body.insuranceLine) {
       return jsonResponse(400, {
+        success: false,
         error: 'templateId and insuranceLine are required'
       });
     }
@@ -41,7 +42,10 @@ const autoSaveIntake = async (
     if (body.intakeId) {
       const existing = await getIntake(body.intakeId);
       if (!existing) {
-        return jsonResponse(404, { error: 'Intake not found for autosave' });
+        return jsonResponse(404, { 
+          success: false,
+          error: 'Intake not found for autosave' 
+        });
       }
       const updated = await upsertIntake({
         ...existing,
@@ -53,6 +57,7 @@ const autoSaveIntake = async (
 
     if (!body.templateId || !body.insuranceLine || !body.customerId) {
       return jsonResponse(400, {
+        success: false,
         error: 'templateId, insuranceLine, and customerId are required'
       });
     }

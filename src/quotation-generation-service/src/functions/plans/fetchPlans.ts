@@ -120,7 +120,8 @@ export async function fetchPlans(
       completedAt: new Date()
     });
 
-    // Publish fetch completed event (for logging in mock Event Grid)
+    // Publish plans.fetch_completed event to Event Grid (primary communication method)
+    let eventPublished = false;
     try {
       await eventGridService.publishPlansFetchCompleted({
         leadId: body.leadId,
@@ -130,39 +131,83 @@ export async function fetchPlans(
         failedVendors,
         plans // Include full plans array for Lead Service
       });
-      context.log('Event published to Event Grid (for logging)');
-    } catch (eventError) {
-      context.warn('Event Grid publish failed (non-critical):', eventError);
-    }
-    
-    // HTTP Fallback: Always call Lead Service directly since Event Grid doesn't route events locally
-    try {
-      const leadServiceUrl = process.env.LEAD_SERVICE_URL || 'http://localhost:7075/api';
-      context.log(`Saving plans to Lead Service via HTTP at ${leadServiceUrl}/leads/${body.leadId}/save-plans`);
+      eventPublished = true;
+      context.log('plans.fetch_completed event published successfully to Event Grid');
       
-      const response = await fetch(`${leadServiceUrl}/leads/${body.leadId}/save-plans`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          leadId: body.leadId,
-          fetchRequestId: fetchRequest.id,
-          totalPlans: plans.length,
-          successfulVendors,
-          failedVendors,
-          plans
-        })
-      });
+      // Delayed HTTP fallback check: Verify status was updated after Event Grid event
+      // If lead is still in "Plans Fetching" after 5 seconds, use HTTP fallback
+      setTimeout(async () => {
+        try {
+          const leadServiceUrl = process.env.LEAD_SERVICE_URL || 'https://lead-service.azurewebsites.net/api';
+          const leadCheckResponse = await fetch(`${leadServiceUrl}/leads/get/${body.leadId}?lineOfBusiness=${body.lineOfBusiness}`);
+          
+          if (leadCheckResponse.ok) {
+            const leadData: any = await leadCheckResponse.json();
+            const lead = leadData.data?.lead || leadData.jsonBody?.data?.lead || leadData;
+            
+            // If still in "Plans Fetching" status after 5 seconds, use HTTP fallback
+            if (lead && lead.currentStage === 'Plans Fetching') {
+              context.warn(`Lead ${body.leadId} still in "Plans Fetching" after Event Grid event - using HTTP fallback`);
+              
+              const response = await fetch(`${leadServiceUrl}/leads/${body.leadId}/save-plans`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  leadId: body.leadId,
+                  fetchRequestId: fetchRequest.id,
+                  totalPlans: plans.length,
+                  successfulVendors,
+                  failedVendors,
+                  plans
+                })
+              });
+              
+              if (response.ok) {
+                context.log('HTTP fallback succeeded after Event Grid delay check');
+              } else {
+                const errorText = await response.text();
+                context.warn(`HTTP fallback after delay check failed: ${response.status} - ${errorText}`);
+              }
+            }
+          }
+        } catch (checkError: any) {
+          context.warn('Status check failed, but Event Grid event was published:', checkError.message);
+        }
+      }, 5000); // 5 second delay to check if Event Grid delivered
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        context.warn(`Failed to save plans to Lead Service: ${response.status} - ${errorText}`);
-      } else {
-        context.log('Plans saved to Lead Service via HTTP successfully');
+    } catch (eventError: any) {
+      context.warn('Failed to publish plans.fetch_completed event to Event Grid:', eventError.message);
+      
+      // HTTP Fallback: Only call Lead Service directly if Event Grid fails
+      // This ensures plans are saved even if Event Grid is unavailable
+      try {
+        const leadServiceUrl = process.env.LEAD_SERVICE_URL || 'https://lead-service.azurewebsites.net/api';
+        context.log(`Event Grid failed, using HTTP fallback to save plans at ${leadServiceUrl}/leads/${body.leadId}/save-plans`);
+        
+        const response = await fetch(`${leadServiceUrl}/leads/${body.leadId}/save-plans`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            leadId: body.leadId,
+            fetchRequestId: fetchRequest.id,
+            totalPlans: plans.length,
+            successfulVendors,
+            failedVendors,
+            plans
+          })
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          context.warn(`Failed to save plans to Lead Service via HTTP fallback: ${response.status} - ${errorText}`);
+        } else {
+          context.log('Plans saved to Lead Service via HTTP fallback successfully');
+        }
+      } catch (httpError: any) {
+        context.error('HTTP fallback to Lead Service also failed:', httpError.message);
       }
-    } catch (httpError: any) {
-      context.error('HTTP fallback to Lead Service failed:', httpError);
     }
 
     context.log(`Plans fetched successfully for lead ${body.leadId}: ${plans.length} plans from ${successfulVendors.length} vendors`);

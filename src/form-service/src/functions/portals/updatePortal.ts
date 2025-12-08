@@ -17,7 +17,10 @@ const updatePortalHandler = async (
     await requirePermission(userContext.userId, FORM_PERMISSIONS.FORMS_UPDATE);
     const portalId = request.params.portalId;
     if (!portalId) {
-      return jsonResponse(400, { error: 'portalId is required' });
+      return jsonResponse(400, { 
+        success: false,
+        error: 'portalId is required' 
+      });
     }
 
     const body = (await request.json()) as Partial<PortalDefinition>;
@@ -25,7 +28,10 @@ const updatePortalHandler = async (
 
     const existing = await getPortal(portalId);
     if (!existing) {
-      return jsonResponse(404, { error: 'Portal not found' });
+      return jsonResponse(404, { 
+        success: false,
+        error: 'Portal not found' 
+      });
     }
 
     const updated: PortalDefinition = {

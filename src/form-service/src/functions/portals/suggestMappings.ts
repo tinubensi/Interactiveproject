@@ -16,7 +16,10 @@ const suggestMappingsHandler = async (
     await requirePermission(userContext.userId, FORM_PERMISSIONS.FORMS_MANAGE);
     const portalId = request.params.portalId;
     if (!portalId) {
-      return jsonResponse(400, { error: 'portalId is required' });
+      return jsonResponse(400, { 
+        success: false,
+        error: 'portalId is required' 
+      });
     }
 
     const body = (await request.json()) as {
@@ -27,6 +30,7 @@ const suggestMappingsHandler = async (
 
     if (!body.targetFields || !body.sourceFields) {
       return jsonResponse(400, {
+        success: false,
         error: 'targetFields and sourceFields are required'
       });
     }
