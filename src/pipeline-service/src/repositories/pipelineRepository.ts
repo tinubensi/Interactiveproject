@@ -194,15 +194,29 @@ export async function getActivePipelineForLOB(
     parameters.push({ name: '@organizationId', value: organizationId });
   }
 
-  query += ' ORDER BY c.isDefault DESC, c.activatedAt DESC';
-
+  // Note: Removed ORDER BY to avoid composite index requirement
+  // We'll sort in memory instead
   const { resources } = await container.items
     .query<PipelineDefinition>({ query, parameters })
     .fetchAll();
 
+  // Sort in memory: prioritize non-default pipelines, then by activation date
+  const sorted = resources.sort((a, b) => {
+    // First, sort by isDefault (false/undefined first, then true)
+    const aIsDefault = a.isDefault === true ? 1 : 0;
+    const bIsDefault = b.isDefault === true ? 1 : 0;
+    if (aIsDefault !== bIsDefault) {
+      return aIsDefault - bIsDefault; // 0 (false) comes before 1 (true)
+    }
+    // Then sort by activatedAt (most recent first)
+    const aDate = a.activatedAt ? new Date(a.activatedAt).getTime() : 0;
+    const bDate = b.activatedAt ? new Date(b.activatedAt).getTime() : 0;
+    return bDate - aDate; // Descending order
+  });
+
   // Return the first matching pipeline (prioritizing non-default ones)
-  if (resources.length > 0) {
-    return resources[0];
+  if (sorted.length > 0) {
+    return sorted[0];
   }
 
   // If no specific pipeline found, look for a default one
