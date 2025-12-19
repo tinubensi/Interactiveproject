@@ -33,7 +33,18 @@ describe('Predefined Constants', () => {
       assert.ok(stageIds.includes('plans-fetching'), 'Should have plans-fetching stage');
       assert.ok(stageIds.includes('plans-available'), 'Should have plans-available stage');
       assert.ok(stageIds.includes('quotation-created'), 'Should have quotation-created stage');
+      assert.ok(stageIds.includes('revision-requested'), 'Should have revision-requested stage');
       assert.ok(stageIds.includes('policy-issued'), 'Should have policy-issued stage');
+    });
+
+    it('should have revision-requested stage with correct configuration', () => {
+      const revisionStage = PREDEFINED_STAGES.find(s => s.id === 'revision-requested');
+      
+      assert.ok(revisionStage, 'Revision Requested stage should exist');
+      assert.strictEqual(revisionStage.name, 'Revision Requested');
+      assert.strictEqual(revisionStage.triggerEvent, 'quotation.revision_requested');
+      assert.strictEqual(revisionStage.order, 5.5);
+      assert.ok(revisionStage.applicableFor.includes('medical'));
     });
 
     it('should have unique stage IDs', () => {
@@ -150,6 +161,11 @@ describe('Predefined Constants', () => {
         assert.ok(event in EVENT_TO_STAGE_MAP, `Should have mapping for ${event}`);
       }
     });
+
+    it('should have mapping for quotation.revision_requested event', () => {
+      assert.ok('quotation.revision_requested' in EVENT_TO_STAGE_MAP, 'Should have mapping for quotation.revision_requested');
+      assert.strictEqual(EVENT_TO_STAGE_MAP['quotation.revision_requested'], 'revision-requested');
+    });
   });
 
   describe('PIPELINE_EVENTS', () => {
@@ -159,6 +175,8 @@ describe('Predefined Constants', () => {
 
     it('should include quotation events', () => {
       assert.ok(PIPELINE_EVENTS.includes('quotation.created'), 'Should include quotation.created');
+      assert.ok(PIPELINE_EVENTS.includes('quotation.viewed'), 'Should include quotation.viewed');
+      assert.ok(PIPELINE_EVENTS.includes('quotation.revision_requested'), 'Should include quotation.revision_requested');
       assert.ok(PIPELINE_EVENTS.includes('quotation.approved'), 'Should include quotation.approved');
     });
 

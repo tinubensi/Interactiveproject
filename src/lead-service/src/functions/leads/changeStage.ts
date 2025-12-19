@@ -1,13 +1,14 @@
 /**
  * Change Lead Stage Function
- * Changes the current stage of a lead
+ * Emits pipeline.manual_advance event for Pipeline Service to handle
+ * ALL leads must have active pipelines - direct stage updates are no longer allowed
  */
 
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
-import { v4 as uuidv4 } from 'uuid';
-import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
+import { cosmosService } from '../../services/cosmosService';
 import { ensureAuthorized, requirePermission, LEAD_PERMISSIONS } from '../../lib/auth';
+import { isLeadManagedByPipeline } from '../../services/pipelineServiceClient';
 
 interface ChangeStageRequest {
   stageId: number;
@@ -53,7 +54,20 @@ export async function changeStage(
       };
     }
 
-    // Get existing lead
+    // Check if lead has active pipeline - ALL leads must have pipelines now
+    const hasPipeline = await isLeadManagedByPipeline(id);
+    if (!hasPipeline) {
+      context.error(`Lead ${id} has no active pipeline - cannot change stage. All leads must have pipelines.`);
+      return {
+        status: 400,
+        jsonBody: {
+          error: 'Pipeline required',
+          message: 'Lead has no active pipeline. All leads must have active pipelines to change stages.'
+        }
+      };
+    }
+
+    // Get existing lead for event data
     const existingLead = await cosmosService.getLeadById(id, lineOfBusiness);
     if (!existingLead) {
       return {
@@ -64,16 +78,7 @@ export async function changeStage(
       };
     }
 
-    if (existingLead.deletedAt) {
-      return {
-        status: 410,
-        jsonBody: {
-          error: 'Cannot change stage of deleted lead'
-        }
-      };
-    }
-
-    // Get new stage
+    // Get new stage for validation (we don't update directly anymore)
     const newStage = await cosmosService.getStageById(body.stageId);
     if (!newStage) {
       return {
@@ -84,62 +89,65 @@ export async function changeStage(
       };
     }
 
-    // Check if stage is applicable for this LOB
-    if (!newStage.applicableFor.includes(existingLead.lineOfBusiness)) {
-      return {
-        status: 400,
-        jsonBody: {
-          error: `Stage "${newStage.name}" is not applicable for ${existingLead.lineOfBusiness}`
+    // Emit pipeline.manual_advance event for Pipeline Service to handle
+    await eventGridService.publishEvent(
+      'pipeline.manual_advance',
+      `lead/${id}`,
+      {
+        leadId: id,
+        lineOfBusiness: lineOfBusiness,
+        requestedStageId: body.stageId,
+        requestedStageName: newStage.name,
+        remark: body.remark,
+        requestedBy: userContext.userId,
+        requestedByName: userContext.name,
+        timestamp: new Date().toISOString()
+      }
+    );
+
+    // Emit specific events for terminal stages
+    if (newStage.name === 'Lost') {
+      await eventGridService.publishEvent(
+        'lead.lost',
+        `lead/${id}`,
+        {
+          leadId: id,
+          referenceId: existingLead.referenceId,
+          customerId: existingLead.customerId,
+          lineOfBusiness: existingLead.lineOfBusiness,
+          lostAt: new Date(),
+          changedBy: userContext.userId,
+          timestamp: new Date().toISOString()
         }
-      };
+      );
+    } else if (newStage.name === 'Cancelled') {
+      await eventGridService.publishEvent(
+        'lead.cancelled',
+        `lead/${id}`,
+        {
+          leadId: id,
+          referenceId: existingLead.referenceId,
+          customerId: existingLead.customerId,
+          lineOfBusiness: existingLead.lineOfBusiness,
+          cancelledAt: new Date(),
+          reason: body.remark || 'Cancelled by user',
+          changedBy: userContext.userId,
+          timestamp: new Date().toISOString()
+        }
+      );
     }
 
-    // Update lead stage
-    const updatedLead = await cosmosService.updateLead(id, lineOfBusiness, {
-      currentStage: newStage.name,
-      stageId: newStage.id
-    });
-
-    // Create timeline entry
-    await cosmosService.createTimelineEntry({
-      id: uuidv4(),
-      leadId: existingLead.id,
-      stage: newStage.name,
-      previousStage: existingLead.currentStage,
-      stageId: newStage.id,
-      remark: body.remark,
-      changedBy: body.changedBy || 'user',
-      changedByName: 'User', // TODO: Get from auth context
-      timestamp: new Date()
-    });
-
-    // Publish lead.stage_changed event
-    await eventGridService.publishLeadStageChanged({
-      leadId: existingLead.id,
-      referenceId: existingLead.referenceId,
-      customerId: existingLead.customerId,
-      oldStage: existingLead.currentStage,
-      oldStageId: existingLead.stageId,
-      newStage: newStage.name,
-      newStageId: newStage.id,
-      remark: body.remark,
-      changedBy: body.changedBy,
-      timestamp: new Date()
-    });
-
-    context.log(`Lead stage changed: ${existingLead.referenceId} - ${existingLead.currentStage} → ${newStage.name}`);
+    context.log(`Emitted pipeline.manual_advance event for lead ${id} to stage ${newStage.name}`);
 
     return {
-      status: 200,
+      status: 202, // Accepted - async processing
       jsonBody: {
         success: true,
-        message: 'Lead stage changed successfully',
+        message: 'Stage change request submitted. Pipeline Service will process asynchronously.',
         data: {
-          lead: updatedLead,
-          stageChange: {
-            from: existingLead.currentStage,
-            to: newStage.name
-          }
+          leadId: id,
+          requestedStage: newStage.name,
+          status: 'pending'
         }
       }
     };
@@ -149,7 +157,7 @@ export async function changeStage(
       status: 500,
       jsonBody: {
         success: false,
-        error: 'Failed to change lead stage',
+        error: 'Failed to submit stage change request',
         details: error.message
       }
     };

@@ -1,118 +1,29 @@
 /**
  * Handle Lead Created Event
- * Auto-triggers plan fetching when a lead is created
- * Listens to lead.created event from Lead Service
+ * DISABLED: Pipeline Service now handles plan fetching orchestration
+ * This handler is kept for backward compatibility but does nothing
+ * Pipeline Service will trigger plan fetching via HTTP call after instance is ready
  */
 
-import { app, InvocationContext } from '@azure/functions';
-import { v4 as uuidv4 } from 'uuid';
-import { cosmosService } from '../../services/cosmosService';
-import { eventGridService } from '../../services/eventGridService';
-import { planFetchingService } from '../../services/planFetchingService';
-import { LeadCreatedEvent } from '../../models/events';
-import { PlanFetchRequest } from '../../models/plan';
+import { app, EventGridEvent, InvocationContext } from '@azure/functions';
 
-export async function handleLeadCreated(
-  eventGridEvent: any,
+/**
+ * Main Event Grid handler for lead.created events
+ * DISABLED - Pipeline Service handles plan fetching now
+ * This prevents race conditions where plan fetching starts before pipeline instance is ready
+ */
+async function handleLeadCreatedEvent(
+  event: EventGridEvent | EventGridEvent[] | any,
   context: InvocationContext
 ): Promise<void> {
-  try {
-    context.log('Received Event Grid event:', JSON.stringify(eventGridEvent, null, 2));
-    
-    // Handle both direct event data and wrapped Event Grid event
-    let event: LeadCreatedEvent;
-    if (eventGridEvent.data && eventGridEvent.eventType) {
-      // Event Grid wrapped format
-      event = eventGridEvent as LeadCreatedEvent;
-    } else if (eventGridEvent.eventType) {
-      // Direct Event Grid event
-      event = eventGridEvent as LeadCreatedEvent;
-    } else {
-      // Array of events (Event Grid can send arrays)
-      const events = Array.isArray(eventGridEvent) ? eventGridEvent : [eventGridEvent];
-      event = events[0] as LeadCreatedEvent;
-    }
-    
-    const data = event.data;
-
-    context.log(`Received lead.created event for lead ${data.leadId}`);
-
-    // Create fetch request
-    const fetchRequest: PlanFetchRequest = {
-      id: uuidv4(),
-      leadId: data.leadId,
-      lineOfBusiness: data.lineOfBusiness,
-      businessType: data.businessType,
-      leadData: data.lobData,
-      status: 'fetching',
-      totalVendors: 0,
-      successfulVendors: [],
-      failedVendors: [],
-      unavailableVendors: [],
-      totalPlansFound: 0,
-      createdAt: new Date(),
-      startedAt: new Date()
-    };
-
-    await cosmosService.createFetchRequest(fetchRequest);
-
-    // Get vendors
-    const vendors = await cosmosService.getVendorsByLOB(data.lineOfBusiness);
-
-    // Publish fetch started event
-    await eventGridService.publishPlansFetchStarted({
-      leadId: data.leadId,
-      fetchRequestId: fetchRequest.id,
-      lineOfBusiness: data.lineOfBusiness,
-      vendorCount: vendors.length
-    });
-
-    // Fetch plans
-    const { plans, successfulVendors, failedVendors } = await planFetchingService.fetchPlansForLead({
-      leadId: data.leadId,
-      lineOfBusiness: data.lineOfBusiness,
-      businessType: data.businessType,
-      leadData: data.lobData,
-      fetchRequestId: fetchRequest.id
-    });
-
-    // Save plans
-    await cosmosService.createPlans(plans);
-
-    // Mark recommended plan
-    const recommendedPlan = planFetchingService.calculateRecommendedPlan(plans);
-    if (recommendedPlan) {
-      await cosmosService.updatePlan(recommendedPlan.id, data.leadId, { isRecommended: true });
-    }
-
-    // Update fetch request
-    await cosmosService.updateFetchRequest(fetchRequest.id, data.leadId, {
-      status: 'completed',
-      totalVendors: vendors.length,
-      successfulVendors,
-      failedVendors,
-      totalPlansFound: plans.length,
-      completedAt: new Date()
-    });
-
-    // Publish fetch completed event with plans for Lead Service to save
-    await eventGridService.publishPlansFetchCompleted({
-      leadId: data.leadId,
-      fetchRequestId: fetchRequest.id,
-      totalPlans: plans.length,
-      successfulVendors,
-      failedVendors,
-      plans // Include full plans array for Lead Service
-    });
-
-    context.log(`Auto-fetched ${plans.length} plans for lead ${data.leadId}`);
-  } catch (error: any) {
-    context.error('Handle lead created error:', error);
-  }
+  // DISABLED: Pipeline Service now handles plan fetching orchestration
+  // This prevents race conditions where plan fetching starts before pipeline instance is ready
+  context.log('=== Quotation Gen Service: handleLeadCreatedEvent RECEIVED (DISABLED) ===');
+  context.log('Pipeline Service now handles plan fetching orchestration - this handler is disabled');
+  context.log('Plan fetching will be triggered by Pipeline Service after instance is ready');
+  return; // Exit early - do nothing
 }
 
 app.eventGrid('handleLeadCreated', {
-  handler: handleLeadCreated
+  handler: handleLeadCreatedEvent
 });
-
-

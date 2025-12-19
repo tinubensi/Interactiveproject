@@ -1,0 +1,175 @@
+{
+	"info": {
+		"name": "Quotation Generation Service API",
+		"description": "API collection for Quotation Generation Service. Handles plan fetching, filtering, and comparison.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://quotation-gen-service-74e1210c.azurewebsites.net/api",
+			"type": "string"
+		},
+		{
+			"key": "lead_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Plans",
+			"item": [
+				{
+					"name": "Fetch Plans",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"leadId\": \"{{lead_id}}\",\n  \"lineOfBusiness\": \"medical\",\n  \"businessType\": \"individual\",\n  \"leadData\": {\n    \"petType\": \"Dog\",\n    \"petBreed\": \"Golden Retriever\",\n    \"petBirthday\": \"2020-01-15\"\n  },\n  \"forceRefresh\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/plans/fetch",
+							"host": ["{{base_url}}"],
+							"path": ["plans", "fetch"]
+						},
+						"description": "Trigger plan fetching from all vendors for a lead"
+					}
+				},
+				{
+					"name": "Get Plan by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/plans/:planId?leadId={{lead_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["plans", ":planId"],
+							"query": [
+								{
+									"key": "leadId",
+									"value": "{{lead_id}}"
+								}
+							],
+							"variable": [
+								{
+									"key": "planId",
+									"value": ""
+								}
+							]
+						},
+						"description": "Get plan by ID"
+					}
+				},
+				{
+					"name": "Select Plans",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"leadId\": \"{{lead_id}}\",\n  \"planIds\": [\"plan-1\", \"plan-2\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/plans/select",
+							"host": ["{{base_url}}"],
+							"path": ["plans", "select"]
+						},
+						"description": "Mark plans as selected for quotation generation"
+					}
+				}
+			]
+		},
+		{
+			"name": "Comparisons",
+			"item": [
+				{
+					"name": "Create Comparison",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"leadId\": \"{{lead_id}}\",\n  \"planIds\": [\"plan-1\", \"plan-2\", \"plan-3\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/comparisons",
+							"host": ["{{base_url}}"],
+							"path": ["comparisons"]
+						},
+						"description": "Create a side-by-side comparison of plans"
+					}
+				},
+				{
+					"name": "Get Comparison",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/comparisons/:comparisonId?leadId={{lead_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["comparisons", ":comparisonId"],
+							"query": [
+								{
+									"key": "leadId",
+									"value": "{{lead_id}}"
+								}
+							],
+							"variable": [
+								{
+									"key": "comparisonId",
+									"value": ""
+								}
+							]
+						},
+						"description": "Get comparison details"
+					}
+				}
+			]
+		},
+		{
+			"name": "Vendors",
+			"item": [
+				{
+					"name": "Get Vendors",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/vendors?lineOfBusiness=medical",
+							"host": ["{{base_url}}"],
+							"path": ["vendors"],
+							"query": [
+								{
+									"key": "lineOfBusiness",
+									"value": "medical"
+								}
+							]
+						},
+						"description": "Get available vendors for a line of business"
+					}
+				}
+			]
+		}
+	]
+}
+
+
+
+

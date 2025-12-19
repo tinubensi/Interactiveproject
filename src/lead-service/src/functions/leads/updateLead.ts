@@ -266,9 +266,9 @@ export async function updateLead(
 }
 
 app.http('updateLead', {
-  methods: ['PUT', 'OPTIONS'],
+  methods: ['PUT', 'PATCH', 'OPTIONS'],
   authLevel: 'anonymous',
-  route: 'leads/update/{id}',
+  route: 'leads/{id}/update',
   handler: updateLead
 });
 

@@ -18,7 +18,6 @@
     "@azure/functions": "^4.5.1",
     "@azure/eventgrid": "^5.5.1",
     "@azure/storage-blob": "^12.26.0",
-    "@nectaria/shared-types": "file:../../../packages/@nectaria/shared-types",
     "pdfkit": "^0.15.1",
     "uuid": "^11.0.3"
   },

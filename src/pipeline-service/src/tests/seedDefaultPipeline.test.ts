@@ -49,7 +49,23 @@ describe('Default Pipeline Seeder', () => {
       assert.ok(stageIds.includes('lead-created'), 'Should have lead-created stage');
       assert.ok(stageIds.includes('plans-available'), 'Should have plans-available stage');
       assert.ok(stageIds.includes('quotation-created'), 'Should have quotation-created stage');
+      assert.ok(stageIds.includes('revision-requested'), 'Should have revision-requested stage');
       assert.ok(stageIds.includes('policy-issued'), 'Should have policy-issued stage');
+    });
+
+    it('should have Revision Requested step with correct configuration', () => {
+      const pipeline = generateDefaultHealthInsurancePipeline('test-user');
+      
+      const revisionStep = pipeline.steps.find(
+        s => s.type === 'stage' && s.stageId === 'revision-requested'
+      );
+      
+      assert.ok(revisionStep, 'Should have Revision Requested step');
+      assert.strictEqual(revisionStep?.name, 'Revision Requested');
+      assert.strictEqual((revisionStep as any).stageId, 'revision-requested');
+      assert.strictEqual(revisionStep?.order, 9.5);
+      assert.ok((revisionStep as any).allowedActions?.includes('CREATE_QUOTATION') || 
+                (revisionStep as any).allowedActions?.includes('REFETCH_PLANS'));
     });
 
     it('should have a hot lead decision step', () => {

@@ -1,0 +1,395 @@
+{
+	"info": {
+		"name": "Pipeline Service API",
+		"description": "API collection for Pipeline Service. Manages insurance pipeline definitions, instances, and approvals.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:7090/api",
+			"type": "string"
+		},
+		{
+			"key": "pipeline_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "instance_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "lead_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Pipelines",
+			"item": [
+				{
+					"name": "List Pipelines",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/pipelines?lineOfBusiness=medical&status=active",
+							"host": ["{{base_url}}"],
+							"path": ["pipelines"],
+							"query": [
+								{
+									"key": "lineOfBusiness",
+									"value": "medical"
+								},
+								{
+									"key": "status",
+									"value": "active"
+								}
+							]
+						},
+						"description": "List all pipelines with optional filters"
+					}
+				},
+				{
+					"name": "Get Pipeline",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/pipelines/{{pipeline_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["pipelines", "{{pipeline_id}}"]
+						},
+						"description": "Get a pipeline by ID"
+					}
+				},
+				{
+					"name": "Create Pipeline",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Medical Individual Pipeline\",\n  \"lineOfBusiness\": \"medical\",\n  \"organizationId\": \"individual\",\n  \"description\": \"Pipeline for medical individual leads\",\n  \"steps\": []\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/pipelines/create",
+							"host": ["{{base_url}}"],
+							"path": ["pipelines", "create"]
+						},
+						"description": "Create a new pipeline"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.pipeline) {",
+									"        pm.environment.set(\"pipeline_id\", response.pipeline.id);",
+									"    }",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Update Pipeline",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Pipeline Name\",\n  \"description\": \"Updated description\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/pipelines/{{pipeline_id}}/update",
+							"host": ["{{base_url}}"],
+							"path": ["pipelines", "{{pipeline_id}}", "update"]
+						},
+						"description": "Update a pipeline"
+					}
+				},
+				{
+					"name": "Delete Pipeline",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/pipelines/{{pipeline_id}}/delete",
+							"host": ["{{base_url}}"],
+							"path": ["pipelines", "{{pipeline_id}}", "delete"]
+						},
+						"description": "Delete a pipeline"
+					}
+				},
+				{
+					"name": "Activate Pipeline",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/pipelines/{{pipeline_id}}/activate",
+							"host": ["{{base_url}}"],
+							"path": ["pipelines", "{{pipeline_id}}", "activate"]
+						},
+						"description": "Activate a pipeline"
+					}
+				},
+				{
+					"name": "Deactivate Pipeline",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/pipelines/{{pipeline_id}}/deactivate",
+							"host": ["{{base_url}}"],
+							"path": ["pipelines", "{{pipeline_id}}", "deactivate"]
+						},
+						"description": "Deactivate a pipeline"
+					}
+				}
+			]
+		},
+		{
+			"name": "Steps",
+			"item": [
+				{
+					"name": "Add Step",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"stepType\": \"approval\",\n  \"name\": \"Manager Approval\",\n  \"config\": {\n    \"approverRole\": \"manager\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/pipelines/{{pipeline_id}}/steps",
+							"host": ["{{base_url}}"],
+							"path": ["pipelines", "{{pipeline_id}}", "steps"]
+						},
+						"description": "Add a step to a pipeline"
+					}
+				},
+				{
+					"name": "Update Step",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Step Name\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/pipelines/{{pipeline_id}}/steps/:stepId",
+							"host": ["{{base_url}}"],
+							"path": ["pipelines", "{{pipeline_id}}", "steps", ":stepId"],
+							"variable": [
+								{
+									"key": "stepId",
+									"value": ""
+								}
+							]
+						},
+						"description": "Update a step in a pipeline"
+					}
+				},
+				{
+					"name": "Delete Step",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/pipelines/{{pipeline_id}}/steps/:stepId/delete",
+							"host": ["{{base_url}}"],
+							"path": ["pipelines", "{{pipeline_id}}", "steps", ":stepId", "delete"],
+							"variable": [
+								{
+									"key": "stepId",
+									"value": ""
+								}
+							]
+						},
+						"description": "Delete a step from a pipeline"
+					}
+				},
+				{
+					"name": "Reorder Steps",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"stepOrder\": [\n    { \"stepId\": \"step-1\", \"order\": 1 },\n    { \"stepId\": \"step-2\", \"order\": 2 }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/pipelines/{{pipeline_id}}/steps/reorder",
+							"host": ["{{base_url}}"],
+							"path": ["pipelines", "{{pipeline_id}}", "steps", "reorder"]
+						},
+						"description": "Reorder steps in a pipeline"
+					}
+				}
+			]
+		},
+		{
+			"name": "Instances",
+			"item": [
+				{
+					"name": "List Instances",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/instances?pipelineId={{pipeline_id}}&status=running",
+							"host": ["{{base_url}}"],
+							"path": ["instances"],
+							"query": [
+								{
+									"key": "pipelineId",
+									"value": "{{pipeline_id}}"
+								},
+								{
+									"key": "status",
+									"value": "running"
+								}
+							]
+						},
+						"description": "List pipeline instances with optional filters"
+					}
+				},
+				{
+					"name": "Get Instance",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/instances/{{instance_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["instances", "{{instance_id}}"]
+						},
+						"description": "Get an instance by ID"
+					}
+				},
+				{
+					"name": "Get Instance by Lead",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/instances/lead/{{lead_id}}?includeAll=false",
+							"host": ["{{base_url}}"],
+							"path": ["instances", "lead", "{{lead_id}}"],
+							"query": [
+								{
+									"key": "includeAll",
+									"value": "false"
+								}
+							]
+						},
+						"description": "Get instance for a lead"
+					}
+				},
+				{
+					"name": "Get Next Step",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/instances/{{instance_id}}/next-step",
+							"host": ["{{base_url}}"],
+							"path": ["instances", "{{instance_id}}", "next-step"]
+						},
+						"description": "Get next step info for an instance"
+					}
+				}
+			]
+		},
+		{
+			"name": "Approvals",
+			"item": [
+				{
+					"name": "List Approvals",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/approvals?status=pending",
+							"host": ["{{base_url}}"],
+							"path": ["approvals"],
+							"query": [
+								{
+									"key": "status",
+									"value": "pending"
+								}
+							]
+						},
+						"description": "List pending approvals"
+					}
+				},
+				{
+					"name": "Submit Approval Decision",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"decision\": \"approved\",\n  \"comments\": \"Looks good\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/approvals/:approvalId/decision",
+							"host": ["{{base_url}}"],
+							"path": ["approvals", ":approvalId", "decision"],
+							"variable": [
+								{
+									"key": "approvalId",
+									"value": ""
+								}
+							]
+						},
+						"description": "Submit an approval decision"
+					}
+				}
+			]
+		}
+	]
+}
+
+
+
+

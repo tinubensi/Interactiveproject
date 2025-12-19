@@ -13,6 +13,7 @@ import { validateCreateLeadRequest, sanitizeInput } from '../../utils/validation
 import { Lead, CreateLeadRequest } from '../../models/lead';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
 import { ensureAuthorized, requirePermission, LEAD_PERMISSIONS } from '../../lib/auth';
+import { isLeadManagedByPipeline, notifyLeadCreated } from '../../services/pipelineServiceClient';
 
 export async function createLead(
   request: HttpRequest,
@@ -81,7 +82,7 @@ export async function createLead(
 
     // Determine assignee (from Petli logic)
     let assignedTo = body.assignedTo;
-    
+
     // If no assignee or assignee is ambassador, assign to technical user
     // TODO: Integrate with Customer Service to fetch technical user
     if (!assignedTo) {
@@ -110,8 +111,8 @@ export async function createLead(
       ambassador: body.ambassador,
       agent: body.agent,
       source: body.source || 'Website',
-      currentStage: 'Plans Fetching',
-      stageId: 'stage-1',
+      currentStage: 'Lead Created', // Start at Lead Created stage
+      stageId: 'stage-0', // stage-0 = Lead Created
       isHotLead: false,
       isEmailRepeated,
       isPhoneRepeated,
@@ -128,9 +129,9 @@ export async function createLead(
     await cosmosService.createTimelineEntry({
       id: uuidv4(),
       leadId: createdLead.id,
-      stage: 'Plans Fetching',
-      stageId: 'stage-1',
-      remark: 'Lead created - fetching plans from vendors',
+      stage: 'Lead Created', // Initial stage is Lead Created
+      stageId: 'stage-0', // stage-0 = Lead Created
+      remark: 'Lead created',
       changedBy: body.assignedTo || 'system',
       changedByName: 'System',
       timestamp: new Date()
@@ -155,37 +156,27 @@ export async function createLead(
       context.log('lead.created event published successfully to Event Grid');
     } catch (eventError: any) {
       context.warn('Failed to publish lead.created event to Event Grid:', eventError.message);
-      
-      // HTTP Fallback: Only trigger plan fetching directly if Event Grid fails
-      // This ensures plans are fetched even if Event Grid is unavailable
-      try {
-        const quotationGenServiceUrl = process.env.QUOTATION_GEN_SERVICE_URL || 'http://localhost:7082/api';
-        context.log(`Event Grid failed, using HTTP fallback to trigger plan fetch at ${quotationGenServiceUrl}/plans/fetch`);
-        
-        const fetchResponse = await fetch(`${quotationGenServiceUrl}/plans/fetch`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            leadId: createdLead.id,
-            lineOfBusiness: createdLead.lineOfBusiness,
-            businessType: createdLead.businessType,
-            leadData: createdLead.lobData,
-            forceRefresh: true
-          })
-        });
-        
-        if (fetchResponse.ok) {
-          context.log('Plan fetching triggered successfully via HTTP fallback');
-        } else {
-          const errorText = await fetchResponse.text();
-          context.warn(`Plan fetching HTTP trigger failed: ${fetchResponse.status} - ${errorText}`);
-        }
-      } catch (httpError: any) {
-        // Log but don't fail - plan fetching can be triggered manually later
-        context.error('HTTP fallback to trigger plan fetching also failed:', httpError.message);
+    }
+
+    // VALIDATION: Ensure Pipeline Service created a pipeline instance
+    // Pipeline Service must listen to lead.created events and create pipeline instances
+    if (eventPublished) {
+      context.log('Lead created event published. Pipeline creation will be handled asynchronously.');
+      // Removed blocking wait for pipeline creation to improve performance
+      // The frontend should handle the "pending pipeline" state gracefully
+    }
+
+    // HTTP Fallback: Also notify pipeline service directly to ensure immediate processing
+    // This provides robustness if Event Grid is slow or unavailable
+    let fallbackResult: any = { success: false, skipped: true };
+    try {
+      fallbackResult = await notifyLeadCreated(createdLead, { log: context.log.bind(context) });
+      if (!fallbackResult.success) {
+        context.warn(`[HTTP Fallback] Failed: ${fallbackResult.error}`);
       }
+    } catch (fallbackError) {
+      context.warn(`[HTTP Fallback] Unexpected error: ${fallbackError}`);
+      fallbackResult = { success: false, error: String(fallbackError) };
     }
 
     context.log(`Lead created successfully: ${createdLead.referenceId}`);
@@ -200,7 +191,8 @@ export async function createLead(
           lead: createdLead,
           warnings: {
             isEmailRepeated,
-            isPhoneRepeated
+            isPhoneRepeated,
+            fallbackDebug: fallbackResult
           }
         }
       }

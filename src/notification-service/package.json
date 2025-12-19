@@ -20,7 +20,6 @@
     "@azure/communication-email": "^1.0.0",
     "@azure/communication-sms": "^1.1.0",
     "@azure/eventgrid": "^5.5.1",
-    "@nectaria/shared-types": "file:../../../packages/@nectaria/shared-types",
     "handlebars": "^4.7.8",
     "uuid": "^11.0.3"
   },

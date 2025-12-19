@@ -120,49 +120,29 @@ export async function handlePlansFetched(
     }
 
     // Check if this lead is managed by a pipeline
-    const hasPipeline = await isLeadManagedByPipeline(data.leadId);
+    const hasPipeline = await isLeadManagedByPipeline(eventData.leadId);
     if (hasPipeline) {
-      context.log(`Lead ${data.leadId} is managed by pipeline - skipping hardcoded stage change`);
+      context.log(`Lead ${eventData.leadId} is managed by pipeline - skipping hardcoded stage change`);
       // Still update plan count but don't change stage
-      await cosmosService.updateLead(data.leadId, lead.lineOfBusiness, {
-        planFetchRequestId: data.fetchRequestId,
-        plansCount: data.plans?.length || data.totalPlans,
+      await cosmosService.updateLead(eventData.leadId, lead.lineOfBusiness, {
+        planFetchRequestId: eventData.fetchRequestId,
+        plansCount: eventData.plans?.length || eventData.totalPlans,
         updatedAt: new Date()
       });
       return;
     }
 
-    // Fallback: No pipeline active - use hardcoded stage change
-    context.log(`Lead ${data.leadId} has no active pipeline - using hardcoded stage change`);
+    // ERROR: No pipeline active - Pipeline Service is sole authority for stage updates
+    context.error(`Lead ${eventData.leadId} has no active pipeline - cannot update stage. Pipeline Service must handle all stage changes.`);
 
-    // Update lead status to "Plans Available"
-    try {
-      await cosmosService.updateLead(leadId, lead.lineOfBusiness, {
-        currentStage: 'Plans Available',
-        stageId: 'stage-2',
-        planFetchRequestId: eventData.fetchRequestId,
-        plansCount: eventData.plans?.length || eventData.totalPlans || 0,
-        updatedAt: new Date()
-      });
+    // Still update plan data but NO stage updates
+    await cosmosService.updateLead(leadId, lead.lineOfBusiness, {
+      planFetchRequestId: eventData.fetchRequestId,
+      plansCount: eventData.plans?.length || eventData.totalPlans || 0,
+      updatedAt: new Date()
+    });
 
-      // Create timeline entry
-      await cosmosService.createTimelineEntry({
-        id: uuidv4(),
-        leadId: leadId,
-        stage: 'Plans Available',
-        previousStage: lead.currentStage,
-        stageId: 'stage-2',
-        remark: `${eventData.plans?.length || eventData.totalPlans || 0} plans fetched from ${eventData.successfulVendors?.length || 0} vendors`,
-        changedBy: 'system',
-        changedByName: 'System',
-        timestamp: new Date()
-      });
-
-      context.log(`Lead ${leadId} status updated to "Plans Available" with ${eventData.plans?.length || eventData.totalPlans || 0} plans`);
-    } catch (updateError: any) {
-      context.error(`Failed to update lead ${leadId} status:`, updateError);
-      throw updateError; // Re-throw to trigger HTTP fallback
-    }
+    context.warn(`Updated plan data for lead ${leadId} but did NOT change stage - no pipeline instance found`);
 
   } catch (error: any) {
     context.error('Handle plans fetched error:', error);

@@ -17,6 +17,8 @@ export interface PipelineServiceConfig {
     authzServiceUrl: string;
     leadServiceUrl: string;
     documentServiceUrl: string;
+    pipelineServiceUrl: string;
+    quotationServiceUrl: string;
   };
   internalServiceKey: string;
 }
@@ -43,6 +45,8 @@ export function getConfig(): PipelineServiceConfig {
       authzServiceUrl: process.env.AUTHZ_SERVICE_URL || 'http://localhost:7072',
       leadServiceUrl: process.env.LEAD_SERVICE_URL || 'http://localhost:7078',
       documentServiceUrl: process.env.DOCUMENT_SERVICE_URL || 'http://localhost:7073',
+      pipelineServiceUrl: process.env.PIPELINE_SERVICE_URL || 'http://localhost:7075',
+      quotationServiceUrl: process.env.QUOTATION_SERVICE_URL || 'http://localhost:7074',
     },
     internalServiceKey: process.env.INTERNAL_SERVICE_KEY || '',
   };

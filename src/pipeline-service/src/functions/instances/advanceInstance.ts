@@ -45,7 +45,7 @@ export async function advanceInstance(
 
     // Verify instance is waiting for manual advance
     const validWaitingEvents = ['manual_advance', 'pipeline.manual_advance'];
-    if (instance.status !== 'waiting_event' || !validWaitingEvents.includes(instance.waitingForEvent || '')) {
+    if (instance.status !== 'active' || !instance.waitingForEvent || !validWaitingEvents.includes(instance.waitingForEvent)) {
       return errorResponse(
         request,
         `Instance is not waiting for manual advance. Current status: ${instance.status}, waiting for: ${instance.waitingForEvent || 'nothing'}`,
@@ -143,7 +143,7 @@ export async function advanceLeadInstance(
 
     // Verify instance is waiting for manual advance
     const validWaitingEvents = ['manual_advance', 'pipeline.manual_advance'];
-    if (instance.status !== 'waiting_event' || !validWaitingEvents.includes(instance.waitingForEvent || '')) {
+    if (instance.status !== 'active' || !instance.waitingForEvent || !validWaitingEvents.includes(instance.waitingForEvent)) {
       return errorResponse(
         request,
         `Instance is not waiting for manual advance. Current status: ${instance.status}, waiting for: ${instance.waitingForEvent || 'nothing'}`,

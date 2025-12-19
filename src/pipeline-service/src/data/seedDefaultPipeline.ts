@@ -33,6 +33,8 @@ export function generateDefaultHealthInsurancePipeline(
     quotationSent: uuidv4(),
     waitCustomerResponse: uuidv4(),
     customerResponseDecision: uuidv4(),
+    revisionRequested: uuidv4(),
+    pendingReview: uuidv4(),
     underwriterApproval: uuidv4(),
     approved: uuidv4(),
     policyRequested: uuidv4(),
@@ -77,13 +79,14 @@ export function generateDefaultHealthInsurancePipeline(
       stageName: 'Plans Available',
       name: 'Plans Available',
       description: 'Insurance plans have been fetched and are ready',
+      allowedActions: ['CREATE_QUOTATION', 'REFETCH_PLANS', 'MANUAL_ADVANCE'],
     } satisfies StageStep,
 
     // Step 4: Hot Lead Decision
     {
       id: stepIds.hotLeadDecision,
       order: 4,
-      enabled: true,
+      enabled: false, // DISABLED: Prevents auto-advance from Plans Available to Quotation Created
       type: 'decision' as const,
       conditionType: 'is_hot_lead' as const,
       trueNextStepId: stepIds.hotLeadNotification,
@@ -96,7 +99,7 @@ export function generateDefaultHealthInsurancePipeline(
     {
       id: stepIds.hotLeadNotification,
       order: 5,
-      enabled: true,
+      enabled: false, // DISABLED: Hot Lead Decision is disabled
       type: 'notification' as const,
       notificationType: 'push_manager_alert' as const,
       name: 'Hot Lead Alert',
@@ -113,6 +116,7 @@ export function generateDefaultHealthInsurancePipeline(
       stageName: 'Quotation Created',
       name: 'Quotation Created',
       description: 'Quotation has been created for the lead',
+      allowedActions: ['SEND_QUOTATION', 'MANUAL_ADVANCE'],
     } satisfies StageStep,
 
     // Step 7: Quotation Sent
@@ -125,6 +129,7 @@ export function generateDefaultHealthInsurancePipeline(
       stageName: 'Quotation Sent',
       name: 'Quotation Sent',
       description: 'Quotation has been sent to the customer',
+      allowedActions: ['MANUAL_ADVANCE'],
     } satisfies StageStep,
 
     // Step 8: Wait for Customer Response
@@ -146,16 +151,42 @@ export function generateDefaultHealthInsurancePipeline(
       enabled: true,
       type: 'decision' as const,
       conditionType: 'quotation_approved' as const,
-      trueNextStepId: stepIds.underwriterApproval,
+      trueNextStepId: stepIds.pendingReview,
       falseNextStepId: stepIds.lost,
       name: 'Quotation Approved?',
       description: 'Check if customer approved the quotation',
     } satisfies DecisionStep,
 
-    // Step 10: Underwriter Approval (optional - can be disabled)
+    // Step 9.5: Revision Requested (Customer requested changes)
+    {
+      id: stepIds.revisionRequested,
+      order: 9.5,
+      enabled: true,
+      type: 'stage' as const,
+      stageId: 'revision-requested' as const,
+      stageName: 'Revision Requested',
+      name: 'Revision Requested',
+      description: 'Customer has requested changes to the quotation',
+      allowedActions: ['CREATE_QUOTATION', 'REFETCH_PLANS', 'MANUAL_ADVANCE'],
+    } satisfies StageStep,
+
+    // Step 10: Pending Review (Customer selected plan - awaiting internal review)
+    {
+      id: stepIds.pendingReview,
+      order: 10,
+      enabled: true,
+      type: 'stage' as const,
+      stageId: 'pending-review' as const,
+      stageName: 'Pending Review',
+      name: 'Pending Review',
+      description: 'Customer has selected a plan - awaiting internal review and approval',
+      allowedActions: ['APPROVE_QUOTATION', 'REJECT_QUOTATION', 'MANUAL_ADVANCE'],
+    } satisfies StageStep,
+
+    // Step 11: Underwriter Approval (optional - can be disabled)
     {
       id: stepIds.underwriterApproval,
-      order: 10,
+      order: 11,
       enabled: false, // Disabled by default - can be enabled for high-value cases
       type: 'approval' as const,
       approverRole: 'underwriter' as const,
@@ -165,10 +196,10 @@ export function generateDefaultHealthInsurancePipeline(
       description: 'Requires underwriter approval (enable for high-value policies)',
     } satisfies ApprovalStep,
 
-    // Step 11: Approved
+    // Step 12: Approved
     {
       id: stepIds.approved,
-      order: 11,
+      order: 12,
       enabled: true,
       type: 'stage' as const,
       stageId: 'approved' as const,
@@ -177,10 +208,10 @@ export function generateDefaultHealthInsurancePipeline(
       description: 'Quotation has been approved',
     } satisfies StageStep,
 
-    // Step 12: Policy Requested
+    // Step 13: Policy Requested
     {
       id: stepIds.policyRequested,
-      order: 12,
+      order: 13,
       enabled: true,
       type: 'stage' as const,
       stageId: 'policy-requested' as const,
@@ -189,10 +220,10 @@ export function generateDefaultHealthInsurancePipeline(
       description: 'Policy request has been submitted',
     } satisfies StageStep,
 
-    // Step 13: Policy Issued (End - Success)
+    // Step 14: Policy Issued (End - Success)
     {
       id: stepIds.policyIssued,
-      order: 13,
+      order: 14,
       enabled: true,
       type: 'stage' as const,
       stageId: 'policy-issued' as const,
@@ -201,7 +232,7 @@ export function generateDefaultHealthInsurancePipeline(
       description: 'Policy has been issued successfully - Pipeline Complete',
     } satisfies StageStep,
 
-    // Step 14: Lost (End - Failure Branch)
+    // Step 15: Lost (End - Failure Branch)
     {
       id: stepIds.lost,
       order: 98,
@@ -213,7 +244,7 @@ export function generateDefaultHealthInsurancePipeline(
       description: 'Lead has been lost - Pipeline Complete',
     } satisfies StageStep,
 
-    // Step 15: Rejected (End - Rejection Branch)
+    // Step 16: Rejected (End - Rejection Branch)
     {
       id: stepIds.rejected,
       order: 99,
@@ -258,7 +289,7 @@ export interface SeedResult {
  */
 export function getSeedData(createdBy: string = 'system'): SeedResult {
   const pipeline = generateDefaultHealthInsurancePipeline(createdBy);
-  
+
   return {
     pipeline,
     message: `Generated default Individual Health Insurance pipeline with ${pipeline.steps.length} steps`,

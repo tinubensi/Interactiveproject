@@ -39,7 +39,17 @@ async function handler(
     // Get the pipeline to find next step details
     const pipeline = await getPipeline(instance.pipelineId);
     const sortedSteps = [...pipeline.steps].sort((a, b) => a.order - b.order);
-    
+
+    // Get current step and extract allowed actions
+    let allowedActions: string[] | undefined;
+    if (instance.currentStepId) {
+      const currentStep = pipeline.steps.find(s => s.id === instance.currentStepId);
+      if (currentStep?.type === 'stage') {
+        const stageStep = currentStep as import('../../models/pipeline').StageStep;
+        allowedActions = stageStep.allowedActions || [];
+      }
+    }
+
     // Find next stage step (if exists)
     let nextStageId: string | undefined;
     let nextStageName: string | undefined;
@@ -68,7 +78,7 @@ async function handler(
     let waitingFor: string | undefined;
     if (instance.status === 'waiting_approval') {
       waitingFor = 'approval';
-    } else if (instance.status === 'waiting_event') {
+    } else if (instance.status === 'active' && instance.waitingForEvent) {
       waitingFor = instance.waitingForEvent;
     }
 
@@ -87,6 +97,7 @@ async function handler(
       progressPercent: instance.progressPercent,
       status: instance.status,
       waitingFor,
+      allowedActions,
     };
 
     return successResponse(request, result);

@@ -50,7 +50,7 @@ class EventGridService {
     vendorName: string;
     lineOfBusiness: LineOfBusiness;
   }): Promise<void> {
-    await this.publishEvent('policy.request_created', `policy/${data.policyRequestId}`, {
+    await this.publishEvent('policy.requested', `policy/${data.policyRequestId}`, {
       ...data,
       createdAt: new Date()
     });

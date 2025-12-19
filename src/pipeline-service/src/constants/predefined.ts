@@ -79,6 +79,16 @@ export const PREDEFINED_STAGES: StageDefinition[] = [
     order: 5,
   },
   {
+    id: 'revision-requested',
+    name: 'Revision Requested',
+    description: 'Customer has requested changes to the quotation',
+    icon: 'edit',
+    triggerEvent: 'quotation.revision_requested',
+    progressPercent: 60,
+    applicableFor: ['medical', 'motor', 'general', 'marine'],
+    order: 5.5,
+  },
+  {
     id: 'pending-review',
     name: 'Pending Review',
     description: 'Awaiting review or customer response',
@@ -495,6 +505,7 @@ export const EVENT_TO_STAGE_MAP: Record<string, PredefinedStageId> = {
   'plans.fetch_completed': 'plans-available',
   'quotation.created': 'quotation-created',
   'quotation.sent': 'quotation-sent',
+  'quotation.revision_requested': 'revision-requested',
   'quotation.pending_approval': 'pending-review',
   'quotation.approved': 'approved',
   'quotation.rejected': 'rejected',
@@ -513,6 +524,8 @@ export const PIPELINE_EVENTS = [
   'plans.fetch_completed',
   'quotation.created',
   'quotation.sent',
+  'quotation.viewed',
+  'quotation.revision_requested',
   'quotation.pending_approval',
   'quotation.approved',
   'quotation.rejected',
@@ -525,5 +538,8 @@ export const PIPELINE_EVENTS = [
   'payment.received',
   'pipeline.manual_advance',
   'pipeline.approval.decided',
+  'pipeline.action.create_quotation',
+  'pipeline.action.refetch_plans',
+  'pipeline.action.send_quotation',
 ];
 

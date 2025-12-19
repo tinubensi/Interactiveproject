@@ -86,19 +86,18 @@ export async function getQuotationByToken(
 
     context.log(`Found quotation ${quotation.referenceId} with ${plans.length} plans`);
 
-    // Publish customer.responded event for pipeline to advance
+    // Publish quotation.viewed event (doesn't trigger wait steps)
     try {
-      await eventGridService.publishEvent('customer.responded', `quotation/${quotation.id}`, {
+      await eventGridService.publishEvent('quotation.viewed', `quotation/${quotation.id}`, {
         leadId: quotation.leadId,
         quotationId: quotation.id,
         referenceId: quotation.referenceId,
-        responseType: 'viewed',
         lineOfBusiness: quotation.lineOfBusiness,
         viewedAt: new Date().toISOString(),
       });
-      context.log(`Published customer.responded event for quotation ${quotation.referenceId}`);
+      context.log(`Published quotation.viewed event for quotation ${quotation.referenceId}`);
     } catch (eventError) {
-      context.warn('Failed to publish customer.responded event:', eventError);
+      context.warn('Failed to publish quotation.viewed event:', eventError);
       // Don't fail the request if event publishing fails
     }
 

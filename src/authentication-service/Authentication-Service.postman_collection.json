@@ -1,0 +1,114 @@
+{
+	"info": {
+		"name": "Authentication Service API",
+		"description": "API collection for Authentication Service. Handles B2B SSO authentication, session management, and user authentication.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://authentication-service.azurewebsites.net/api",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/me",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "me"]
+						},
+						"description": "Get current authenticated user info. Returns null if not authenticated. Uses httpOnly cookies for authentication."
+					}
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/refresh",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "refresh"]
+						},
+						"description": "Refresh access token using refresh token cookie. Returns true if successful."
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "logout"]
+						},
+						"description": "Logout current session. Returns Azure AD logout URL for complete SSO logout."
+					}
+				},
+				{
+					"name": "Logout All Sessions",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/logout/all",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "logout", "all"]
+						},
+						"description": "Logout from all sessions across all devices"
+					}
+				}
+			]
+		},
+		{
+			"name": "Sessions",
+			"item": [
+				{
+					"name": "Get All Sessions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/sessions",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "sessions"]
+						},
+						"description": "Get list of all active sessions for current user"
+					}
+				},
+				{
+					"name": "Delete Session",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/sessions/:sessionId",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "sessions", ":sessionId"],
+							"variable": [
+								{
+									"key": "sessionId",
+									"value": ""
+								}
+							]
+						},
+						"description": "Delete/invalidate a specific session. Cannot delete current session (use logout instead)."
+					}
+				}
+			]
+		}
+	]
+}
+
+
+
+

@@ -16,7 +16,6 @@ export type StepType = 'stage' | 'approval' | 'decision' | 'notification' | 'wai
 export type InstanceStatus = 
   | 'active' 
   | 'waiting_approval' 
-  | 'waiting_event' 
   | 'completed' 
   | 'failed' 
   | 'cancelled';
@@ -33,6 +32,7 @@ export type PredefinedStageId =
   | 'plans-available'
   | 'quotation-created'
   | 'quotation-sent'
+  | 'revision-requested'
   | 'pending-review'
   | 'approved'
   | 'rejected'
@@ -100,6 +100,7 @@ export interface StageStep extends BaseStep {
   stageId: PredefinedStageId;
   stageName: string;
   triggerEvent?: string; // Event that triggers this stage
+  allowedActions?: string[]; // Actions allowed at this stage
 }
 
 /**
@@ -198,7 +199,8 @@ export interface PipelineDefinition {
 export interface StepHistoryEntry {
   stepId: string;
   stepType: StepType;
-  stageName?: string;
+  stageName?: string; // For stage steps
+  stepName?: string; // For all steps (display name)
   enteredAt: string;
   exitedAt?: string;
   outcome?: 'completed' | 'approved' | 'rejected' | 'skipped' | 'timeout' | 'branched';
@@ -392,5 +394,6 @@ export interface NextStepInfo {
   progressPercent?: number;
   status?: InstanceStatus;
   waitingFor?: string;
+  allowedActions?: string[]; // Actions allowed at current stage
 }
 

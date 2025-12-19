@@ -65,6 +65,21 @@ export async function requirePermission(
 }
 
 /**
+ * Validate internal service key for event handlers
+ */
+export function validateServiceKey(request: HttpRequest): boolean {
+  const serviceKey = request.headers.get('x-service-key');
+  const expectedKey = process.env.INTERNAL_SERVICE_KEY;
+  
+  if (!expectedKey) {
+    console.warn('INTERNAL_SERVICE_KEY not configured - skipping validation');
+    return false;
+  }
+  
+  return serviceKey === expectedKey;
+}
+
+/**
  * Permission constants for quote generation operations
  */
 export const QUOTE_PERMISSIONS = {

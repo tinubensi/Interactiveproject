@@ -69,33 +69,17 @@ export async function handleQuotationCreated(
       return;
     }
 
-    // Fallback: No pipeline active - use hardcoded stage change
-    context.log(`Lead ${data.leadId} has no active pipeline - using hardcoded stage change`);
+    // ERROR: No pipeline active - Pipeline Service is sole authority for stage updates
+    context.error(`Lead ${data.leadId} has no active pipeline - cannot update stage. Pipeline Service must handle all stage changes.`);
 
-    // Update lead status to "Quotation Created"
+    // Still update quotation reference but NO stage updates
     await cosmosService.updateLead(data.leadId, lead.lineOfBusiness, {
-      currentStage: 'Quotation Created',
-      stageId: 'stage-3',
       currentQuotationId: data.quotationId,
       isQuoteGenerated: true,
       updatedAt: new Date()
     });
 
-    // Create timeline entry
-    await cosmosService.createTimelineEntry({
-      id: uuidv4(),
-      leadId: data.leadId,
-      stage: 'Quotation Created',
-      previousStage: lead.currentStage,
-      stageId: 'stage-3',
-      remark: `Quotation ${data.referenceId} created with ${data.planIds.length} plans`,
-      changedBy: 'system',
-      changedByName: 'System',
-      quotationId: data.quotationId,
-      timestamp: new Date()
-    });
-
-    context.log(`Lead ${data.leadId} status updated to "Quotation Created" (${data.referenceId})`);
+    context.warn(`Updated quotation reference for lead ${data.leadId} but did NOT change stage - no pipeline instance found`);
   } catch (error: any) {
     context.error('Handle quotation created error:', error);
   }

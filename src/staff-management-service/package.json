@@ -18,7 +18,6 @@
     "@azure/cosmos": "^4.2.0",
     "@azure/functions": "^4.5.1",
     "@azure/eventgrid": "^5.5.1",
-    "@nectaria/shared-types": "file:../../../packages/@nectaria/shared-types",
     "uuid": "^11.0.3"
   },
   "devDependencies": {
