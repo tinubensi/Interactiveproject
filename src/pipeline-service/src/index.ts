@@ -3,6 +3,10 @@
  * Lead Stage Orchestration with Configurable Pipelines
  */
 
+// Initialize Application Insights telemetry
+import { initTelemetry } from './lib/telemetry';
+initTelemetry();
+
 // Pipeline Management Functions
 import './functions/pipelines/createPipeline';
 import './functions/pipelines/getPipeline';
@@ -28,6 +32,9 @@ import './functions/instances/getNextStep';
 import './functions/approvals/listPendingApprovals';
 import './functions/approvals/decideApproval';
 
+// Admin Functions
+import './functions/admin/detectStuckInstances';
+
 // Options Functions (for UI dropdowns)
 import './functions/options/getStages';
 import './functions/options/getApprovers';
@@ -37,6 +44,9 @@ import './functions/options/getWaitEvents';
 
 // Event Handlers
 import './functions/events/pipelineOrchestrator';
+
+// Queue Handlers
+import './functions/queue/retryQueueHandler';
 
 // Export types and utilities
 export * from './models/pipeline';

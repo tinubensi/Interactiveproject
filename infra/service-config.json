@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "services": [
+    {
+      "name": "authentication",
+      "displayName": "Authentication Service",
+      "database": "auth-db",
+      "port": 7071,
+      "containers": [
+        {
+          "name": "sessions",
+          "partitionKey": "/userId",
+          "ttl": 2592000
+        },
+        {
+          "name": "login-attempts",
+          "partitionKey": "/email",
+          "ttl": 900
+        },
+        {
+          "name": "otps",
+          "partitionKey": "/email",
+          "ttl": 300
+        }
+      ],
+      "requiresAzureAd": true
+    },
+    {
+      "name": "authorization",
+      "displayName": "Authorization Service",
+      "database": "authz-db",
+      "port": 7072,
+      "containers": [
+        {
+          "name": "role-definitions",
+          "partitionKey": "/roleId",
+          "ttl": -1
+        },
+        {
+          "name": "user-roles",
+          "partitionKey": "/userId",
+          "ttl": -1
+        },
+        {
+          "name": "permission-cache",
+          "partitionKey": "/userId",
+          "ttl": 300
+        }
+      ]
+    },
+    {
+      "name": "audit",
+      "displayName": "Audit Service",
+      "database": "audit-db",
+      "port": 7073,
+      "containers": [
+        {
+          "name": "audit-logs",
+          "partitionKey": "/entityType",
+          "ttl": -1
+        },
+        {
+          "name": "audit-summaries",
+          "partitionKey": "/date",
+          "ttl": 31536000
+        }
+      ]
+    },
+    {
+      "name": "staff-management",
+      "displayName": "Staff Management Service",
+      "database": "staff-db",
+      "port": 7074,
+      "containers": [
+        {
+          "name": "staff-members",
+          "partitionKey": "/staffId",
+          "ttl": -1
+        },
+        {
+          "name": "teams",
+          "partitionKey": "/teamId",
+          "ttl": -1
+        },
+        {
+          "name": "territories",
+          "partitionKey": "/id",
+          "ttl": -1
+        }
+      ]
+    },
+    {
+      "name": "notification",
+      "displayName": "Notification Service",
+      "database": "notification-db",
+      "port": 7075,
+      "containers": [
+        {
+          "name": "templates",
+          "partitionKey": "/templateId",
+          "ttl": -1
+        },
+        {
+          "name": "notifications",
+          "partitionKey": "/userId",
+          "ttl": 7776000
+        },
+        {
+          "name": "preferences",
+          "partitionKey": "/userId",
+          "ttl": -1
+        }
+      ]
+    },
+    {
+      "name": "customer",
+      "displayName": "Customer Service",
+      "database": "customer-db",
+      "port": 7076,
+      "containers": [
+        {
+          "name": "customers",
+          "partitionKey": "/id",
+          "ttl": -1
+        }
+      ]
+    },
+    {
+      "name": "form",
+      "displayName": "Form Service",
+      "database": "form-db",
+      "port": 7077,
+      "containers": [
+        {
+          "name": "form-definitions",
+          "partitionKey": "/insuranceLine",
+          "ttl": -1
+        },
+        {
+          "name": "intake-forms",
+          "partitionKey": "/intakeId",
+          "ttl": -1
+        },
+        {
+          "name": "portal-registry",
+          "partitionKey": "/portalId",
+          "ttl": -1
+        },
+        {
+          "name": "unmapped-fields",
+          "partitionKey": "/portalId",
+          "ttl": -1
+        }
+      ]
+    },
+    {
+      "name": "lead",
+      "displayName": "Lead Service",
+      "database": "lead-db",
+      "port": 7078,
+      "containers": [
+        {
+          "name": "leads",
+          "partitionKey": "/customerId",
+          "ttl": -1
+        },
+        {
+          "name": "plans",
+          "partitionKey": "/insuranceLineId",
+          "ttl": -1
+        }
+      ]
+    },
+    {
+      "name": "quotation",
+      "displayName": "Quotation Service",
+      "database": "quotation-db",
+      "port": 7079,
+      "containers": [
+        {
+          "name": "quotations",
+          "partitionKey": "/leadId",
+          "ttl": -1
+        }
+      ]
+    },
+    {
+      "name": "quotation-generation",
+      "displayName": "Quotation Generation Service",
+      "database": "quotation-gen-db",
+      "port": 7080,
+      "containers": [
+        {
+          "name": "insurer-quoting-rules",
+          "partitionKey": "/insuranceLine",
+          "ttl": -1
+        }
+      ]
+    },
+    {
+      "name": "policy",
+      "displayName": "Policy Service",
+      "database": "policy-db",
+      "port": 7081,
+      "containers": [
+        {
+          "name": "policies",
+          "partitionKey": "/customerId",
+          "ttl": -1
+        }
+      ]
+    },
+    {
+      "name": "document",
+      "displayName": "Document Service",
+      "database": "document-db",
+      "port": 7082,
+      "containers": [
+        {
+          "name": "documents",
+          "partitionKey": "/customerId",
+          "ttl": -1
+        },
+        {
+          "name": "metadata",
+          "partitionKey": "/documentId",
+          "ttl": -1
+        }
+      ],
+      "requiresBlobStorage": true
+    },
+    {
+      "name": "pipeline",
+      "displayName": "Pipeline Service",
+      "database": "pipeline-db",
+      "port": 7090,
+      "containers": [
+        {
+          "name": "pipeline-definitions",
+          "partitionKey": "/lineOfBusiness",
+          "ttl": -1
+        },
+        {
+          "name": "pipeline-instances",
+          "partitionKey": "/leadId",
+          "ttl": -1
+        },
+        {
+          "name": "pipeline-templates",
+          "partitionKey": "/templateId",
+          "ttl": -1
+        }
+      ]
+    }
+  ]
+}
+

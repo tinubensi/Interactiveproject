@@ -14,6 +14,10 @@ import type {
   WaitStep,
   StepType,
   LineOfBusiness,
+  EnhancedStageStep,
+  SyncActionConfig,
+  AsyncActionConfig,
+  StepHistoryEntry,
 } from '../models/pipeline';
 
 import {
@@ -56,6 +60,13 @@ import {
   publishApprovalDecided,
   publishPipelineNotificationRequired,
 } from '../services/eventGridService';
+
+import { publishActionEvent } from '../services/actionEventService';
+import { httpRequest, getServiceUrl } from '../services/httpClient';
+import { scheduleDelayedAction } from './queueHelper';
+import { trackPipelineEvent, trackPipelineMetric } from './telemetry';
+import { leadServiceBreaker } from './circuitBreaker';
+import { v4 as uuidv4 } from 'uuid';
 
 import {
   getStageById,
@@ -133,6 +144,11 @@ export async function processEvent(
     // Special case: lead.created - start a new pipeline instance
     if (eventType === 'lead.created') {
       return await handleLeadCreated(eventData, log);
+    }
+
+    // Check if this is a service completion event
+    if (eventType.startsWith('service.')) {
+      return await handleServiceCompletion(eventType, eventData, log, requestId);
     }
 
     // For all other events, find the active instance for this lead
@@ -240,6 +256,15 @@ async function handleLeadCreated(
   let instance = await createInstance(pipeline, leadId, 'lead.created');
   log(`[LEAD CREATED] ✓ Created pipeline instance ${instance.instanceId} for lead ${leadId}`);
   log(`[LEAD CREATED] Initial step: ${instance.currentStepId} (${instance.currentStepType})`);
+
+  // Track pipeline instance creation
+  trackPipelineEvent('PipelineInstanceCreated', {
+    instanceId: instance.instanceId,
+    pipelineId: pipeline.pipelineId,
+    leadId,
+    lineOfBusiness: lineOfBusiness || 'unknown',
+    initialStep: instance.currentStepId,
+  });
 
   // Publish instance created event
   await publishPipelineInstanceCreated({
@@ -631,6 +656,28 @@ async function executeStep(
 ): Promise<void> {
   log(`Executing step ${step.id} (${step.type}) for instance ${instance.instanceId}`);
 
+  // Track step execution duration
+  const startTime = Date.now();
+  try {
+    await executeStepInternal(instance, pipeline, step, triggeredBy, log, eventData);
+  } finally {
+    const duration = Date.now() - startTime;
+    trackPipelineMetric('pipeline.step.duration', duration, {
+      stepType: step.type,
+      stepId: step.id,
+      instanceId: instance.instanceId,
+    });
+  }
+}
+
+async function executeStepInternal(
+  instance: PipelineInstance,
+  pipeline: PipelineDefinition,
+  step: PipelineStep,
+  triggeredBy: string,
+  log: (...args: unknown[]) => void,
+  eventData?: EventData
+): Promise<void> {
   switch (step.type) {
     case 'stage':
       try {
@@ -743,23 +790,88 @@ async function executeStep(
 }
 
 /**
- * Execute a stage step - update the lead's stage
+ * Execute a stage step - update the lead's stage and execute actions
  */
 async function executeStageStep(
   instance: PipelineInstance,
-  step: StageStep,
+  step: StageStep | EnhancedStageStep,
   log: (...args: unknown[]) => void
 ): Promise<void> {
   log(`[EXECUTE STAGE] Starting execution of stage step: ${step.stageName} (${step.stageId})`);
   log(`[EXECUTE STAGE] Lead ID: ${instance.leadId}, Instance ID: ${instance.instanceId}`);
 
+  // 1. Always update lead stage synchronously (critical path)
+  await updateLeadStageSync(instance, step, log);
+
+  // 2. Check if this is an enhanced stage step with action config
+  const enhancedStep = step as EnhancedStageStep;
+  if (enhancedStep.actionConfig?.primaryAction) {
+    const action = enhancedStep.actionConfig.primaryAction;
+    const pipeline = await getPipeline(instance.pipelineId);
+    
+    log(`[EXECUTE STAGE] Primary action type: ${action.type}`);
+    
+    switch (action.type) {
+      case 'sync':
+        if (action.syncAction) {
+          await executeSyncAction(instance, pipeline, enhancedStep, action.syncAction, log);
+        }
+        break;
+      case 'async':
+        if (action.asyncAction) {
+          await executeAsyncAction(instance, enhancedStep, action.asyncAction, log);
+        }
+        break;
+      case 'manual':
+        await setManualWaitState(instance, enhancedStep, log);
+        break;
+      case 'wait':
+        // Wait state is handled by existing executeWaitStep
+        break;
+    }
+    
+    // Handle auto-advance if configured
+    if (enhancedStep.actionConfig.autoAdvance?.enabled) {
+      const delayMs = enhancedStep.actionConfig.autoAdvance.delayMs || 0;
+      if (delayMs > 0) {
+        log(`[EXECUTE STAGE] Auto-advance enabled with delay: ${delayMs}ms`);
+        log(`[EXECUTE STAGE] Scheduling auto-advance via Storage Queue (durable execution)`);
+        
+        // Get next step for auto-advance
+        const nextStep = getNextEnabledStep(pipeline.steps, step.id);
+        if (nextStep) {
+          // Schedule auto-advance via Storage Queue (replaces unsafe setTimeout)
+          await scheduleDelayedAction('auto_advance', {
+            instanceId: instance.instanceId,
+            stepId: step.id,
+            nextStepId: nextStep.id,
+            triggeredBy: 'auto_advance',
+          }, delayMs);
+          log(`[EXECUTE STAGE] ✓ Auto-advance scheduled via queue for ${delayMs}ms delay`);
+        } else {
+          log(`[EXECUTE STAGE] No next step found for auto-advance - skipping`);
+        }
+      }
+    }
+  } else {
+    // Legacy stage step - use existing logic
+    log(`[EXECUTE STAGE] Legacy stage step - using existing execution logic`);
+  }
+}
+
+/**
+ * Update lead stage synchronously (helper function)
+ */
+async function updateLeadStageSync(
+  instance: PipelineInstance,
+  step: StageStep,
+  log: (...args: unknown[]) => void
+): Promise<void> {
   // Map pipeline stage name to Lead Service stage ID
   const leadServiceStageId = STAGE_NAME_TO_LEAD_SERVICE_ID[step.stageName];
 
   if (!leadServiceStageId) {
     log(`[EXECUTE STAGE] ⚠ Warning: No Lead Service stage ID mapping found for stage "${step.stageName}" (stageId: ${step.stageId})`);
-    // Don't update lead service for unmapped stages - they might not exist in lead service
-    // Just log and continue - the pipeline will still track the stage internally
     log(`[EXECUTE STAGE] Pipeline stage "${step.stageName}" is not mapped to Lead Service - pipeline continues without lead service update`);
     return;
   }
@@ -775,12 +887,16 @@ async function executeStageStep(
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       log(`[EXECUTE STAGE] Attempting to update lead stage (attempt ${attempt}/3)...`);
-      lastResult = await updateLeadStage(instance.leadId, instance.lineOfBusiness, {
-        stageId: leadServiceStageId,
-        stageName: step.stageName,
-        remark: `Pipeline: ${instance.pipelineName}`,
-        changedBy: 'pipeline-service',
-      });
+      // Wrap Lead Service call with circuit breaker to prevent cascade failures
+      lastResult = await leadServiceBreaker.execute(
+        () => updateLeadStage(instance.leadId, instance.lineOfBusiness, {
+          stageId: leadServiceStageId,
+          stageName: step.stageName,
+          remark: `Pipeline: ${instance.pipelineName}`,
+          changedBy: 'pipeline-service',
+        }),
+        'LeadService'
+      );
 
       if (lastResult.success) {
         stageUpdateSuccess = true;
@@ -875,6 +991,330 @@ async function executeStageStep(
   });
 
   log(`[EXECUTE STAGE] ✓ Stage step ${step.stageName} execution complete`);
+}
+
+// =============================================================================
+// Enhanced Action Execution (Phase 2: Hybrid Sync/Async)
+// =============================================================================
+
+/**
+ * Fail-fast validation before action execution
+ */
+function validateRequiredData(
+  instance: PipelineInstance,
+  requiredFields: string[],
+  actionName: string
+): void {
+  const missingFields: string[] = [];
+  
+  for (const field of requiredFields) {
+    const value = getNestedProperty(instance, field);
+    if (value === undefined || value === null || value === '') {
+      missingFields.push(field);
+    }
+  }
+  
+  if (missingFields.length > 0) {
+    throw new Error(
+      `[${actionName}] Missing required data: ${missingFields.join(', ')}. ` +
+      `Instance ${instance.instanceId} cannot proceed.`
+    );
+  }
+}
+
+/**
+ * Helper to get nested properties
+ */
+function getNestedProperty(obj: any, path: string): any {
+  return path.split('.').reduce((current, key) => current?.[key], obj);
+}
+
+/**
+ * Prepare action data from instance and lead
+ */
+async function prepareActionData(
+  instance: PipelineInstance,
+  requiredFields: string[]
+): Promise<Record<string, any>> {
+  const actionData: Record<string, any> = {
+    leadId: instance.leadId,
+    instanceId: instance.instanceId,
+    lineOfBusiness: instance.lineOfBusiness,
+    businessType: instance.businessType,
+  };
+
+  // Get lead data for additional fields
+  try {
+    const lead = await getLead(instance.leadId, instance.lineOfBusiness);
+    if (lead) {
+      // Add common lead fields
+      actionData.customerId = lead.customerId;
+      actionData.lobData = lead.lobData;
+      
+      // Extract specific required fields from lead
+      for (const field of requiredFields) {
+        if (field.startsWith('lobData.')) {
+          const fieldPath = field.replace('lobData.', '');
+          const value = getNestedProperty(lead.lobData, fieldPath);
+          if (value !== undefined) {
+            if (!actionData.lobData) actionData.lobData = {};
+            actionData.lobData[fieldPath] = value;
+          }
+        } else if (field !== 'leadId' && field !== 'lineOfBusiness' && field !== 'businessType') {
+          const value = getNestedProperty(lead, field);
+          if (value !== undefined) {
+            actionData[field] = value;
+          }
+        }
+      }
+    }
+  } catch (error) {
+    // Log but don't fail - we'll validate required fields separately
+    console.warn(`Could not fetch lead data for action preparation: ${error}`);
+  }
+
+  return actionData;
+}
+
+/**
+ * Execute synchronous action (API call)
+ */
+export async function executeSyncAction(
+  instance: PipelineInstance,
+  pipeline: PipelineDefinition,
+  step: EnhancedStageStep,
+  config: SyncActionConfig,
+  log: (...args: unknown[]) => void
+): Promise<void> {
+  log(`[SYNC ACTION] ${config.method} ${config.targetService}${config.endpoint}`);
+
+  // Validate before execution
+  try {
+    validateRequiredData(instance, config.requiredData, `SYNC:${config.endpoint}`);
+  } catch (error: any) {
+    log(`[VALIDATION ERROR] ${error.message}`);
+    await recordError(instance.instanceId, step.id, error);
+    throw error;
+  }
+
+  try {
+    const requestData = await prepareActionData(instance, config.requiredData);
+    
+    const response = await httpRequest({
+      method: config.method,
+      url: `${getServiceUrl(config.targetService)}${config.endpoint}`,
+      data: requestData,
+      timeout: config.timeout,
+      headers: {
+        'x-service-key': process.env.INTERNAL_SERVICE_KEY || '',
+        'x-correlation-id': uuidv4(),
+        'x-instance-id': instance.instanceId,
+      },
+    });
+
+    log(`[SYNC ACTION] Success`);
+
+    // Handle success - use pipeline parameter passed by caller
+    if (config.onSuccess?.nextStage) {
+      const nextStep = findStepByStageId(pipeline.steps, config.onSuccess.nextStage);
+      if (nextStep) {
+        await advanceToStep(instance, pipeline, step, nextStep, 'sync_success', 'completed', log);
+      }
+    }
+
+    // Update instance data if specified
+    if (config.onSuccess?.updateData) {
+      // Interpolate data from response
+      const updateData: Record<string, any> = {};
+      for (const [key, value] of Object.entries(config.onSuccess.updateData)) {
+        if (typeof value === 'string' && value.startsWith('{{') && value.endsWith('}}')) {
+          const path = value.slice(2, -2);
+          updateData[key] = getNestedProperty(response, path);
+        } else {
+          updateData[key] = value;
+        }
+      }
+      // Store in instance metadata or update directly
+      await updateInstanceStatusDirect(instance, instance.status, updateData);
+    }
+  } catch (error: any) {
+    log(`[SYNC ACTION] Failed: ${error.message}`);
+    
+    // Retry logic
+    if (config.onFailure?.retryPolicy) {
+      const retryCount = instance.actionRetryCount || 0;
+      if (retryCount < config.onFailure.retryPolicy.maxRetries) {
+        log(`[SYNC ACTION] Scheduling retry ${retryCount + 1}/${config.onFailure.retryPolicy.maxRetries}`);
+        log(`[SYNC ACTION] Using Storage Queue for durable retry execution`);
+        await updateInstanceStatusDirect(instance, instance.status, {
+          actionRetryCount: retryCount + 1,
+        });
+        
+        // Schedule retry via Storage Queue (replaces unsafe setTimeout)
+        await scheduleDelayedAction('sync_retry', {
+          instanceId: instance.instanceId,
+          stepId: step.id,
+          config,
+        }, config.onFailure.retryPolicy.delayMs);
+        
+        // Track retry scheduling
+        trackPipelineEvent('ActionRetryScheduled', {
+          instanceId: instance.instanceId,
+          stepId: step.id,
+          actionType: 'sync',
+          retryCount: retryCount + 1,
+          maxRetries: config.onFailure.retryPolicy.maxRetries,
+          delayMs: config.onFailure.retryPolicy.delayMs,
+        });
+        
+        log(`[SYNC ACTION] ✓ Retry scheduled via queue for ${config.onFailure.retryPolicy.delayMs}ms delay`);
+        return;
+      }
+    }
+
+    // Fallback stage
+    if (config.onFailure?.fallbackStage) {
+      const pipeline = await getPipeline(instance.pipelineId);
+      const fallbackStep = findStepByStageId(pipeline.steps, config.onFailure.fallbackStage);
+      if (fallbackStep) {
+        await advanceToStep(instance, pipeline, step, fallbackStep, 'sync_failure', 'completed', log);
+      }
+    }
+
+    await recordError(instance.instanceId, step.id, error);
+    throw error;
+  }
+}
+
+/**
+ * Execute asynchronous action (Event)
+ */
+export async function executeAsyncAction(
+  instance: PipelineInstance,
+  step: EnhancedStageStep,
+  config: AsyncActionConfig,
+  log: (...args: unknown[]) => void
+): Promise<void> {
+  log(`[ASYNC ACTION] ${config.actionEvent}`);
+
+  // Validate before execution
+  try {
+    validateRequiredData(instance, config.requiredData, `ASYNC:${config.actionEvent}`);
+  } catch (error: any) {
+    log(`[VALIDATION ERROR] ${error.message}`);
+    await recordError(instance.instanceId, step.id, error);
+    throw error;
+  }
+
+  const correlationId = uuidv4();
+  const actionData = await prepareActionData(instance, config.requiredData);
+
+  try {
+    await publishActionEvent({
+      eventType: config.actionEvent,
+      data: {
+        instanceId: instance.instanceId,
+        leadId: instance.leadId,
+        lineOfBusiness: instance.lineOfBusiness,
+        businessType: instance.businessType,
+        currentStage: step.stageName,
+        actionData,
+        metadata: {
+          correlationId,
+          pipelineId: instance.pipelineId,
+          timestamp: new Date().toISOString(),
+        },
+      },
+    });
+
+    log(`[ASYNC ACTION] Event published: ${config.actionEvent}`);
+
+    // Extract short action name from event (e.g., 'pipeline.action.fetch_plans' -> 'fetch_plans')
+    const actionName = config.actionEvent.replace('pipeline.action.', '');
+
+    // Set waiting state
+    await updateInstanceStatusDirect(instance, instance.status, {
+      waitingForEvent: config.completionEvent,
+      waitingForAction: actionName,
+      actionCorrelationId: correlationId,
+      actionStartedAt: new Date().toISOString(),
+      actionDeadline: new Date(Date.now() + config.timeout).toISOString(),
+      waitingForService: config.targetService,
+    });
+
+    log(`[ASYNC ACTION] Waiting for ${config.completionEvent}`);
+  } catch (error: any) {
+    log(`[ASYNC ACTION] Failed to emit event: ${error.message}`);
+    
+    // Retry event emission
+    if (config.retryPolicy) {
+      const retryCount = instance.actionRetryCount || 0;
+      if (retryCount < config.retryPolicy.maxRetries) {
+        log(`[ASYNC ACTION] Scheduling retry ${retryCount + 1}/${config.retryPolicy.maxRetries}`);
+        log(`[ASYNC ACTION] Using Storage Queue for durable retry execution`);
+        await updateInstanceStatusDirect(instance, instance.status, {
+          actionRetryCount: retryCount + 1,
+        });
+        
+        // Schedule retry via Storage Queue (replaces unsafe setTimeout)
+        await scheduleDelayedAction('async_retry', {
+          instanceId: instance.instanceId,
+          stepId: step.id,
+          config,
+        }, config.retryPolicy.retryDelayMs);
+        
+        // Track retry scheduling
+        trackPipelineEvent('ActionRetryScheduled', {
+          instanceId: instance.instanceId,
+          stepId: step.id,
+          actionType: 'async',
+          retryCount: retryCount + 1,
+          maxRetries: config.retryPolicy.maxRetries,
+          delayMs: config.retryPolicy.retryDelayMs,
+        });
+        
+        log(`[ASYNC ACTION] ✓ Retry scheduled via queue for ${config.retryPolicy.retryDelayMs}ms delay`);
+        return;
+      }
+    }
+    
+    await recordError(instance.instanceId, step.id, error);
+    throw error;
+  }
+}
+
+/**
+ * Handle action failure
+ */
+async function handleActionFailure(
+  instance: PipelineInstance,
+  error: { code: string; message: string; retryable: boolean }
+): Promise<void> {
+  await recordError(instance.instanceId, instance.currentStepId, error.message);
+  
+  // Could route to error stage or mark as failed
+  // For now, just log and update status
+  if (!error.retryable) {
+    await updateInstanceStatus(instance.instanceId, 'failed', {
+      lastError: {
+        stepId: instance.currentStepId,
+        message: error.message,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+}
+
+/**
+ * Set manual wait state (for user-triggered actions)
+ */
+async function setManualWaitState(
+  instance: PipelineInstance,
+  step: EnhancedStageStep,
+  log: (...args: unknown[]) => void
+): Promise<void> {
+  log(`[MANUAL WAIT] Stage ${step.stageName} waiting for user action`);
+  // Instance stays in current state, waiting for user to trigger an allowed action
 }
 
 /**
@@ -1021,6 +1461,16 @@ async function executeDecisionStep(
     nextStepId = conditionMet ? step.trueNextStepId : step.falseNextStepId;
   }
 
+  // Track decision evaluation
+  trackPipelineEvent('DecisionEvaluated', {
+    instanceId: instance.instanceId,
+    leadId: instance.leadId,
+    conditionType: step.conditionType,
+    outcome: String(conditionMet),
+    nextStepId: nextStepId || 'none',
+    triggeredBy,
+  });
+
   // Handle special values from the UI
   if (nextStepId === 'end') {
     // "end" means complete the pipeline
@@ -1139,7 +1589,7 @@ async function executeWaitStep(
 /**
  * Advance instance to a new step
  */
-async function advanceToStep(
+export async function advanceToStep(
   instance: PipelineInstance,
   pipeline: PipelineDefinition,
   fromStep: PipelineStep,
@@ -1195,6 +1645,15 @@ async function completeInstance(
 
   await updateInstanceStatus(instance.instanceId, status);
 
+  // Track pipeline completion
+  trackPipelineEvent('PipelineCompleted', {
+    instanceId: instance.instanceId,
+    pipelineId: instance.pipelineId,
+    leadId: instance.leadId,
+    status,
+    progressPercent: instance.progressPercent || 0,
+  });
+
   await publishPipelineInstanceCompleted({
     instanceId: instance.instanceId,
     pipelineId: instance.pipelineId,
@@ -1247,6 +1706,158 @@ function getNextStepForOutcome(
 // =============================================================================
 // Approval Handling
 // =============================================================================
+
+// =============================================================================
+// Service Completion Event Handling
+// =============================================================================
+
+/**
+ * Handle service completion event
+ */
+async function handleServiceCompletion(
+  eventType: string,
+  eventData: EventData,
+  log: (...args: unknown[]) => void,
+  requestId?: string
+): Promise<ProcessEventResult> {
+  const { instanceId, actionCompleted, status, result, error } = eventData as any;
+
+  log(`[COMPLETION] ${actionCompleted} - ${status}${requestId ? ` (requestId: ${requestId})` : ''}`);
+
+  if (!instanceId) {
+    log(`[COMPLETION] ✗ No instanceId in completion event`);
+    return { processed: false, error: 'No instanceId in completion event' };
+  }
+
+  const instance = await getInstance(instanceId);
+  if (!instance) {
+    log(`[COMPLETION] ✗ Instance ${instanceId} not found`);
+    return { processed: false, error: 'Instance not found' };
+  }
+
+  // Validate completion matches expected action
+  if (instance.waitingForAction !== actionCompleted) {
+    log(`[COMPLETION] ✗ Unexpected completion: expected ${instance.waitingForAction}, got ${actionCompleted}`);
+    return { processed: false, error: 'Unexpected completion' };
+  }
+
+  // Check correlation ID (prevent duplicates)
+  const correlationId = (eventData as any).metadata?.correlationId;
+  if (correlationId && instance.actionCorrelationId && correlationId !== instance.actionCorrelationId) {
+    log(`[COMPLETION] ✗ Correlation ID mismatch - duplicate or late event`);
+    return { processed: false, error: 'Correlation ID mismatch' };
+  }
+
+  // Get pipeline and validate current step exists BEFORE updating anything
+  const pipeline = await getPipeline(instance.pipelineId);
+  const currentStep = findStepById(pipeline.steps, instance.currentStepId);
+  
+  if (!currentStep) {
+    log(`[COMPLETION] ✗ Current step ${instance.currentStepId} not found in pipeline`);
+    // Clear waiting fields even though step not found to prevent inconsistent state
+    await updateInstanceStatusDirect(instance, instance.status, {
+      waitingForAction: undefined,
+      waitingForService: undefined,
+      actionCorrelationId: undefined,
+      actionStartedAt: undefined,
+      actionDeadline: undefined,
+      actionRetryCount: 0,
+    });
+    await recordError(instance.instanceId, instance.currentStepId, 'Current step not found in pipeline during completion');
+    return {
+      processed: false,
+      error: 'Current step not found in pipeline',
+    };
+  }
+
+  // Clear waiting fields only - do NOT update step history here
+  // moveToStep (called by advanceToStep) will handle step history updates to avoid double-update bugs
+  // Bug Fix #1: Removed manual step history update to let moveToStep handle it atomically
+  // Bug Fix #2: Capture the returned fresh instance with updated _etag to avoid 412 conflicts
+  // 
+  // TODO: Consider storing detailed action completion metadata (actionCompleted, result, error) 
+  // in a separate action results collection or instance metadata for audit trails
+  const refreshedInstance = await updateInstanceStatusDirect(instance, instance.status, {
+    waitingForAction: undefined,
+    waitingForService: undefined,
+    actionCorrelationId: undefined,
+    actionStartedAt: undefined,
+    actionDeadline: undefined,
+    actionRetryCount: 0,
+  });
+
+  if (status === 'success') {
+    // Determine next step
+    const nextStep = determineNextStep(pipeline, refreshedInstance, currentStep, result);
+
+    if (nextStep) {
+      // Use refreshedInstance (with updated _etag) to avoid 412 conflicts in moveToStep
+      await advanceToStep(refreshedInstance, pipeline, currentStep, nextStep, actionCompleted, 'completed', log);
+      return {
+        processed: true,
+        instanceId: instance.instanceId,
+        action: `advanced_to_${nextStep.id}`,
+      };
+    } else {
+      // No next step: pipeline complete
+      await completeInstance(refreshedInstance, 'completed', log);
+      return {
+        processed: true,
+        instanceId: instance.instanceId,
+        action: 'pipeline_completed',
+      };
+    }
+  } else {
+    // Handle failure
+    await handleActionFailure(refreshedInstance, error || {
+      code: 'ACTION_FAILED',
+      message: 'Service action failed',
+      retryable: false,
+    });
+    return {
+      processed: true,
+      instanceId: instance.instanceId,
+      action: 'action_failed',
+    };
+  }
+}
+
+/**
+ * Find step by ID
+ */
+function findStepById(steps: PipelineStep[], stepId: string): PipelineStep | undefined {
+  return steps.find(s => s.id === stepId);
+}
+
+/**
+ * Find step by stage ID
+ */
+function findStepByStageId(steps: PipelineStep[], stageId: string): PipelineStep | undefined {
+  return steps.find(s => s.type === 'stage' && (s as StageStep).stageId === stageId);
+}
+
+/**
+ * Determine next step based on pipeline and result
+ */
+function determineNextStep(
+  pipeline: PipelineDefinition,
+  instance: PipelineInstance,
+  currentStep: PipelineStep | undefined,
+  result: Record<string, any>
+): PipelineStep | null {
+  if (!currentStep) {
+    return getNextEnabledStep(pipeline.steps, instance.currentStepId);
+  }
+  
+  // Check if current step is enhanced with action config
+  const enhancedStep = currentStep as EnhancedStageStep;
+  if (enhancedStep.actionConfig?.primaryAction?.type === 'async') {
+    // For async actions, just get the next sequential step
+    return getNextEnabledStep(pipeline.steps, currentStep.id);
+  }
+  
+  return getNextEnabledStep(pipeline.steps, currentStep.id);
+}
 
 /**
  * Handle an approval decision

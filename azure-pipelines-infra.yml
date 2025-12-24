@@ -1,0 +1,364 @@
+# Azure DevOps Pipeline for Nectaria Infrastructure and Services Deployment
+# This pipeline builds all services, deploys infrastructure, and deploys code
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - nectaria-services/src/**
+      - nectaria-services/infra/**
+
+variables:
+  - name: environment
+    value: 'dev'
+  - name: parametersFile
+    value: 'nectaria-services/infra/parameters.dev.json'
+  - name: azureSubscription
+    value: 'Nectaria-Azure-Connection' # Update with your service connection name
+  - name: vmImageName
+    value: 'ubuntu-latest'
+
+stages:
+  # ============================================
+  # Stage 1: Build All Services
+  # ============================================
+  - stage: Build
+    displayName: 'Build All Services'
+    jobs:
+      - job: BuildServices
+        displayName: 'Build TypeScript Services'
+        pool:
+          vmImage: $(vmImageName)
+        
+        steps:
+          - task: NodeTool@0
+            displayName: 'Install Node.js 20'
+            inputs:
+              versionSpec: '20.x'
+          
+          - script: |
+              cd nectaria-services
+              ./infra/scripts/build-all-services.sh
+            displayName: 'Build All Services'
+            continueOnError: false
+          
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish Build Artifacts'
+            inputs:
+              targetPath: '$(System.DefaultWorkingDirectory)/nectaria-services/src'
+              artifact: 'services-build'
+              publishLocation: 'pipeline'
+
+  # ============================================
+  # Stage 2: Package Services
+  # ============================================
+  - stage: Package
+    displayName: 'Package Services'
+    dependsOn: Build
+    jobs:
+      - job: PackageServices
+        displayName: 'Create Deployment Packages'
+        pool:
+          vmImage: $(vmImageName)
+        
+        steps:
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download Build Artifacts'
+            inputs:
+              artifact: 'services-build'
+              path: '$(System.DefaultWorkingDirectory)/nectaria-services/src'
+          
+          - task: NodeTool@0
+            displayName: 'Install Node.js 20'
+            inputs:
+              versionSpec: '20.x'
+          
+          - script: |
+              cd nectaria-services
+              ./infra/scripts/package-services.sh
+            displayName: 'Package All Services'
+          
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish Service Packages'
+            inputs:
+              targetPath: '$(System.DefaultWorkingDirectory)/nectaria-services/artifacts'
+              artifact: 'service-packages'
+              publishLocation: 'pipeline'
+          
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish Bicep Templates'
+            inputs:
+              targetPath: '$(System.DefaultWorkingDirectory)/nectaria-services/infra'
+              artifact: 'bicep-templates'
+              publishLocation: 'pipeline'
+
+  # ============================================
+  # Stage 3: Deploy Infrastructure
+  # ============================================
+  - stage: DeployInfra
+    displayName: 'Deploy Infrastructure'
+    dependsOn: Package
+    jobs:
+      - deployment: DeployBicep
+        displayName: 'Deploy Bicep Templates'
+        pool:
+          vmImage: $(vmImageName)
+        environment: $(environment)
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadPipelineArtifact@2
+                  displayName: 'Download Bicep Templates'
+                  inputs:
+                    artifact: 'bicep-templates'
+                    path: '$(Pipeline.Workspace)/infra'
+                
+                - task: AzureCLI@2
+                  displayName: 'Deploy Bicep Infrastructure'
+                  inputs:
+                    azureSubscription: $(azureSubscription)
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      set -e
+                      
+                      echo "Deploying Nectaria Infrastructure to $(environment)"
+                      
+                      DEPLOYMENT_NAME="nectaria-$(environment)-$(Build.BuildId)"
+                      INFRA_DIR="$(Pipeline.Workspace)/infra"
+                      PARAMS_FILE="$INFRA_DIR/parameters.$(environment).json"
+                      
+                      # Extract location from parameters file
+                      LOCATION=$(jq -r '.parameters.location.value' "$PARAMS_FILE")
+                      if [ -z "$LOCATION" ] || [ "$LOCATION" = "null" ]; then
+                        LOCATION="uaenorth"  # Default fallback
+                        echo "Warning: No location in parameters, using default: $LOCATION"
+                      else
+                        echo "Deployment location from parameters: $LOCATION"
+                      fi
+                      
+                      # Validate template
+                      echo "Validating Bicep template..."
+                      az deployment sub validate \
+                        --location "$LOCATION" \
+                        --template-file "$INFRA_DIR/main.bicep" \
+                        --parameters "@$PARAMS_FILE"
+                      
+                      # Deploy infrastructure
+                      echo "Deploying infrastructure to $LOCATION..."
+                      az deployment sub create \
+                        --name "$DEPLOYMENT_NAME" \
+                        --location "$LOCATION" \
+                        --template-file "$INFRA_DIR/main.bicep" \
+                        --parameters "@$PARAMS_FILE" \
+                        --output json > deployment-output.json
+                      
+                      # Extract outputs
+                      echo "##vso[task.setvariable variable=resourceGroupName;isOutput=true]$(jq -r '.properties.outputs.resourceGroupName.value' deployment-output.json)"
+                      echo "##vso[task.setvariable variable=keyVaultName;isOutput=true]$(jq -r '.properties.outputs.keyVaultName.value' deployment-output.json)"
+                      echo "##vso[task.setvariable variable=cosmosAccountName;isOutput=true]$(jq -r '.properties.outputs.cosmosDbAccountName.value' deployment-output.json)"
+                      
+                      # Save function app names
+                      jq -r '.properties.outputs.functionApps.value | map(.functionAppName) | join(",")' deployment-output.json > function-apps.txt
+                      echo "Function Apps: $(cat function-apps.txt)"
+                  name: deployInfra
+                
+                - task: PublishPipelineArtifact@1
+                  displayName: 'Publish Deployment Output'
+                  inputs:
+                    targetPath: '$(System.DefaultWorkingDirectory)/deployment-output.json'
+                    artifact: 'deployment-output'
+                    publishLocation: 'pipeline'
+
+  # ============================================
+  # Stage 4: Configure Secrets
+  # ============================================
+  - stage: ConfigureSecrets
+    displayName: 'Configure Key Vault Secrets'
+    dependsOn: DeployInfra
+    variables:
+      resourceGroupName: $[ stageDependencies.DeployInfra.DeployBicep.outputs['deployInfra.resourceGroupName'] ]
+      keyVaultName: $[ stageDependencies.DeployInfra.DeployBicep.outputs['deployInfra.keyVaultName'] ]
+      cosmosAccountName: $[ stageDependencies.DeployInfra.DeployBicep.outputs['deployInfra.cosmosAccountName'] ]
+    jobs:
+      - job: ConfigureKeyVault
+        displayName: 'Set Key Vault Secrets'
+        pool:
+          vmImage: $(vmImageName)
+        
+        steps:
+          - task: AzureCLI@2
+            displayName: 'Configure Secrets'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                set -e
+                
+                echo "Configuring secrets in Key Vault: $(keyVaultName)"
+                
+                # Get Cosmos DB key
+                echo "Retrieving Cosmos DB key..."
+                COSMOS_KEY=$(az cosmosdb keys list \
+                  --name "$(cosmosAccountName)" \
+                  --resource-group "$(resourceGroupName)" \
+                  --type keys \
+                  --query primaryMasterKey -o tsv)
+                
+                az keyvault secret set \
+                  --vault-name "$(keyVaultName)" \
+                  --name "cosmos-key" \
+                  --value "$COSMOS_KEY"
+                
+                # Get Event Grid topic key
+                echo "Retrieving Event Grid topic key..."
+                EVENT_GRID_TOPIC_NAME="egt-nectaria-events-$(environment)"
+                EVENT_GRID_KEY=$(az eventgrid topic key list \
+                  --name "$EVENT_GRID_TOPIC_NAME" \
+                  --resource-group "$(resourceGroupName)" \
+                  --query key1 -o tsv)
+                
+                az keyvault secret set \
+                  --vault-name "$(keyVaultName)" \
+                  --name "event-grid-topic-key" \
+                  --value "$EVENT_GRID_KEY"
+                
+                # Generate internal service key
+                echo "Generating internal service key..."
+                INTERNAL_SERVICE_KEY=$(openssl rand -base64 32)
+                az keyvault secret set \
+                  --vault-name "$(keyVaultName)" \
+                  --name "internal-service-key" \
+                  --value "$INTERNAL_SERVICE_KEY"
+                
+                # Generate JWT secret
+                echo "Generating JWT secret..."
+                JWT_SECRET=$(openssl rand -base64 32)
+                az keyvault secret set \
+                  --vault-name "$(keyVaultName)" \
+                  --name "jwt-secret" \
+                  --value "$JWT_SECRET"
+                
+                # Note: Azure AD client secret should be set manually or via variable group
+                echo "Note: azure-ad-client-secret must be configured manually"
+                
+                echo "Secrets configured successfully!"
+
+  # ============================================
+  # Stage 5: Deploy Function Apps
+  # ============================================
+  - stage: DeployCode
+    displayName: 'Deploy Function Code'
+    dependsOn:
+      - DeployInfra
+      - ConfigureSecrets
+    variables:
+      resourceGroupName: $[ stageDependencies.DeployInfra.DeployBicep.outputs['deployInfra.resourceGroupName'] ]
+    jobs:
+      - deployment: DeployFunctions
+        displayName: 'Deploy All Function Apps'
+        pool:
+          vmImage: $(vmImageName)
+        environment: $(environment)
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadPipelineArtifact@2
+                  displayName: 'Download Service Packages'
+                  inputs:
+                    artifact: 'service-packages'
+                    path: '$(Pipeline.Workspace)/packages'
+                
+                - task: DownloadPipelineArtifact@2
+                  displayName: 'Download Deployment Output'
+                  inputs:
+                    artifact: 'deployment-output'
+                    path: '$(Pipeline.Workspace)/output'
+                
+                - task: AzureCLI@2
+                  displayName: 'Deploy Function Apps'
+                  inputs:
+                    azureSubscription: $(azureSubscription)
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      set -e
+                      
+                      PACKAGES_DIR="$(Pipeline.Workspace)/packages"
+                      OUTPUT_FILE="$(Pipeline.Workspace)/output/deployment-output.json"
+                      
+                      # Extract function app names
+                      FUNCTION_APPS=$(jq -r '.properties.outputs.functionApps.value[] | "\(.serviceName):\(.functionAppName)"' "$OUTPUT_FILE")
+                      
+                      echo "Deploying function apps..."
+                      echo "$FUNCTION_APPS" | while IFS=: read -r SERVICE_NAME FUNCTION_APP_NAME; do
+                        ZIP_FILE="$PACKAGES_DIR/${SERVICE_NAME}-service.zip"
+                        
+                        if [ -f "$ZIP_FILE" ]; then
+                          echo "Deploying $SERVICE_NAME to $FUNCTION_APP_NAME..."
+                          az functionapp deployment source config-zip \
+                            --resource-group "$(resourceGroupName)" \
+                            --name "$FUNCTION_APP_NAME" \
+                            --src "$ZIP_FILE" \
+                            --build-remote false
+                          
+                          echo "✅ $SERVICE_NAME deployed successfully"
+                        else
+                          echo "⚠️  Warning: Package not found for $SERVICE_NAME"
+                        fi
+                      done
+                      
+                      echo "All function apps deployed!"
+
+  # ============================================
+  # Stage 6: Post-Deployment Validation
+  # ============================================
+  - stage: Validate
+    displayName: 'Validate Deployment'
+    dependsOn: DeployCode
+    jobs:
+      - job: ValidationTests
+        displayName: 'Run Validation Tests'
+        pool:
+          vmImage: $(vmImageName)
+        
+        steps:
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download Deployment Output'
+            inputs:
+              artifact: 'deployment-output'
+              path: '$(Pipeline.Workspace)/output'
+          
+          - task: AzureCLI@2
+            displayName: 'Validate Function Apps'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                set -e
+                
+                OUTPUT_FILE="$(Pipeline.Workspace)/output/deployment-output.json"
+                
+                echo "Validating deployed function apps..."
+                jq -r '.properties.outputs.functionApps.value[] | "\(.serviceName):\(.url)"' "$OUTPUT_FILE" | while IFS=: read -r SERVICE_NAME URL; do
+                  echo "Checking $SERVICE_NAME at $URL"
+                  
+                  # Simple health check (you can customize this)
+                  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || echo "000")
+                  
+                  if [ "$HTTP_CODE" != "000" ]; then
+                    echo "✅ $SERVICE_NAME is responding (HTTP $HTTP_CODE)"
+                  else
+                    echo "⚠️  $SERVICE_NAME is not responding"
+                  fi
+                done
+                
+                echo "Validation complete!"
+

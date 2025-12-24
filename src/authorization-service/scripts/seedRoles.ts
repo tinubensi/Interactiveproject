@@ -7,7 +7,7 @@
 
 import { CosmosClient } from '@azure/cosmos';
 import { v4 as uuidv4 } from 'uuid';
-import { DEFAULT_ROLES } from '@nectaria/shared-types';
+import { DEFAULT_ROLES } from '../src/constants/roles';
 
 interface RoleDefinitionDocument {
   id: string;

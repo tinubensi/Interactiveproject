@@ -21,6 +21,7 @@ import './functions/vendors/getVendors';
 
 // Import all event handlers
 import './functions/events/handleLeadCreated';
+import './functions/events/handlePipelineAction';
 
 console.log('Quotation Generation Service loaded');
 
