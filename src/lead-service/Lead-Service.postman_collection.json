@@ -1,0 +1,286 @@
+{
+	"info": {
+		"name": "Lead Service API",
+		"description": "API collection for Lead Service Azure Functions. Manages insurance leads across all lines of business (Medical/Pet, Motor, General, Marine).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://lead-service.azurewebsites.net/api",
+			"type": "string"
+		},
+		{
+			"key": "lead_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "line_of_business",
+			"value": "medical",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Leads",
+			"item": [
+				{
+					"name": "Create Lead",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"lineOfBusiness\": \"medical\",\n  \"businessType\": \"individual\",\n  \"formId\": \"form-123\",\n  \"formData\": {},\n  \"lobData\": {\n    \"petType\": \"Dog\",\n    \"petBreed\": \"Golden Retriever\",\n    \"petBirthday\": \"2020-01-15\"\n  },\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phone\": {\n    \"number\": \"501234567\",\n    \"countryCode\": \"+971\",\n    \"isoCode\": \"AE\"\n  },\n  \"emirate\": \"Dubai\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/leads",
+							"host": ["{{base_url}}"],
+							"path": ["leads"]
+						},
+						"description": "Create a new insurance lead"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.data && response.data.lead) {",
+									"        pm.environment.set(\"lead_id\", response.data.lead.id);",
+									"        pm.environment.set(\"line_of_business\", response.data.lead.lineOfBusiness);",
+									"    }",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "List Leads",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"page\": 1,\n  \"limit\": 20,\n  \"sortBy\": \"createdAt\",\n  \"sortOrder\": \"desc\",\n  \"filters\": {\n    \"lineOfBusiness\": \"medical\",\n    \"businessType\": \"individual\",\n    \"currentStage\": \"Plans Fetching\",\n    \"search\": \"John\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/leads/list",
+							"host": ["{{base_url}}"],
+							"path": ["leads", "list"]
+						},
+						"description": "List all leads with pagination and filters"
+					}
+				},
+				{
+					"name": "Get Lead by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/leads/get/{{lead_id}}?lineOfBusiness={{line_of_business}}",
+							"host": ["{{base_url}}"],
+							"path": ["leads", "get", "{{lead_id}}"],
+							"query": [
+								{
+									"key": "lineOfBusiness",
+									"value": "{{line_of_business}}"
+								}
+							]
+						},
+						"description": "Get a specific lead by ID with timeline"
+					}
+				},
+				{
+					"name": "Update Lead",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"lobData\": {\n    \"petType\": \"Cat\",\n    \"petBreed\": \"Persian\"\n  },\n  \"formData\": {},\n  \"lineOfBusiness\": \"medical\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/leads/{{lead_id}}/update?lineOfBusiness={{line_of_business}}",
+							"host": ["{{base_url}}"],
+							"path": ["leads", "{{lead_id}}", "update"],
+							"query": [
+								{
+									"key": "lineOfBusiness",
+									"value": "{{line_of_business}}"
+								}
+							]
+						},
+						"description": "Update a lead's data"
+					}
+				},
+				{
+					"name": "Delete Lead",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/leads/{{lead_id}}?lineOfBusiness={{line_of_business}}",
+							"host": ["{{base_url}}"],
+							"path": ["leads", "{{lead_id}}"],
+							"query": [
+								{
+									"key": "lineOfBusiness",
+									"value": "{{line_of_business}}"
+								}
+							]
+						},
+						"description": "Delete a lead (soft delete)"
+					}
+				},
+				{
+					"name": "Refetch Plans",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/leads/{{lead_id}}/refetch-plans",
+							"host": ["{{base_url}}"],
+							"path": ["leads", "{{lead_id}}", "refetch-plans"]
+						},
+						"description": "Trigger plan refetch for a lead"
+					}
+				}
+			]
+		},
+		{
+			"name": "Timeline",
+			"item": [
+				{
+					"name": "Get Lead Timeline",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/leads/{{lead_id}}/timeline",
+							"host": ["{{base_url}}"],
+							"path": ["leads", "{{lead_id}}", "timeline"]
+						},
+						"description": "Get timeline entries for a lead"
+					}
+				}
+			]
+		},
+		{
+			"name": "Plans",
+			"item": [
+				{
+					"name": "Get Lead Plans",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/leads/{{lead_id}}/plans",
+							"host": ["{{base_url}}"],
+							"path": ["leads", "{{lead_id}}", "plans"]
+						},
+						"description": "Get all plans for a lead"
+					}
+				}
+			]
+		},
+		{
+			"name": "Metadata",
+			"item": [
+				{
+					"name": "Get Pet Types",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/leads/metadata/pet-types",
+							"host": ["{{base_url}}"],
+							"path": ["leads", "metadata", "pet-types"]
+						},
+						"description": "Get all available pet types"
+					}
+				},
+				{
+					"name": "Get Breeds",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"petType\": \"Dog\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/leads/metadata/breeds",
+							"host": ["{{base_url}}"],
+							"path": ["leads", "metadata", "breeds"]
+						},
+						"description": "Get breeds for a specific pet type"
+					}
+				},
+				{
+					"name": "Get Emirates",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/leads/metadata/emirates",
+							"host": ["{{base_url}}"],
+							"path": ["leads", "metadata", "emirates"]
+						},
+						"description": "Get all UAE emirates"
+					}
+				}
+			]
+		},
+		{
+			"name": "Stages",
+			"item": [
+				{
+					"name": "Get All Stages",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/stages",
+							"host": ["{{base_url}}"],
+							"path": ["stages"]
+						},
+						"description": "Get all available stages"
+					}
+				}
+			]
+		}
+	]
+}
+
+
+
+

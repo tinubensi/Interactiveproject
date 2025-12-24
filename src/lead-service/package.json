@@ -17,8 +17,6 @@
     "@azure/cosmos": "^4.0.0",
     "@azure/eventgrid": "^5.0.0",
     "@azure/functions": "^4.0.0",
-    "@nectaria/auth-middleware": "file:../../../packages/@nectaria/auth-middleware",
-    "@nectaria/shared-types": "file:../../../packages/@nectaria/shared-types",
     "axios": "^1.6.0",
     "uuid": "^9.0.0"
   },

@@ -1,5 +1,7 @@
-import puppeteer from 'puppeteer';
+import PDFDocument from 'pdfkit';
 import { QuotationPlan } from '../models/quotation';
+
+type PDFDocumentType = InstanceType<typeof PDFDocument>;
 
 export interface QuotationPDFData {
   referenceId: string;
@@ -16,503 +18,352 @@ export interface QuotationPDFData {
 
 class PDFService {
   /**
-   * Generate a PDF for a quotation
+   * Format currency amount
    */
-  async generateQuotationPDF(data: QuotationPDFData): Promise<Buffer> {
-    const html = this.generateHTML(data);
-    
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu'
-      ]
-    });
-
-    try {
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
-      
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '20mm',
-          right: '15mm',
-          bottom: '20mm',
-          left: '15mm'
-        }
-      });
-
-      return Buffer.from(pdfBuffer);
-    } finally {
-      await browser.close();
-    }
+  private formatCurrency(amount: number, currency: string): string {
+    return `${currency} ${amount.toLocaleString()}`;
   }
 
   /**
-   * Generate HTML template for the quotation PDF
+   * Format date in readable format
    */
-  private generateHTML(data: QuotationPDFData): string {
-    const formatCurrency = (amount: number) => {
-      return `${data.currency} ${amount.toLocaleString()}`;
-    };
+  private formatDate(date: Date): string {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
 
-    const formatDate = (date: Date) => {
-      return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+  /**
+   * Get display label for line of business
+   */
+  private getLOBDisplay(lob: string): string {
+    const labels: { [key: string]: string } = {
+      medical: 'Medical Insurance',
+      motor: 'Motor Insurance',
+      general: 'General Insurance',
+      marine: 'Marine Insurance',
+    };
+    return labels[lob] || lob;
+  }
+
+  /**
+   * Generate a PDF for a quotation using PDFKit
+   */
+  async generateQuotationPDF(data: QuotationPDFData): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: 72, bottom: 72, left: 54, right: 54 }
       });
-    };
 
-    const getLOBDisplay = (lob: string) => {
-      const labels: { [key: string]: string } = {
-        medical: 'Medical Insurance',
-        motor: 'Motor Insurance',
-        general: 'General Insurance',
-        marine: 'Marine Insurance',
-      };
-      return labels[lob] || lob;
-    };
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
 
-    const plansHTML = data.plans.map((plan, index) => `
-      <div class="plan-card">
-        <div class="plan-header">
-          <div class="plan-title">
-            <h3>${plan.planName}</h3>
-            <span class="vendor">${plan.vendorName}</span>
-          </div>
-          <span class="plan-type">${plan.planType}</span>
-        </div>
-        
-        <div class="plan-pricing">
-          <div class="price-item main">
-            <span class="label">Annual Premium</span>
-            <span class="value">${formatCurrency(plan.annualPremium)}</span>
-          </div>
-          <div class="price-item">
-            <span class="label">Monthly Premium</span>
-            <span class="value">${formatCurrency(plan.monthlyPremium)}</span>
-          </div>
-        </div>
+      // Build PDF sections
+      this.addHeader(doc, data);
+      this.addCustomerInfo(doc, data);
+      this.addSummary(doc, data);
+      this.addPlans(doc, data);
+      this.addTerms(doc, data);
+      this.addFooter(doc, data);
 
-        <div class="plan-details">
-          <div class="detail-row">
-            <div class="detail-item">
-              <span class="label">Annual Limit</span>
-              <span class="value">${formatCurrency(plan.annualLimit)}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">Deductible</span>
-              <span class="value">${formatCurrency(plan.deductible)}</span>
-            </div>
-          </div>
-          <div class="detail-row">
-            <div class="detail-item">
-              <span class="label">Co-Insurance</span>
-              <span class="value">${plan.coInsurance}%</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">Waiting Period</span>
-              <span class="value">${plan.waitingPeriod} days</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    `).join('');
+      doc.end();
+    });
+  }
 
-    return `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Insurance Quotation - ${data.referenceId}</title>
-        <style>
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
-          
-          body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #1f2937;
-            background-color: #ffffff;
-          }
+  /**
+   * Add header section with title and reference
+   */
+  private addHeader(doc: PDFDocumentType, data: QuotationPDFData): void {
+    // Blue background rectangle
+    doc.rect(0, 0, doc.page.width, 120)
+       .fillColor('#1e40af')
+       .fill();
 
-          .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 0;
-          }
+    // White text
+    doc.fillColor('#ffffff')
+       .fontSize(28)
+       .font('Helvetica-Bold')
+       .text('Insurance Quotation', 54, 30, { align: 'center' });
 
-          /* Header */
-          .header {
-            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-            color: white;
-            padding: 40px;
-            text-align: center;
-            border-radius: 0 0 20px 20px;
-          }
+    doc.fontSize(16)
+       .font('Helvetica')
+       .text(this.getLOBDisplay(data.lineOfBusiness), 54, 65, { align: 'center' });
 
-          .header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 8px;
-          }
+    // Reference badge
+    doc.fontSize(14)
+       .font('Helvetica-Bold')
+       .text(data.referenceId, 54, 90, { align: 'center' });
 
-          .header .subtitle {
-            font-size: 16px;
-            opacity: 0.9;
-          }
+    // Reset color and move down
+    doc.fillColor('#000000')
+       .moveDown(2);
+  }
 
-          .reference-badge {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 8px 20px;
-            border-radius: 20px;
-            margin-top: 16px;
-            font-weight: 600;
-            font-size: 14px;
-          }
+  /**
+   * Add customer information section
+   */
+  private addCustomerInfo(doc: PDFDocumentType, data: QuotationPDFData): void {
+    const startY = doc.y;
+    const sectionHeight = 80;
 
-          /* Customer Info Section */
-          .customer-section {
-            padding: 30px 40px;
-            background: #f8fafc;
-            border-bottom: 1px solid #e2e8f0;
-          }
+    // Light gray background
+    doc.rect(54, startY, doc.page.width - 108, sectionHeight)
+       .fillColor('#f8fafc')
+       .fill()
+       .fillColor('#000000');
 
-          .customer-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-          }
+    // Section title
+    doc.fontSize(16)
+       .font('Helvetica-Bold')
+       .text('Customer Information', 64, startY + 10);
 
-          .customer-item {
-            display: flex;
-            flex-direction: column;
-          }
+    // Customer details in 2x2 grid
+    const leftX = 64;
+    const rightX = (doc.page.width - 54) / 2 + 20;
+    const topY = startY + 35;
+    const bottomY = startY + 60;
 
-          .customer-item .label {
-            font-size: 12px;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-          }
+    doc.fontSize(12)
+       .font('Helvetica')
+       .fillColor('#64748b')
+       .text('Customer Name', leftX, topY)
+       .text('Email Address', leftX, bottomY)
+       .text('Business Type', rightX, topY)
+       .text('Quote Date', rightX, bottomY);
 
-          .customer-item .value {
-            font-size: 15px;
-            font-weight: 600;
-            color: #1e293b;
-          }
+    doc.fillColor('#1e293b')
+       .font('Helvetica-Bold')
+       .text(data.customerName, leftX, topY + 15)
+       .text(data.customerEmail, leftX, bottomY + 15)
+       .text(data.businessType.charAt(0).toUpperCase() + data.businessType.slice(1), rightX, topY + 15)
+       .text(this.formatDate(data.createdAt), rightX, bottomY + 15);
 
-          /* Summary Section */
-          .summary-section {
-            padding: 30px 40px;
-            background: white;
-          }
+    doc.fillColor('#000000')
+       .moveDown(2);
+  }
 
-          .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-          }
+  /**
+   * Add summary section with total premium, plans count, and validity
+   */
+  private addSummary(doc: PDFDocumentType, data: QuotationPDFData): void {
+    const startY = doc.y;
+    const cardWidth = (doc.page.width - 108 - 40) / 3; // 3 cards with spacing
+    const cardHeight = 60;
 
-          .summary-card {
-            background: #f1f5f9;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-          }
+    // Card 1: Total Premium (highlighted green)
+    doc.rect(54, startY, cardWidth, cardHeight)
+       .fillColor('#10b981')
+       .fill()
+       .fillColor('#ffffff')
+       .fontSize(12)
+       .font('Helvetica')
+       .text('Total Premium', 64, startY + 10, { width: cardWidth - 20, align: 'center' })
+       .fontSize(24)
+       .font('Helvetica-Bold')
+       .text(this.formatCurrency(data.totalPremium, data.currency), 64, startY + 25, { width: cardWidth - 20, align: 'center' });
 
-          .summary-card.highlight {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-          }
+    // Card 2: Plans Count
+    doc.fillColor('#f1f5f9')
+       .rect(64 + cardWidth + 10, startY, cardWidth, cardHeight)
+       .fill()
+       .fillColor('#000000')
+       .fontSize(12)
+       .font('Helvetica')
+       .text('Plans Included', 74 + cardWidth + 10, startY + 10, { width: cardWidth - 20, align: 'center' })
+       .fontSize(24)
+       .font('Helvetica-Bold')
+       .text(data.plans.length.toString(), 74 + cardWidth + 10, startY + 25, { width: cardWidth - 20, align: 'center' });
 
-          .summary-card .label {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-          }
+    // Card 3: Valid Until
+    doc.rect(74 + (cardWidth + 10) * 2, startY, cardWidth, cardHeight)
+       .fill()
+       .fontSize(12)
+       .font('Helvetica')
+       .text('Valid Until', 84 + (cardWidth + 10) * 2, startY + 10, { width: cardWidth - 20, align: 'center' })
+       .fontSize(16)
+       .font('Helvetica-Bold')
+       .text(this.formatDate(data.validUntil), 84 + (cardWidth + 10) * 2, startY + 25, { width: cardWidth - 20, align: 'center' });
 
-          .summary-card .value {
-            font-size: 24px;
-            font-weight: 700;
-          }
+    doc.fillColor('#000000')
+       .moveDown(2);
+  }
 
-          .summary-card.highlight .label {
-            opacity: 0.9;
-          }
+  /**
+   * Add plans section with all plan details
+   */
+  private addPlans(doc: PDFDocumentType, data: QuotationPDFData): void {
+    doc.fontSize(20)
+       .font('Helvetica-Bold')
+       .text('Insurance Plans', 54, doc.y)
+       .moveDown(0.5);
 
-          /* Plans Section */
-          .plans-section {
-            padding: 30px 40px;
-          }
+    // Underline
+    doc.moveTo(54, doc.y)
+       .lineTo(doc.page.width - 54, doc.y)
+       .strokeColor('#e2e8f0')
+       .lineWidth(2)
+       .stroke()
+       .moveDown();
 
-          .section-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #e2e8f0;
-          }
+    data.plans.forEach((plan, index) => {
+      // Check if we need a new page
+      if (doc.y > doc.page.height - 200) {
+        doc.addPage();
+      }
 
-          .plan-card {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            overflow: hidden;
-            page-break-inside: avoid;
-          }
+      // Plan card background
+      const cardStartY = doc.y;
+      const cardHeight = 150;
 
-          .plan-header {
-            background: #f8fafc;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 1px solid #e2e8f0;
-          }
+      doc.rect(54, cardStartY, doc.page.width - 108, cardHeight)
+         .fillColor('#ffffff')
+         .fill()
+         .strokeColor('#e2e8f0')
+         .lineWidth(1)
+         .stroke()
+         .fillColor('#000000');
 
-          .plan-title h3 {
-            font-size: 18px;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 4px;
-          }
+      // Plan header
+      doc.fontSize(18)
+         .font('Helvetica-Bold')
+         .text(plan.planName, 64, cardStartY + 15);
 
-          .plan-title .vendor {
-            font-size: 14px;
-            color: #64748b;
-          }
+      doc.fontSize(14)
+         .font('Helvetica')
+         .fillColor('#64748b')
+         .text(plan.vendorName, 64, cardStartY + 35);
 
-          .plan-type {
-            background: #dbeafe;
-            color: #1e40af;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: capitalize;
-          }
+      // Plan type badge (right aligned)
+      const badgeText = plan.planType.charAt(0).toUpperCase() + plan.planType.slice(1);
+      doc.fontSize(12).font('Helvetica-Bold');
+      const badgeWidth = doc.widthOfString(badgeText) + 20;
+      doc.rect(doc.page.width - 54 - badgeWidth, cardStartY + 15, badgeWidth, 20)
+         .fillColor('#dbeafe')
+         .fill()
+         .fillColor('#1e40af')
+         .fontSize(12)
+         .font('Helvetica-Bold')
+         .text(badgeText, doc.page.width - 54 - badgeWidth + 10, cardStartY + 20);
 
-          .plan-pricing {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            padding: 20px;
-            background: #f0fdf4;
-            border-bottom: 1px solid #e2e8f0;
-          }
+      // Pricing section (green background)
+      doc.fillColor('#f0fdf4')
+         .rect(64, cardStartY + 50, doc.page.width - 128, 40)
+         .fill()
+         .fillColor('#166534')
+         .fontSize(12)
+         .font('Helvetica')
+         .text('Annual Premium', 64, cardStartY + 55, { width: (doc.page.width - 128) / 2, align: 'center' })
+         .text('Monthly Premium', 64 + (doc.page.width - 128) / 2, cardStartY + 55, { width: (doc.page.width - 128) / 2, align: 'center' })
+         .fillColor('#15803d')
+         .fontSize(20)
+         .font('Helvetica-Bold')
+         .text(this.formatCurrency(plan.annualPremium, data.currency), 64, cardStartY + 70, { width: (doc.page.width - 128) / 2, align: 'center' })
+         .text(this.formatCurrency(plan.monthlyPremium, data.currency), 64 + (doc.page.width - 128) / 2, cardStartY + 70, { width: (doc.page.width - 128) / 2, align: 'center' });
 
-          .price-item {
-            text-align: center;
-            padding: 10px;
-          }
+      // Plan details
+      doc.fillColor('#000000')
+         .fontSize(13)
+         .font('Helvetica')
+         .fillColor('#64748b')
+         .text('Annual Limit', 64, cardStartY + 100)
+         .text('Deductible', 64 + (doc.page.width - 128) / 2, cardStartY + 100)
+         .text('Co-Insurance', 64, cardStartY + 120)
+         .text('Waiting Period', 64 + (doc.page.width - 128) / 2, cardStartY + 120)
+         .fillColor('#1e293b')
+         .font('Helvetica-Bold')
+         .text(this.formatCurrency(plan.annualLimit, data.currency), 64, cardStartY + 115)
+         .text(this.formatCurrency(plan.deductible, data.currency), 64 + (doc.page.width - 128) / 2, cardStartY + 115)
+         .text(`${plan.coInsurance}%`, 64, cardStartY + 135)
+         .text(`${plan.waitingPeriod} days`, 64 + (doc.page.width - 128) / 2, cardStartY + 135);
 
-          .price-item .label {
-            font-size: 12px;
-            color: #166534;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-            display: block;
-          }
+      doc.fillColor('#000000')
+         .moveDown(1.5);
+    });
+  }
 
-          .price-item .value {
-            font-size: 20px;
-            font-weight: 700;
-            color: #15803d;
-          }
+  /**
+   * Add terms and conditions section
+   */
+  private addTerms(doc: PDFDocumentType, data: QuotationPDFData): void {
+    // Yellow background
+    const startY = doc.y;
+    doc.rect(54, startY, doc.page.width - 108, 100)
+       .fillColor('#fffbeb')
+       .fill()
+       .fillColor('#000000');
 
-          .price-item.main .value {
-            font-size: 24px;
-          }
+    doc.fontSize(14)
+       .font('Helvetica-Bold')
+       .fillColor('#92400e')
+       .text('Terms & Conditions', 64, startY + 10);
 
-          .plan-details {
-            padding: 20px;
-          }
+    const terms = [
+      'This quotation is valid until the date mentioned above.',
+      'Premiums are subject to underwriting approval.',
+      'Coverage is subject to policy terms and conditions.',
+      'Pre-existing conditions may affect coverage eligibility.',
+      'Please review the full policy document for complete details.'
+    ];
 
-          .detail-row {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 15px;
-          }
+    doc.fontSize(12)
+       .font('Helvetica')
+       .fillColor('#78350f');
 
-          .detail-row:last-child {
-            margin-bottom: 0;
-          }
+    // Add terms as bullet points
+    let currentY = startY + 30;
+    terms.forEach((term) => {
+      doc.text('•', 64, currentY)
+         .text(term, 80, currentY, { width: doc.page.width - 144 });
+      currentY += 15;
+    });
 
-          .detail-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 15px;
-            background: #f8fafc;
-            border-radius: 8px;
-          }
+    doc.fillColor('#000000')
+       .moveDown(2);
+  }
 
-          .detail-item .label {
-            font-size: 13px;
-            color: #64748b;
-          }
+  /**
+   * Add footer section
+   */
+  private addFooter(doc: PDFDocumentType, data: QuotationPDFData): void {
+    const startY = doc.y;
+    
+    // Light gray background
+    doc.rect(54, startY, doc.page.width - 108, 80)
+       .fillColor('#f8fafc')
+       .fill()
+       .fillColor('#000000');
 
-          .detail-item .value {
-            font-size: 14px;
-            font-weight: 600;
-            color: #1e293b;
-          }
+    doc.fontSize(12)
+       .font('Helvetica')
+       .fillColor('#64748b')
+       .text('Thank you for considering our insurance services.', 64, startY + 10, { align: 'center' })
+       .text('For any questions, please contact our support team.', 64, startY + 25, { align: 'center' });
 
-          /* Footer */
-          .footer {
-            padding: 30px 40px;
-            background: #f8fafc;
-            text-align: center;
-            border-top: 1px solid #e2e8f0;
-          }
+    // Validity date (red)
+    doc.fontSize(14)
+       .font('Helvetica-Bold')
+       .fillColor('#dc2626')
+       .text(`This quotation expires on ${this.formatDate(data.validUntil)}`, 64, startY + 45, { align: 'center' });
 
-          .footer p {
-            font-size: 12px;
-            color: #64748b;
-            margin-bottom: 5px;
-          }
+    // Divider
+    doc.moveTo(64, startY + 65)
+       .lineTo(doc.page.width - 64, startY + 65)
+       .strokeColor('#e2e8f0')
+       .lineWidth(1)
+       .stroke();
 
-          .footer .validity {
-            font-size: 14px;
-            font-weight: 600;
-            color: #dc2626;
-            margin-top: 15px;
-          }
-
-          .footer .contact {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #e2e8f0;
-          }
-
-          .footer .contact p {
-            font-size: 13px;
-            color: #475569;
-          }
-
-          /* Terms */
-          .terms-section {
-            padding: 20px 40px;
-            background: #fffbeb;
-            border-top: 1px solid #fde68a;
-          }
-
-          .terms-section h4 {
-            font-size: 14px;
-            font-weight: 600;
-            color: #92400e;
-            margin-bottom: 10px;
-          }
-
-          .terms-section ul {
-            padding-left: 20px;
-          }
-
-          .terms-section li {
-            font-size: 12px;
-            color: #78350f;
-            margin-bottom: 5px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <!-- Header -->
-          <div class="header">
-            <h1>Insurance Quotation</h1>
-            <p class="subtitle">${getLOBDisplay(data.lineOfBusiness)}</p>
-            <span class="reference-badge">${data.referenceId}</span>
-          </div>
-
-          <!-- Customer Information -->
-          <div class="customer-section">
-            <div class="customer-grid">
-              <div class="customer-item">
-                <span class="label">Customer Name</span>
-                <span class="value">${data.customerName}</span>
-              </div>
-              <div class="customer-item">
-                <span class="label">Email Address</span>
-                <span class="value">${data.customerEmail}</span>
-              </div>
-              <div class="customer-item">
-                <span class="label">Business Type</span>
-                <span class="value" style="text-transform: capitalize;">${data.businessType}</span>
-              </div>
-              <div class="customer-item">
-                <span class="label">Quote Date</span>
-                <span class="value">${formatDate(data.createdAt)}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Summary -->
-          <div class="summary-section">
-            <div class="summary-grid">
-              <div class="summary-card highlight">
-                <div class="label">Total Premium</div>
-                <div class="value">${formatCurrency(data.totalPremium)}</div>
-              </div>
-              <div class="summary-card">
-                <div class="label">Plans Included</div>
-                <div class="value">${data.plans.length}</div>
-              </div>
-              <div class="summary-card">
-                <div class="label">Valid Until</div>
-                <div class="value" style="font-size: 16px;">${formatDate(data.validUntil)}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Plans -->
-          <div class="plans-section">
-            <h2 class="section-title">Insurance Plans</h2>
-            ${plansHTML}
-          </div>
-
-          <!-- Terms -->
-          <div class="terms-section">
-            <h4>Terms & Conditions</h4>
-            <ul>
-              <li>This quotation is valid until the date mentioned above.</li>
-              <li>Premiums are subject to underwriting approval.</li>
-              <li>Coverage is subject to policy terms and conditions.</li>
-              <li>Pre-existing conditions may affect coverage eligibility.</li>
-              <li>Please review the full policy document for complete details.</li>
-            </ul>
-          </div>
-
-          <!-- Footer -->
-          <div class="footer">
-            <p>Thank you for considering our insurance services.</p>
-            <p>For any questions, please contact our support team.</p>
-            <p class="validity">This quotation expires on ${formatDate(data.validUntil)}</p>
-            <div class="contact">
-              <p>Generated on ${formatDate(new Date())}</p>
-              <p>Document Reference: ${data.referenceId}</p>
-            </div>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
+    // Generated info
+    doc.fontSize(13)
+       .font('Helvetica')
+       .fillColor('#475569')
+       .text(`Generated on ${this.formatDate(new Date())}`, 64, startY + 70, { align: 'center' })
+       .text(`Document Reference: ${data.referenceId}`, 64, startY + 85, { align: 'center' });
   }
 }
 
 export const pdfService = new PDFService();
-

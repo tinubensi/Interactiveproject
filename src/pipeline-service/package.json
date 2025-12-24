@@ -16,9 +16,10 @@
     "@azure/cosmos": "^4.0.0",
     "@azure/eventgrid": "^5.0.0",
     "@azure/functions": "^4.0.0",
-    "@nectaria/auth-middleware": "file:../../../packages/@nectaria/auth-middleware",
-    "@nectaria/shared-types": "file:../../../packages/@nectaria/shared-types",
-    "uuid": "^9.0.0"
+    "@azure/storage-queue": "^12.17.0",
+    "applicationinsights": "^2.9.0",
+    "uuid": "^9.0.0",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

@@ -32,6 +32,13 @@ export interface StageChangeRequest {
   changedBy?: string;
 }
 
+export interface UpdateLeadStageResult {
+  success: boolean;
+  timeout?: boolean;
+  error?: string;
+  statusCode?: number;
+}
+
 // =============================================================================
 // Client Functions
 // =============================================================================
@@ -53,6 +60,14 @@ function getDocumentServiceUrl(): string {
 }
 
 /**
+ * Get the Quotation Service base URL
+ */
+function getQuotationServiceUrl(): string {
+  const config = getConfig();
+  return config.services.quotationServiceUrl;
+}
+
+/**
  * Get lead data by ID
  */
 export async function getLead(
@@ -62,7 +77,7 @@ export async function getLead(
   try {
     const baseUrl = getLeadServiceUrl();
     const response = await fetch(
-      `${baseUrl}/api/leads/${leadId}?lineOfBusiness=${lineOfBusiness}`,
+      `${baseUrl}/leads/${leadId}?lineOfBusiness=${lineOfBusiness}`,
       {
         method: 'GET',
         headers: {
@@ -89,16 +104,26 @@ export async function getLead(
 
 /**
  * Update lead stage via Lead Service API
+ * Returns detailed result including timeout information
  */
 export async function updateLeadStage(
   leadId: string,
   lineOfBusiness: string,
   stageRequest: StageChangeRequest
-): Promise<boolean> {
+): Promise<UpdateLeadStageResult> {
+  const controller = new AbortController();
+  const timeoutMs = 10000; // 10 seconds
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     const baseUrl = getLeadServiceUrl();
+    if (!baseUrl) {
+      clearTimeout(timeoutId);
+      return { success: false, error: 'LEAD_SERVICE_URL not configured' };
+    }
+
     const response = await fetch(
-      `${baseUrl}/api/leads/${leadId}/stage?lineOfBusiness=${lineOfBusiness}`,
+      `${baseUrl}/leads/${leadId}/stage/internal?lineOfBusiness=${lineOfBusiness}`,
       {
         method: 'PATCH',
         headers: {
@@ -106,19 +131,34 @@ export async function updateLeadStage(
           'x-service-key': getConfig().internalServiceKey,
         },
         body: JSON.stringify(stageRequest),
+        signal: controller.signal,
       }
     );
 
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
       const error = await response.text();
-      console.error(`Failed to update lead stage: ${error}`);
-      return false;
+      console.error(`Failed to update lead stage: HTTP ${response.status} - ${error}`);
+      return { 
+        success: false, 
+        error: `HTTP ${response.status}: ${error}`,
+        statusCode: response.status
+      };
     }
 
-    return true;
-  } catch (error) {
+    return { success: true };
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    
+    // Check if it's a timeout
+    if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+      console.warn(`Request timeout for lead ${leadId} - request may have succeeded`);
+      return { success: false, timeout: true, error: 'Request timeout' };
+    }
+    
     console.error('Error updating lead stage:', error);
-    return false;
+    return { success: false, error: error.message || String(error) };
   }
 }
 
@@ -144,17 +184,85 @@ export async function getLeadSummary(
 }
 
 /**
+ * Quotation data interface
+ */
+interface Quotation {
+  id: string;
+  leadId: string;
+  status: string;
+  createdAt: string;
+  version?: number;
+  [key: string]: unknown;
+}
+
+/**
+ * Get quotations for a lead from Quotation Service
+ */
+async function getQuotationByLeadId(
+  leadId: string,
+  lineOfBusiness: string
+): Promise<Quotation[]> {
+  try {
+    const baseUrl = getQuotationServiceUrl();
+    if (!baseUrl) {
+      console.warn('Quotation service URL not configured');
+      return [];
+    }
+
+    const response = await fetch(
+      `${baseUrl}/quotations`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-service-key': getConfig().internalServiceKey,
+        },
+        body: JSON.stringify({
+          leadId,
+          page: 1,
+          limit: 100,
+          sortBy: 'createdAt',
+          sortOrder: 'desc',
+          filters: {
+            lineOfBusiness: [lineOfBusiness],
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.warn(`Quotation service returned ${response.status} for lead ${leadId}`);
+      return [];
+    }
+
+    const result = await response.json() as { 
+      success?: boolean; 
+      data?: Quotation[];
+      quotations?: Quotation[];
+    };
+    
+    // Handle different response formats
+    return result.data || result.quotations || [];
+  } catch (error) {
+    console.warn('Error getting quotations:', error);
+    return [];
+  }
+}
+
+/**
  * Evaluate a lead-based condition
  */
 export async function evaluateLeadCondition(
   leadId: string,
   lineOfBusiness: string,
   conditionType: string,
-  conditionValue?: string | number
+  conditionValue?: string | number,
+  eventData?: Record<string, unknown>,
+  log: (...args: unknown[]) => void = console.log
 ): Promise<boolean> {
   const lead = await getLead(leadId, lineOfBusiness);
   if (!lead) {
-    console.warn(`Lead not found for condition evaluation: ${leadId}`);
+    log(`[WARN] Lead not found for condition evaluation: ${leadId}`);
     return false;
   }
 
@@ -201,21 +309,90 @@ export async function evaluateLeadCondition(
             },
           }
         );
-        
+
         if (!docResponse.ok) {
-          console.warn(`Document service returned ${docResponse.status} for lead ${leadId}`);
+          log(`[WARN] Document service returned ${docResponse.status} for lead ${leadId}`);
           return false; // Safe default - assume documents missing
         }
-        
+
         const docResult = await docResponse.json() as { allRequiredUploaded?: boolean };
         return docResult.allRequiredUploaded === true;
       } catch (error) {
-        console.warn('Error checking required documents:', error);
+        log(`[WARN] Error checking required documents:`, error);
         return false; // Safe default - assume documents missing
       }
 
+    case 'quotation_approved':
+      // CRITICAL FIX: Check event data first to avoid race condition
+      // If event data indicates plan was selected, return true immediately
+      log(`[QUOTATION_APPROVED] Evaluating condition. eventData present: ${!!eventData}`);
+      
+      if (eventData) {
+        const responseType = eventData.responseType as string;
+        const selectedPlanId = eventData.selectedPlanId;
+        
+        log(`[QUOTATION_APPROVED] Event data: responseType="${responseType}", selectedPlanId="${selectedPlanId}"`);
+        log(`[QUOTATION_APPROVED] Event data keys: ${Object.keys(eventData).join(', ')}`);
+        log(`[QUOTATION_APPROVED] Event data full: ${JSON.stringify(eventData)}`);
+        
+        // Handle both event types that indicate customer selected a plan:
+        // 1. customer.responded event: has responseType='plan_selected' AND selectedPlanId
+        // 2. quotation.pending_approval event: has selectedPlanId (customer selected plan)
+        // Check: selectedPlanId must be a non-empty string (not undefined, null, or empty)
+        // Also handle cases where selectedPlanId might be a number (convert to string)
+        const selectedPlanIdStr = selectedPlanId ? String(selectedPlanId).trim() : '';
+        const hasValidSelectedPlan = selectedPlanIdStr.length > 0;
+        const isPlanSelectedResponse = responseType === 'plan_selected' && hasValidSelectedPlan;
+        
+        log(`[QUOTATION_APPROVED] Condition check: responseType="${responseType}", selectedPlanId="${selectedPlanId}" (as string: "${selectedPlanIdStr}")`);
+        log(`[QUOTATION_APPROVED] Condition check: hasValidSelectedPlan=${hasValidSelectedPlan}, isPlanSelectedResponse=${isPlanSelectedResponse}`);
+        
+        if (isPlanSelectedResponse || hasValidSelectedPlan) {
+          log(`[QUOTATION_APPROVED] ✓ Event data confirms plan selection - returning true immediately`);
+          return true; // Customer selected a plan - approved!
+        } else {
+          log(`[QUOTATION_APPROVED] ✗ Event data does NOT indicate plan selection - will check API`);
+          log(`[QUOTATION_APPROVED] Response type: "${responseType}", selectedPlanId: "${selectedPlanId}"`);
+        }
+      } else {
+        log(`[QUOTATION_APPROVED] ✗ No eventData provided - will check API`);
+      }
+
+      // Fallback: Check if customer has approved the quotation by selecting a plan
+      // OR if quotation is already internally approved
+      try {
+        const quotations = await getQuotationByLeadId(leadId, lineOfBusiness);
+        
+        if (quotations.length === 0) {
+          return false; // No quotations found
+        }
+
+        // Find the most recent quotation (already sorted by createdAt desc)
+        // Or use version if available
+        const mostRecentQuotation = quotations.sort((a, b) => {
+          // First try to sort by version (higher version = more recent)
+          if (a.version && b.version) {
+            return b.version - a.version;
+          }
+          // Fallback to createdAt
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return dateB - dateA;
+        })[0];
+
+        const status = mostRecentQuotation.status;
+        const hasCustomerSelectedPlan = !!mostRecentQuotation.customerSelectedPlanId;
+        
+        // Customer approval: customer selected a plan (pending_approval status)
+        // OR quotation is already internally approved (approved/policy_issued)
+        return hasCustomerSelectedPlan || status === 'approved' || status === 'policy_issued';
+      } catch (error) {
+        log(`[WARN] Error checking quotation approval status:`, error);
+        return false; // Safe default - assume not approved
+      }
+
     default:
-      console.warn(`Unknown condition type: ${conditionType}`);
+      log(`[WARN] Unknown condition type: ${conditionType}`);
       return false;
   }
 }

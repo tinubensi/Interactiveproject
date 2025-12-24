@@ -16,7 +16,6 @@ export type StepType = 'stage' | 'approval' | 'decision' | 'notification' | 'wai
 export type InstanceStatus = 
   | 'active' 
   | 'waiting_approval' 
-  | 'waiting_event' 
   | 'completed' 
   | 'failed' 
   | 'cancelled';
@@ -33,6 +32,7 @@ export type PredefinedStageId =
   | 'plans-available'
   | 'quotation-created'
   | 'quotation-sent'
+  | 'revision-requested'
   | 'pending-review'
   | 'approved'
   | 'rejected'
@@ -100,6 +100,7 @@ export interface StageStep extends BaseStep {
   stageId: PredefinedStageId;
   stageName: string;
   triggerEvent?: string; // Event that triggers this stage
+  allowedActions?: string[]; // Actions allowed at this stage
 }
 
 /**
@@ -146,6 +147,83 @@ export interface WaitStep extends BaseStep {
  * Union type for all step types
  */
 export type PipelineStep = StageStep | ApprovalStep | DecisionStep | NotificationStep | WaitStep;
+
+// =============================================================================
+// Enhanced Action Types (Phase 1: Hybrid Sync/Async Architecture)
+// =============================================================================
+
+/**
+ * Action execution types
+ */
+export type ActionType = 'sync' | 'async' | 'manual' | 'wait';
+
+/**
+ * Sync action configuration (API call)
+ */
+export interface SyncActionConfig {
+  targetService: string;
+  endpoint: string;
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  requiredData: string[];
+  timeout: number;
+  onSuccess?: {
+    nextStage?: string;
+    updateData?: Record<string, any>;
+  };
+  onFailure?: {
+    retryPolicy?: { maxRetries: number; delayMs: number };
+    fallbackStage?: string;
+  };
+}
+
+/**
+ * Async action configuration (Event)
+ */
+export interface AsyncActionConfig {
+  targetService: string;
+  actionEvent: string;
+  requiredData: string[];
+  completionEvent: string;
+  timeout: number;
+  retryPolicy?: {
+    maxRetries: number;
+    retryDelayMs: number;
+  };
+}
+
+/**
+ * Enhanced stage step with action config
+ */
+export interface EnhancedStageStep extends StageStep {
+  actionConfig?: {
+    primaryAction?: {
+      type: ActionType;
+      syncAction?: SyncActionConfig;
+      asyncAction?: AsyncActionConfig;
+    };
+    allowedUserActions?: Array<{
+      actionId: string;
+      actionName: string;
+      actionType: 'sync' | 'async';
+      requiresApproval: boolean;
+      requiresPermission?: string;
+      syncAction?: SyncActionConfig;
+      asyncAction?: AsyncActionConfig;
+      nextStepOverride?: string;
+    }>;
+    autoAdvance?: {
+      enabled: boolean;
+      delayMs?: number;
+      condition?: string;
+    };
+  };
+  metadata: {
+    estimatedDuration: number;
+    requiresUserInput: boolean;
+    canSkip: boolean;
+    exitConditions: string[];
+  };
+}
 
 // =============================================================================
 // Pipeline Definition
@@ -198,10 +276,11 @@ export interface PipelineDefinition {
 export interface StepHistoryEntry {
   stepId: string;
   stepType: StepType;
-  stageName?: string;
+  stageName?: string; // For stage steps
+  stepName?: string; // For all steps (display name)
   enteredAt: string;
   exitedAt?: string;
-  outcome?: 'completed' | 'approved' | 'rejected' | 'skipped' | 'timeout' | 'branched';
+  outcome?: 'completed' | 'approved' | 'rejected' | 'skipped' | 'timeout' | 'branched' | 'failed';
   triggeredBy: string; // Event name, user ID, or 'system'
   metadata?: Record<string, unknown>;
 }
@@ -220,6 +299,7 @@ export interface PipelineInstance {
   pipelineName: string;
   leadId: string;
   lineOfBusiness: LineOfBusiness;
+  businessType?: BusinessType;
   organizationId?: string;
   
   // Current state
@@ -243,6 +323,14 @@ export interface PipelineInstance {
   waitingForEvent?: string;
   waitingForApprovalId?: string;
   waitingUntil?: string; // Timeout timestamp
+  
+  // NEW: Action tracking (Phase 1: Hybrid Sync/Async Architecture)
+  waitingForAction?: string;
+  waitingForService?: string;
+  actionCorrelationId?: string;
+  actionStartedAt?: string;
+  actionDeadline?: string;
+  actionRetryCount?: number;
   
   // History
   stepHistory: StepHistoryEntry[];
@@ -392,5 +480,6 @@ export interface NextStepInfo {
   progressPercent?: number;
   status?: InstanceStatus;
   waitingFor?: string;
+  allowedActions?: string[]; // Actions allowed at current stage
 }
 

@@ -6,6 +6,7 @@ import { eventGridService } from '../../services/eventGridService';
 import { tokenService } from '../../services/tokenService';
 import { SendQuotationRequest } from '../../models/quotation';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
+import { notifyPipelineService } from '../../utils/pipelineFallback';
 
 export async function sendQuotation(
   request: HttpRequest,
@@ -83,8 +84,8 @@ export async function sendQuotation(
     const selectionToken = tokenService.generateSelectionToken();
     context.log(`Generated selection token for quotation ${quotationId}`);
 
-    // Construct the review link
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    // Construct the review link - always use localhost:3000 for now
+    const frontendUrl = 'http://localhost:3000';
     const reviewLink = `${frontendUrl}/quotations/review/${selectionToken}`;
     context.log(`Review link: ${reviewLink}`);
 
@@ -137,8 +138,44 @@ export async function sendQuotation(
         recipientEmail,
       });
       context.log('Quotation sent event published');
+
+      // HTTP Fallback: Also notify pipeline service directly
+      try {
+        await notifyPipelineService('quotation.sent', {
+          leadId: quotation.leadId,
+          lineOfBusiness: quotation.lineOfBusiness,
+          quotationId: quotation.id,
+          recipientEmail,
+        }, { log: context.log.bind(context) });
+      } catch (fallbackError) {
+        context.warn(`[HTTP Fallback] Failed to notify pipeline service: ${fallbackError}`);
+      }
     } catch (eventError) {
       context.warn('Failed to publish quotation sent event:', eventError);
+      // Don't fail the request if event publishing fails
+    }
+
+    // Publish quotation.pending_approval event for pipeline
+    try {
+      // Get the first selected plan (assuming there's at least one)
+      const selectedPlan = plans.length > 0 ? plans[0] : null;
+
+      await eventGridService.publishQuotationPendingApproval({
+        quotationId: quotation.id,
+        referenceId: quotation.referenceId,
+        leadId: quotation.leadId,
+        customerId: quotation.customerId,
+        selectedPlanId: selectedPlan?.id || '',
+        selectedPlanName: selectedPlan?.planName || '',
+        vendorName: selectedPlan?.vendorName || '',
+        annualPremium: quotation.totalPremium,
+        currency: quotation.currency,
+        lineOfBusiness: quotation.lineOfBusiness,
+        businessType: quotation.businessType,
+      });
+      context.log('Quotation pending approval event published');
+    } catch (eventError) {
+      context.warn('Failed to publish quotation pending approval event:', eventError);
       // Don't fail the request if event publishing fails
     }
 

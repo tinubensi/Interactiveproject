@@ -1,0 +1,100 @@
+{
+	"info": {
+		"name": "Authorization Service API",
+		"description": "API collection for Authorization Service. Handles permission management and access control.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:7072/api",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Permissions",
+			"item": [
+				{
+					"name": "Get User Permissions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/authz/users/{{user_id}}/permissions",
+							"host": ["{{base_url}}"],
+							"path": ["authz", "users", "{{user_id}}", "permissions"]
+						},
+						"description": "Get all permissions for a user including roles and temporary permissions"
+					}
+				},
+				{
+					"name": "Check Permission",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"{{user_id}}\",\n  \"permission\": \"customers:read\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/authz/check",
+							"host": ["{{base_url}}"],
+							"path": ["authz", "check"]
+						},
+						"description": "Check if user has a specific permission"
+					}
+				},
+				{
+					"name": "Check Resource Permission",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"{{user_id}}\",\n  \"permission\": \"customers:read:own\",\n  \"resource\": {\n    \"type\": \"customer\",\n    \"id\": \"customer-123\",\n    \"ownerId\": \"{{user_id}}\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/authz/check-resource",
+							"host": ["{{base_url}}"],
+							"path": ["authz", "check-resource"]
+						},
+						"description": "Check permission on a specific resource (for scoped permissions)"
+					}
+				},
+				{
+					"name": "Get User Roles",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/authz/users/{{user_id}}/roles",
+							"host": ["{{base_url}}"],
+							"path": ["authz", "users", "{{user_id}}", "roles"]
+						},
+						"description": "Get roles assigned to a user"
+					}
+				}
+			]
+		}
+	]
+}
+
+
+
+

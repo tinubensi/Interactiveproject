@@ -12,6 +12,7 @@ import { generateQuotationReferenceId } from '../../utils/referenceGenerator';
 import { Quotation, QuotationPlan, CreateQuotationRequest } from '../../models/quotation';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
 import { ensureAuthorized, requirePermission, QUOTATION_PERMISSIONS } from '../../lib/auth';
+import { notifyPipelineService } from '../../utils/pipelineFallback';
 
 export async function createQuotation(
   request: HttpRequest,
@@ -140,6 +141,23 @@ export async function createQuotation(
       version,
       planIds: body.planIds
     });
+
+    // HTTP Fallback: Also notify pipeline service directly
+    try {
+      await notifyPipelineService('quotation.created', {
+        leadId: body.leadId,
+        quotationId,
+        referenceId,
+        customerId: body.customerId,
+        lineOfBusiness: body.lineOfBusiness,
+        totalPremium,
+        planCount: quotationPlans.length,
+        version,
+        planIds: body.planIds,
+      }, { log: context.log.bind(context) });
+    } catch (fallbackError) {
+      context.warn(`[HTTP Fallback] Failed to notify pipeline service: ${fallbackError}`);
+    }
 
     context.log(`Quotation created: ${referenceId} for lead ${body.leadId}`);
 

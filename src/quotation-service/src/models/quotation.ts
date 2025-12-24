@@ -11,6 +11,7 @@ export type QuotationStatus =
   | 'sent'            // Sent to customer
   | 'viewed'          // Customer viewed quotation
   | 'pending_approval' // Customer selected plan, awaiting internal approval
+  | 'revision_requested' // Customer requested changes to quotation
   | 'approved'        // Internally approved, ready for policy issuance
   | 'policy_issued'   // Policy has been issued
   | 'rejected'        // Rejected (by customer or internally)
@@ -53,6 +54,7 @@ export interface Quotation {
   approvedAt?: Date;
   rejectedAt?: Date;
   rejectionReason?: string;
+  revisionReason?: string; // Reason for revision request
   
   // Customer Plan Selection (via temporary link)
   selectionToken?: string; // Unique token for customer review link
@@ -267,6 +269,7 @@ export interface UpdateQuotationRequest {
   termsAndConditions?: string;
   remarks?: Quotation['remarks'];
   rejectionReason?: string;
+  revisionReason?: string;
 }
 
 /**

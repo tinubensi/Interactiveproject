@@ -11,6 +11,7 @@ import './functions/leads/getLeadById'; // GET - register first
 import './functions/leads/updateLead'; // PUT
 import './functions/leads/deleteLead'; // DELETE
 import './functions/leads/changeStage';
+import './functions/leads/updateStageInternal';
 import './functions/leads/refetchPlans';
 
 import './functions/timelines/getTimeline';

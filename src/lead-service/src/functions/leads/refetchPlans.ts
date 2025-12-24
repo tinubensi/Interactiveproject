@@ -8,6 +8,7 @@ import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
 import { v4 as uuidv4 } from 'uuid';
+import { isLeadManagedByPipeline } from '../../services/pipelineServiceClient';
 
 export async function refetchPlans(
   request: HttpRequest,
@@ -66,26 +67,42 @@ export async function refetchPlans(
     // Delete existing plans for this lead
     await cosmosService.deletePlansForLead(leadId);
 
-    // Update lead status to "Plans Fetching"
-    const updatedLead = await cosmosService.updateLead(leadId, latestLead.lineOfBusiness, {
-      currentStage: 'Plans Fetching',
-      stageId: 'stage-1',
-      plansCount: 0,
-      updatedAt: new Date()
-    });
+    // Check if this lead is managed by a pipeline
+    const hasPipeline = await isLeadManagedByPipeline(leadId);
+    
+    let updatedLead;
+    if (hasPipeline) {
+      context.log(`Lead ${leadId} is managed by pipeline - skipping stage update. Pipeline Service will handle stage progression.`);
+      // Only update plan count, not stage - Pipeline Service controls stage progression
+      updatedLead = await cosmosService.updateLead(leadId, latestLead.lineOfBusiness, {
+        plansCount: 0,
+        updatedAt: new Date()
+      });
+    } else {
+      // No pipeline active - fallback to direct stage update (for legacy leads without pipelines)
+      context.log(`Lead ${leadId} has no active pipeline - updating stage directly as fallback`);
+      
+      // Update lead status to "Plans Fetching"
+      updatedLead = await cosmosService.updateLead(leadId, latestLead.lineOfBusiness, {
+        currentStage: 'Plans Fetching',
+        stageId: 'stage-1',
+        plansCount: 0,
+        updatedAt: new Date()
+      });
 
-    // Create timeline entry
-    await cosmosService.createTimelineEntry({
-      id: uuidv4(),
-      leadId: leadId,
-      stage: 'Plans Fetching',
-      previousStage: lead.currentStage,
-      stageId: 'stage-1',
-      remark: 'Plans refetch requested - fetching updated plans from vendors',
-      changedBy: 'system',
-      changedByName: 'System',
-      timestamp: new Date()
-    });
+      // Create timeline entry
+      await cosmosService.createTimelineEntry({
+        id: uuidv4(),
+        leadId: leadId,
+        stage: 'Plans Fetching',
+        previousStage: lead.currentStage,
+        stageId: 'stage-1',
+        remark: 'Plans refetch requested - fetching updated plans from vendors',
+        changedBy: 'system',
+        changedByName: 'System',
+        timestamp: new Date()
+      });
+    }
 
     // Publish lead.created event to Event Grid (primary communication method)
     // Use latestLead to ensure we have the most recent data including updated lobData

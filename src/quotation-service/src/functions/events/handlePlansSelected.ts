@@ -11,6 +11,7 @@ import { eventGridService } from '../../services/eventGridService';
 import { generateQuotationReferenceId } from '../../utils/referenceGenerator';
 import { PlansSelectedEvent } from '../../models/events';
 import { Quotation, QuotationPlan } from '../../models/quotation';
+import { notifyPipelineService } from '../../utils/pipelineFallback';
 
 // Helper function to fetch lead data from lead service
 async function fetchLeadData(leadId: string, context: InvocationContext): Promise<any | null> {
@@ -148,6 +149,23 @@ export async function handlePlansSelected(
       version,
       planIds: data.planIds
     });
+
+    // HTTP Fallback: Also notify pipeline service directly
+    try {
+      await notifyPipelineService('quotation.created', {
+        leadId: data.leadId,
+        quotationId,
+        referenceId,
+        customerId: quotation.customerId,
+        lineOfBusiness: quotation.lineOfBusiness,
+        totalPremium,
+        planCount: quotationPlans.length,
+        version,
+        planIds: data.planIds,
+      }, { log: context.log.bind(context) });
+    } catch (fallbackError) {
+      context.warn(`[HTTP Fallback] Failed to notify pipeline service: ${fallbackError}`);
+    }
 
     context.log(`Auto-created quotation ${referenceId} for lead ${data.leadId}`);
   } catch (error: any) {

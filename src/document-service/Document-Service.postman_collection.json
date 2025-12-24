@@ -1,0 +1,175 @@
+{
+	"info": {
+		"name": "Document Service API",
+		"description": "API collection for Document Service. Manages document uploads, storage, and retrieval for customers.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://document-service-func.azurewebsites.net/api",
+			"type": "string"
+		},
+		{
+			"key": "customer_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "document_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Documents",
+			"item": [
+				{
+					"name": "List Documents",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/customers/{{customer_id}}/documents",
+							"host": ["{{base_url}}"],
+							"path": ["customers", "{{customer_id}}", "documents"]
+						},
+						"description": "List all documents for a customer"
+					}
+				},
+				{
+					"name": "Create Document",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"user-123\",\n  \"documentType\": \"Passport\",\n  \"fileName\": \"passport.pdf\",\n  \"expiryDate\": \"2025-12-31\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/customers/{{customer_id}}/documents",
+							"host": ["{{base_url}}"],
+							"path": ["customers", "{{customer_id}}", "documents"]
+						},
+						"description": "Create document metadata and get upload URL (SAS URI)"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.documentId) {",
+									"        pm.environment.set(\"document_id\", response.documentId);",
+									"        pm.environment.set(\"upload_sas_uri\", response.uploadSasUri);",
+									"    }",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Confirm Upload",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"uploaded\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/documents/{{document_id}}/confirm-upload?customerId={{customer_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["documents", "{{document_id}}", "confirm-upload"],
+							"query": [
+								{
+									"key": "customerId",
+									"value": "{{customer_id}}"
+								}
+							]
+						},
+						"description": "Confirm that file upload to blob storage is complete"
+					}
+				},
+				{
+					"name": "Get Preview URL",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/documents/{{document_id}}/download?customerId={{customer_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["documents", "{{document_id}}", "download"],
+							"query": [
+								{
+									"key": "customerId",
+									"value": "{{customer_id}}"
+								}
+							]
+						},
+						"description": "Get preview URL for viewing document in browser"
+					}
+				},
+				{
+					"name": "Get Download URL",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/documents/{{document_id}}/download?customerId={{customer_id}}&download=true",
+							"host": ["{{base_url}}"],
+							"path": ["documents", "{{document_id}}", "download"],
+							"query": [
+								{
+									"key": "customerId",
+									"value": "{{customer_id}}"
+								},
+								{
+									"key": "download",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get download URL (forces download)"
+					}
+				},
+				{
+					"name": "Delete Document",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/documents/{{document_id}}?customerId={{customer_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["documents", "{{document_id}}"],
+							"query": [
+								{
+									"key": "customerId",
+									"value": "{{customer_id}}"
+								}
+							]
+						},
+						"description": "Delete a document"
+					}
+				}
+			]
+		}
+	]
+}
+
+
+
+

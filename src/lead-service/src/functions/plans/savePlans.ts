@@ -8,6 +8,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { v4 as uuidv4 } from 'uuid';
 import { cosmosService, Plan } from '../../services/cosmosService';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
+import { isLeadManagedByPipeline } from '../../services/pipelineServiceClient';
 
 export async function savePlans(
   request: HttpRequest,
@@ -73,6 +74,32 @@ export async function savePlans(
       context.warn(`Only ${savedPlans.length} of ${body.plans.length} plans were saved successfully`);
     }
 
+    // Check if this lead is managed by a pipeline
+    const hasPipeline = await isLeadManagedByPipeline(leadId);
+    if (hasPipeline) {
+      context.log(`Lead ${leadId} is managed by pipeline - skipping stage update. Pipeline Service will handle stage progression.`);
+      // Only update plan data, not stage - Pipeline Service controls stage progression
+      await cosmosService.updateLead(leadId, lead.lineOfBusiness, {
+        planFetchRequestId: body.fetchRequestId,
+        plansCount: body.plans.length,
+        updatedAt: new Date()
+      });
+      
+      return withCors(request, {
+        status: 200,
+        jsonBody: {
+          success: true,
+          message: 'Plans saved successfully. Pipeline Service will handle stage progression.',
+          data: {
+            plansCount: savedPlans.length
+          }
+        }
+      });
+    }
+
+    // No pipeline active - fallback to direct stage update (for legacy leads without pipelines)
+    context.log(`Lead ${leadId} has no active pipeline - updating stage directly as fallback`);
+    
     // Update lead status to "Plans Available"
     await cosmosService.updateLead(leadId, lead.lineOfBusiness, {
       currentStage: 'Plans Available',

@@ -118,7 +118,7 @@ export interface Policy {
   // References
   leadId: string;
   quotationId: string;
-  policyRequestId: string;
+  policyRequestId?: string; // Optional - only set if created from a policy request
   planId: string;
   
   // Vendor Information

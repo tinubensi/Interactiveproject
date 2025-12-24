@@ -10,8 +10,9 @@ import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
 import { planFetchingService } from '../../services/planFetchingService';
 import { FetchPlansRequest, PlanFetchRequest } from '../../models/plan';
-import { ensureAuthorized, requirePermission, QUOTE_PERMISSIONS } from '../../lib/auth';
+import { ensureAuthorized, requirePermission, QUOTE_PERMISSIONS, validateServiceKey } from '../../lib/auth';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
+import { notifyPipelineService } from '../../utils/pipelineFallback';
 
 export async function fetchPlans(
   request: HttpRequest,
@@ -22,8 +23,18 @@ export async function fetchPlans(
   if (preflightResponse) return preflightResponse;
 
   try {
-    const userContext = await ensureAuthorized(request);
-    await requirePermission(userContext.userId, QUOTE_PERMISSIONS.QUOTES_CREATE);
+    // CRITICAL FIX: Allow service key authentication for internal service calls
+    // This allows Pipeline Service to trigger plan fetching without user authentication
+    const isServiceCall = validateServiceKey(request);
+
+    if (!isServiceCall) {
+      // For user calls, require authentication
+      const userContext = await ensureAuthorized(request);
+      await requirePermission(userContext.userId, QUOTE_PERMISSIONS.QUOTES_CREATE);
+    } else {
+      context.log('Plan fetch request authenticated via service key (internal service call)');
+    }
+
     const body: FetchPlansRequest = await request.json() as FetchPlansRequest;
 
     if (!body.leadId || !body.lineOfBusiness) {
@@ -79,8 +90,9 @@ export async function fetchPlans(
 
     // Get vendors for this LOB
     const vendors = await cosmosService.getVendorsByLOB(body.lineOfBusiness);
-    
+
     // Publish fetch started event
+    let fetchStartedPublished = false;
     try {
       await eventGridService.publishPlansFetchStarted({
         leadId: body.leadId,
@@ -88,8 +100,40 @@ export async function fetchPlans(
         lineOfBusiness: body.lineOfBusiness,
         vendorCount: vendors.length
       });
+      fetchStartedPublished = true;
+      context.log('plans.fetch_started event published successfully to Event Grid');
     } catch (eventError) {
-      context.warn('Event Grid not available, continuing without event publishing:', eventError);
+      context.warn('Event Grid not available for plans.fetch_started, using HTTP fallback:', eventError);
+    }
+
+    // HTTP Fallback: Also notify pipeline service directly for plans.fetch_started
+    if (!fetchStartedPublished) {
+      try {
+        await notifyPipelineService('plans.fetch_started', {
+          leadId: body.leadId,
+          lineOfBusiness: body.lineOfBusiness,
+          businessType: body.businessType,
+          fetchRequestId: fetchRequest.id,
+          vendorCount: vendors.length,
+        }, { log: context.log.bind(context) });
+        context.log('[HTTP Fallback] Successfully notified pipeline service: plans.fetch_started');
+      } catch (fallbackError) {
+        context.warn(`[HTTP Fallback] Failed to notify pipeline service for plans.fetch_started: ${fallbackError}`);
+      }
+    } else {
+      // Even if Event Grid succeeds, also send HTTP fallback as backup
+      try {
+        await notifyPipelineService('plans.fetch_started', {
+          leadId: body.leadId,
+          lineOfBusiness: body.lineOfBusiness,
+          businessType: body.businessType,
+          fetchRequestId: fetchRequest.id,
+          vendorCount: vendors.length,
+        }, { log: context.log.bind(context) });
+      } catch (fallbackError) {
+        // Silent fail - Event Grid already published
+        context.log(`[HTTP Fallback] Backup notification failed (Event Grid succeeded): ${fallbackError}`);
+      }
     }
 
     // Fetch plans
@@ -133,57 +177,35 @@ export async function fetchPlans(
       });
       eventPublished = true;
       context.log('plans.fetch_completed event published successfully to Event Grid');
-      
-      // Delayed HTTP fallback check: Verify status was updated after Event Grid event
-      // If lead is still in "Plans Fetching" after 5 seconds, use HTTP fallback
-      setTimeout(async () => {
-        try {
-          const leadServiceUrl = process.env.LEAD_SERVICE_URL || 'https://lead-service.azurewebsites.net/api';
-          const leadCheckResponse = await fetch(`${leadServiceUrl}/leads/get/${body.leadId}?lineOfBusiness=${body.lineOfBusiness}`);
-          
-          if (leadCheckResponse.ok) {
-            const leadData: any = await leadCheckResponse.json();
-            const lead = leadData.data?.lead || leadData.jsonBody?.data?.lead || leadData;
-            
-            // If still in "Plans Fetching" status after 5 seconds, use HTTP fallback
-            if (lead && lead.currentStage === 'Plans Fetching') {
-              context.warn(`Lead ${body.leadId} still in "Plans Fetching" after Event Grid event - using HTTP fallback`);
-              
-              const response = await fetch(`${leadServiceUrl}/leads/${body.leadId}/save-plans`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  leadId: body.leadId,
-                  fetchRequestId: fetchRequest.id,
-                  totalPlans: plans.length,
-                  successfulVendors,
-                  failedVendors,
-                  plans
-                })
-              });
-              
-              if (response.ok) {
-                context.log('HTTP fallback succeeded after Event Grid delay check');
-              } else {
-                const errorText = await response.text();
-                context.warn(`HTTP fallback after delay check failed: ${response.status} - ${errorText}`);
-              }
-            }
-          }
-        } catch (checkError: any) {
-          context.warn('Status check failed, but Event Grid event was published:', checkError.message);
-        }
-      }, 5000); // 5 second delay to check if Event Grid delivered
-      
+
+      // HTTP Fallback: Also notify pipeline service directly
+      try {
+        await notifyPipelineService('plans.fetch_completed', {
+          leadId: body.leadId,
+          lineOfBusiness: body.lineOfBusiness,
+          businessType: body.businessType,
+          fetchRequestId: fetchRequest.id,
+          totalPlans: plans.length,
+          successfulVendors,
+          failedVendors,
+        }, { log: context.log.bind(context) });
+      } catch (fallbackError) {
+        context.warn(`[HTTP Fallback] Failed to notify pipeline service: ${fallbackError}`);
+      }
+
+      // Delayed HTTP fallback check REMOVED
+      // We rely on the immediate HTTP fallback (sent above) and Event Grid
+      // This removes the 5 second blocking wait
+
     } catch (eventError: any) {
       context.warn('Failed to publish plans.fetch_completed event to Event Grid:', eventError.message);
-      
+
       // HTTP Fallback: Only call Lead Service directly if Event Grid fails
       // This ensures plans are saved even if Event Grid is unavailable
       try {
         const leadServiceUrl = process.env.LEAD_SERVICE_URL || 'https://lead-service.azurewebsites.net/api';
         context.log(`Event Grid failed, using HTTP fallback to save plans at ${leadServiceUrl}/leads/${body.leadId}/save-plans`);
-        
+
         const response = await fetch(`${leadServiceUrl}/leads/${body.leadId}/save-plans`, {
           method: 'POST',
           headers: {
@@ -198,7 +220,7 @@ export async function fetchPlans(
             plans
           })
         });
-        
+
         if (!response.ok) {
           const errorText = await response.text();
           context.warn(`Failed to save plans to Lead Service via HTTP fallback: ${response.status} - ${errorText}`);

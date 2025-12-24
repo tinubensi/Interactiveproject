@@ -3,7 +3,7 @@
  * Handles all database operations for leads, timelines, and stages
  */
 
-import { CosmosClient, Container, Database, SqlQuerySpec } from '@azure/cosmos';
+import { CosmosClient, Container, Database, SqlQuerySpec, SqlParameter } from '@azure/cosmos';
 import { Lead, Timeline, Stage, CreateLeadRequest, UpdateLeadRequest, LeadListRequest, LeadListResponse } from '../models/lead';
 import axios from 'axios';
 
@@ -238,20 +238,92 @@ class CosmosService {
   /**
    * Update lead
    */
-  async updateLead(id: string, lineOfBusiness: string, updates: Partial<Lead>): Promise<Lead> {
-    const lead = await this.getLeadById(id, lineOfBusiness);
+  async updateLead(id: string, lineOfBusiness: string, updates: Partial<Lead>, etag?: string): Promise<Lead> {
+    // Get existing lead
+    let lead = await this.getLeadById(id, lineOfBusiness);
     if (!lead) {
       throw new Error('Lead not found');
     }
 
+    // Store the ETag from the lead (or use provided etag)
+    let currentEtag = etag || (lead as any)._etag;
+
+    // CRITICAL: Ensure the id field matches (Cosmos DB requires exact match)
     const updatedLead = {
       ...lead,
       ...updates,
+      id: lead.id, // Ensure id is preserved and matches
       updatedAt: new Date()
     };
 
-    const { resource } = await this.leadsContainer.item(id, lineOfBusiness).replace(updatedLead);
-    return resource as Lead;
+    // Try to replace with retry logic for Cosmos DB consistency and ETag optimistic concurrency
+    let lastError: any;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        // Use ETag-based optimistic concurrency if ETag is available
+        const replaceOptions: any = {};
+        if (currentEtag) {
+          replaceOptions.accessCondition = {
+            type: 'IfMatch',
+            condition: currentEtag
+          };
+        }
+
+        const { resource } = await this.leadsContainer.item(lead.id, lineOfBusiness).replace(updatedLead, replaceOptions);
+        if (!resource) {
+          throw new Error('Replace operation returned no resource');
+        }
+        return resource as unknown as Lead;
+      } catch (error: any) {
+        lastError = error;
+        
+        // Handle ETag mismatch (409 Conflict or 412 Precondition Failed)
+        // This indicates the lead was modified by another process
+        if ((error.code === 409 || error.code === 412 || error.statusCode === 409 || error.statusCode === 412) && attempt < 3) {
+          // Wait a bit for consistency
+          await new Promise(resolve => setTimeout(resolve, 300 * attempt));
+          
+          // Refresh the lead to get latest _etag and data
+          const refreshedLead = await this.getLeadById(id, lineOfBusiness);
+          if (refreshedLead) {
+            lead = refreshedLead;
+            currentEtag = (refreshedLead as any)._etag;
+            // Update the lead object with latest data
+            Object.assign(updatedLead, {
+              ...refreshedLead,
+              ...updates,
+              id: refreshedLead.id,
+              updatedAt: new Date()
+            });
+            continue; // Retry with refreshed lead and new ETag
+          }
+        }
+        
+        // If 404, retry after refreshing the lead
+        if (error.code === 404 && attempt < 3) {
+          await new Promise(resolve => setTimeout(resolve, 300 * attempt));
+          const refreshedLead = await this.getLeadById(id, lineOfBusiness);
+          if (refreshedLead) {
+            lead = refreshedLead;
+            currentEtag = (refreshedLead as any)._etag;
+            Object.assign(updatedLead, {
+              ...refreshedLead,
+              ...updates,
+              id: refreshedLead.id,
+              updatedAt: new Date()
+            });
+            continue;
+          }
+        }
+        
+        // For other errors or final attempt, throw
+        if (attempt === 3) {
+          throw new Error(`Failed to update lead after ${attempt} attempts: ${error.message || String(error)}`);
+        }
+      }
+    }
+    
+    throw lastError || new Error('Failed to update lead');
   }
 
   /**
@@ -483,8 +555,36 @@ class CosmosService {
   /**
    * Create timeline entry
    * Reference: Petli addTimelineHistory function
+   * Includes duplicate check to prevent race conditions
    */
   async createTimelineEntry(timeline: Timeline): Promise<Timeline> {
+    // Quick check for recent duplicate entry (best effort - may not catch all race conditions)
+    // This is an additional safety net; primary deduplication happens in updateStageInternal
+    try {
+      const recentEntries = await this.getTimelineEntries(timeline.leadId, {
+        limit: 1,
+        orderBy: 'timestamp',
+        order: 'desc',
+        stage: timeline.stage,
+        stageId: timeline.stageId,
+        since: new Date(Date.now() - 10 * 1000) // Check last 10 seconds
+      });
+
+      if (recentEntries.length > 0) {
+        const mostRecent = recentEntries[0];
+        const timeDiff = Date.now() - new Date(mostRecent.timestamp).getTime();
+        // If duplicate found within 10 seconds with same changedBy, skip creation
+        if (timeDiff < 10 * 1000 && mostRecent.changedBy === timeline.changedBy) {
+          // Return existing entry instead of creating duplicate
+          return mostRecent;
+        }
+      }
+    } catch (checkError) {
+      // Log but don't fail - this is a best-effort check
+      // Primary deduplication happens in updateStageInternal
+      console.warn('Failed to check for duplicate timeline entry:', checkError);
+    }
+
     const { resource } = await this.timelinesContainer.items.create(timeline);
     return resource as Timeline;
   }
@@ -499,6 +599,62 @@ class CosmosService {
     };
 
     const { resources } = await this.timelinesContainer.items.query<Timeline>(query).fetchAll();
+    return resources;
+  }
+
+  /**
+   * Get timeline entries for a lead with optional filters
+   */
+  async getTimelineEntries(
+    leadId: string,
+    options?: {
+      limit?: number;
+      orderBy?: 'timestamp';
+      order?: 'asc' | 'desc';
+      stage?: string;
+      stageId?: string;
+      since?: Date;
+    }
+  ): Promise<Timeline[]> {
+    const limit = options?.limit || 100;
+    const order = options?.order || 'desc';
+    const orderBy = options?.orderBy || 'timestamp';
+    
+    let query = 'SELECT * FROM c WHERE c.leadId = @leadId';
+    const parameters: SqlParameter[] = [
+      { name: '@leadId', value: leadId }
+    ];
+    
+    // Add stage filter
+    if (options?.stage) {
+      query += ' AND c.stage = @stage';
+      parameters.push({ name: '@stage', value: options.stage });
+    }
+    
+    // Add stageId filter
+    if (options?.stageId) {
+      query += ' AND c.stageId = @stageId';
+      parameters.push({ name: '@stageId', value: options.stageId });
+    }
+    
+    // Add timestamp filter (since)
+    if (options?.since) {
+      query += ' AND c.timestamp >= @since';
+      parameters.push({ name: '@since', value: options.since.toISOString() });
+    }
+    
+    // Add ordering
+    query += ` ORDER BY c.${orderBy} ${order.toUpperCase()}`;
+    
+    // Add limit (Cosmos DB uses TOP)
+    query = query.replace('SELECT *', `SELECT TOP ${limit} *`);
+    
+    const querySpec: SqlQuerySpec = {
+      query,
+      parameters
+    };
+    
+    const { resources } = await this.timelinesContainer.items.query<Timeline>(querySpec).fetchAll();
     return resources;
   }
 
@@ -550,6 +706,7 @@ class CosmosService {
       { id: 'stage-2', name: 'Plans Available', order: 2, applicableFor: ['medical', 'motor', 'general', 'marine'], isActive: true },
       { id: 'stage-3', name: 'Quotation Created', order: 3, applicableFor: ['medical', 'motor', 'general', 'marine'], isActive: true },
       { id: 'stage-4', name: 'Quotation Sent', order: 4, applicableFor: ['medical', 'motor', 'general', 'marine'], isActive: true },
+      { id: 'stage-9', name: 'Revision Requested', order: 5.5, applicableFor: ['medical', 'motor', 'general', 'marine'], isActive: true },
       { id: 'stage-5', name: 'Pending Review', order: 5, applicableFor: ['medical', 'motor', 'general', 'marine'], isActive: true },
       { id: 'stage-6', name: 'Policy Issued', order: 6, applicableFor: ['medical', 'motor', 'general', 'marine'], isActive: true },
       { id: 'stage-7', name: 'Rejected', order: 7, applicableFor: ['medical', 'motor', 'general', 'marine'], isActive: true },

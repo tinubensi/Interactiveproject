@@ -24,6 +24,7 @@ import './functions/customer/selectPlan';
 
 // Import all event handlers
 import './functions/events/handlePlansSelected';
+import './functions/events/handlePipelineAction';
 
 console.log('Quotation Service loaded');
 

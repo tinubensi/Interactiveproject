@@ -1,0 +1,1635 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.39.26.7824",
+      "templateHash": "15513881393631431934"
+    }
+  },
+  "parameters": {
+    "environment": {
+      "type": "string",
+      "metadata": {
+        "description": "Environment name (dev, staging, prod)"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "uaenorth",
+      "metadata": {
+        "description": "Primary Azure region"
+      }
+    },
+    "prefix": {
+      "type": "string",
+      "defaultValue": "nectaria",
+      "metadata": {
+        "description": "Resource naming prefix"
+      }
+    },
+    "azureAdTenantId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Azure AD Tenant ID for authentication service"
+      }
+    },
+    "azureAdClientId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Azure AD Client ID for authentication service"
+      }
+    },
+    "frontendUrl": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Frontend application URL for CORS configuration"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {
+        "environment": "[parameters('environment')]",
+        "project": "nectaria",
+        "managedBy": "bicep",
+        "deployedAt": "[utcNow()]"
+      },
+      "metadata": {
+        "description": "Tags for all resources"
+      }
+    }
+  },
+  "variables": {
+    "$fxv#0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "services": [
+        {
+          "name": "authentication",
+          "displayName": "Authentication Service",
+          "database": "auth-db",
+          "port": 7071,
+          "containers": [
+            {
+              "name": "sessions",
+              "partitionKey": "/userId",
+              "ttl": 2592000
+            },
+            {
+              "name": "login-attempts",
+              "partitionKey": "/email",
+              "ttl": 900
+            },
+            {
+              "name": "otps",
+              "partitionKey": "/email",
+              "ttl": 300
+            }
+          ],
+          "requiresAzureAd": true
+        },
+        {
+          "name": "authorization",
+          "displayName": "Authorization Service",
+          "database": "authz-db",
+          "port": 7072,
+          "containers": [
+            {
+              "name": "role-definitions",
+              "partitionKey": "/roleId",
+              "ttl": -1
+            },
+            {
+              "name": "user-roles",
+              "partitionKey": "/userId",
+              "ttl": -1
+            },
+            {
+              "name": "permission-cache",
+              "partitionKey": "/userId",
+              "ttl": 300
+            }
+          ]
+        },
+        {
+          "name": "audit",
+          "displayName": "Audit Service",
+          "database": "audit-db",
+          "port": 7073,
+          "containers": [
+            {
+              "name": "audit-logs",
+              "partitionKey": "/entityType",
+              "ttl": -1
+            },
+            {
+              "name": "audit-summaries",
+              "partitionKey": "/date",
+              "ttl": 31536000
+            }
+          ]
+        },
+        {
+          "name": "staff-management",
+          "displayName": "Staff Management Service",
+          "database": "staff-db",
+          "port": 7074,
+          "containers": [
+            {
+              "name": "staff-members",
+              "partitionKey": "/staffId",
+              "ttl": -1
+            },
+            {
+              "name": "teams",
+              "partitionKey": "/teamId",
+              "ttl": -1
+            },
+            {
+              "name": "territories",
+              "partitionKey": "/id",
+              "ttl": -1
+            }
+          ]
+        },
+        {
+          "name": "notification",
+          "displayName": "Notification Service",
+          "database": "notification-db",
+          "port": 7075,
+          "containers": [
+            {
+              "name": "templates",
+              "partitionKey": "/templateId",
+              "ttl": -1
+            },
+            {
+              "name": "notifications",
+              "partitionKey": "/userId",
+              "ttl": 7776000
+            },
+            {
+              "name": "preferences",
+              "partitionKey": "/userId",
+              "ttl": -1
+            }
+          ]
+        },
+        {
+          "name": "customer",
+          "displayName": "Customer Service",
+          "database": "customer-db",
+          "port": 7076,
+          "containers": [
+            {
+              "name": "customers",
+              "partitionKey": "/id",
+              "ttl": -1
+            }
+          ]
+        },
+        {
+          "name": "form",
+          "displayName": "Form Service",
+          "database": "form-db",
+          "port": 7077,
+          "containers": [
+            {
+              "name": "form-definitions",
+              "partitionKey": "/insuranceLine",
+              "ttl": -1
+            },
+            {
+              "name": "intake-forms",
+              "partitionKey": "/intakeId",
+              "ttl": -1
+            },
+            {
+              "name": "portal-registry",
+              "partitionKey": "/portalId",
+              "ttl": -1
+            },
+            {
+              "name": "unmapped-fields",
+              "partitionKey": "/portalId",
+              "ttl": -1
+            }
+          ]
+        },
+        {
+          "name": "lead",
+          "displayName": "Lead Service",
+          "database": "lead-db",
+          "port": 7078,
+          "containers": [
+            {
+              "name": "leads",
+              "partitionKey": "/customerId",
+              "ttl": -1
+            },
+            {
+              "name": "plans",
+              "partitionKey": "/insuranceLineId",
+              "ttl": -1
+            }
+          ]
+        },
+        {
+          "name": "quotation",
+          "displayName": "Quotation Service",
+          "database": "quotation-db",
+          "port": 7079,
+          "containers": [
+            {
+              "name": "quotations",
+              "partitionKey": "/leadId",
+              "ttl": -1
+            }
+          ]
+        },
+        {
+          "name": "quotation-generation",
+          "displayName": "Quotation Generation Service",
+          "database": "quotation-gen-db",
+          "port": 7080,
+          "containers": [
+            {
+              "name": "insurer-quoting-rules",
+              "partitionKey": "/insuranceLine",
+              "ttl": -1
+            }
+          ]
+        },
+        {
+          "name": "policy",
+          "displayName": "Policy Service",
+          "database": "policy-db",
+          "port": 7081,
+          "containers": [
+            {
+              "name": "policies",
+              "partitionKey": "/customerId",
+              "ttl": -1
+            }
+          ]
+        },
+        {
+          "name": "document",
+          "displayName": "Document Service",
+          "database": "document-db",
+          "port": 7082,
+          "containers": [
+            {
+              "name": "documents",
+              "partitionKey": "/customerId",
+              "ttl": -1
+            },
+            {
+              "name": "metadata",
+              "partitionKey": "/documentId",
+              "ttl": -1
+            }
+          ],
+          "requiresBlobStorage": true
+        },
+        {
+          "name": "pipeline",
+          "displayName": "Pipeline Service",
+          "database": "pipeline-db",
+          "port": 7090,
+          "containers": [
+            {
+              "name": "pipeline-definitions",
+              "partitionKey": "/lineOfBusiness",
+              "ttl": -1
+            },
+            {
+              "name": "pipeline-instances",
+              "partitionKey": "/leadId",
+              "ttl": -1
+            },
+            {
+              "name": "pipeline-templates",
+              "partitionKey": "/templateId",
+              "ttl": -1
+            }
+          ]
+        }
+      ]
+    },
+    "serviceConfig": "[variables('$fxv#0')]",
+    "serviceUrlsMap": "[reduce(variables('serviceConfig').services, createObject(), lambda('acc', 'service', union(lambdaVariables('acc'), createObject(format('{0}_SERVICE_URL', toUpper(replace(lambdaVariables('service').name, '-', '_'))), format('https://func-{0}-{1}-{2}.azurewebsites.net', parameters('prefix'), lambdaVariables('service').name, parameters('environment'))))))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2023-07-01",
+      "name": "[format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]"
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "appInsights-deployment",
+      "resourceGroup": "[format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('appi-{0}-{1}', parameters('prefix'), parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "7796536432084410218"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Application Insights resource"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for Application Insights"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the resource"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2022-10-01",
+              "name": "[format('{0}-law', parameters('name'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 30
+              }
+            },
+            {
+              "type": "Microsoft.Insights/components",
+              "apiVersion": "2020-02-02",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "web",
+              "properties": {
+                "Application_Type": "web",
+                "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', format('{0}-law', parameters('name')))]",
+                "IngestionMode": "LogAnalytics"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', format('{0}-law', parameters('name')))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "instrumentationKey": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Insights/components', parameters('name')), '2020-02-02').InstrumentationKey]"
+            },
+            "connectionString": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Insights/components', parameters('name')), '2020-02-02').ConnectionString]"
+            },
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Insights/components', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-{0}-{1}', parameters('prefix'), parameters('environment')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "functionStorage-deployment",
+      "resourceGroup": "[format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('st{0}func{1}', parameters('prefix'), parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "13567987927720722859"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the storage account (must be globally unique, 3-24 chars, lowercase alphanumeric)"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the storage account"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the resource"
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "Standard_LRS",
+              "allowedValues": [
+                "Standard_LRS",
+                "Standard_GRS",
+                "Standard_RAGRS",
+                "Standard_ZRS",
+                "Premium_LRS"
+              ],
+              "metadata": {
+                "description": "Storage account SKU"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2023-01-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('sku')]"
+              },
+              "kind": "StorageV2",
+              "properties": {
+                "supportsHttpsTrafficOnly": true,
+                "minimumTlsVersion": "TLS1_2",
+                "allowBlobPublicAccess": false,
+                "networkAcls": {
+                  "defaultAction": "Allow",
+                  "bypass": "AzureServices"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'default')]",
+              "properties": {
+                "deleteRetentionPolicy": {
+                  "enabled": true,
+                  "days": 7
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "primaryEndpoints": {
+              "type": "object",
+              "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', parameters('name')), '2023-01-01').primaryEndpoints]"
+            },
+            "connectionString": {
+              "type": "string",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', parameters('name'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('name')), '2023-01-01').keys[0].value)]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-{0}-{1}', parameters('prefix'), parameters('environment')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "documentStorage-deployment",
+      "resourceGroup": "[format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('st{0}docs{1}', parameters('prefix'), parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "13567987927720722859"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the storage account (must be globally unique, 3-24 chars, lowercase alphanumeric)"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the storage account"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the resource"
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "Standard_LRS",
+              "allowedValues": [
+                "Standard_LRS",
+                "Standard_GRS",
+                "Standard_RAGRS",
+                "Standard_ZRS",
+                "Premium_LRS"
+              ],
+              "metadata": {
+                "description": "Storage account SKU"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2023-01-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('sku')]"
+              },
+              "kind": "StorageV2",
+              "properties": {
+                "supportsHttpsTrafficOnly": true,
+                "minimumTlsVersion": "TLS1_2",
+                "allowBlobPublicAccess": false,
+                "networkAcls": {
+                  "defaultAction": "Allow",
+                  "bypass": "AzureServices"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'default')]",
+              "properties": {
+                "deleteRetentionPolicy": {
+                  "enabled": true,
+                  "days": 7
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "primaryEndpoints": {
+              "type": "object",
+              "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', parameters('name')), '2023-01-01').primaryEndpoints]"
+            },
+            "connectionString": {
+              "type": "string",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', parameters('name'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('name')), '2023-01-01').keys[0].value)]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-{0}-{1}', parameters('prefix'), parameters('environment')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "cosmosDb-deployment",
+      "resourceGroup": "[format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "accountName": {
+            "value": "[format('cosmos-{0}-{1}', parameters('prefix'), parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "serviceConfig": {
+            "value": "[variables('serviceConfig')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "15487947055988195710"
+            }
+          },
+          "parameters": {
+            "accountName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Cosmos DB account"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the Cosmos DB account"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the resource"
+              }
+            },
+            "serviceConfig": {
+              "type": "object",
+              "metadata": {
+                "description": "Service configuration loaded from service-config.json"
+              }
+            }
+          },
+          "variables": {
+            "copy": [
+              {
+                "name": "databasesArray",
+                "count": "[length(variables('uniqueDatabases'))]",
+                "input": {
+                  "name": "[variables('uniqueDatabases')[copyIndex('databasesArray')]]"
+                }
+              }
+            ],
+            "uniqueDatabases": "[union(map(parameters('serviceConfig').services, lambda('service', lambdaVariables('service').database)), createArray())]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.DocumentDB/databaseAccounts",
+              "apiVersion": "2023-11-15",
+              "name": "[parameters('accountName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "GlobalDocumentDB",
+              "properties": {
+                "databaseAccountOfferType": "Standard",
+                "consistencyPolicy": {
+                  "defaultConsistencyLevel": "Session"
+                },
+                "locations": [
+                  {
+                    "locationName": "[parameters('location')]",
+                    "failoverPriority": 0,
+                    "isZoneRedundant": false
+                  }
+                ],
+                "enableAutomaticFailover": false,
+                "enableMultipleWriteLocations": false,
+                "capabilities": []
+              }
+            },
+            {
+              "copy": {
+                "name": "sqlDatabases",
+                "count": "[length(variables('databasesArray'))]"
+              },
+              "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
+              "apiVersion": "2023-11-15",
+              "name": "[format('{0}/{1}', parameters('accountName'), variables('databasesArray')[copyIndex()].name)]",
+              "properties": {
+                "resource": {
+                  "id": "[variables('databasesArray')[copyIndex()].name]"
+                },
+                "options": {
+                  "throughput": 400
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('accountName'))]"
+              ]
+            },
+            {
+              "copy": {
+                "name": "containerDeployments",
+                "count": "[length(parameters('serviceConfig').services)]"
+              },
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2025-04-01",
+              "name": "[format('{0}-containers', parameters('serviceConfig').services[copyIndex()].database)]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "cosmosAccountName": {
+                    "value": "[parameters('accountName')]"
+                  },
+                  "databaseName": {
+                    "value": "[parameters('serviceConfig').services[copyIndex()].database]"
+                  },
+                  "containers": {
+                    "value": "[parameters('serviceConfig').services[copyIndex()].containers]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.39.26.7824",
+                      "templateHash": "15245542406410849650"
+                    }
+                  },
+                  "parameters": {
+                    "cosmosAccountName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The name of the Cosmos DB account"
+                      }
+                    },
+                    "databaseName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The name of the database"
+                      }
+                    },
+                    "containers": {
+                      "type": "array",
+                      "metadata": {
+                        "description": "Array of containers to create"
+                      }
+                    }
+                  },
+                  "resources": [
+                    {
+                      "copy": {
+                        "name": "cosmosContainers",
+                        "count": "[length(parameters('containers'))]"
+                      },
+                      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+                      "apiVersion": "2023-11-15",
+                      "name": "[format('{0}/{1}/{2}', parameters('cosmosAccountName'), parameters('databaseName'), parameters('containers')[copyIndex()].name)]",
+                      "properties": {
+                        "resource": {
+                          "id": "[parameters('containers')[copyIndex()].name]",
+                          "partitionKey": {
+                            "paths": [
+                              "[parameters('containers')[copyIndex()].partitionKey]"
+                            ],
+                            "kind": "Hash"
+                          },
+                          "defaultTtl": "[parameters('containers')[copyIndex()].ttl]"
+                        },
+                        "options": {}
+                      }
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('accountName'))]",
+                "sqlDatabases"
+              ]
+            }
+          ],
+          "outputs": {
+            "endpoint": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('accountName')), '2023-11-15').documentEndpoint]"
+            },
+            "accountName": {
+              "type": "string",
+              "value": "[parameters('accountName')]"
+            },
+            "accountId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('accountName'))]"
+            },
+            "primaryKey": {
+              "type": "string",
+              "value": "[listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('accountName')), '2023-11-15').primaryMasterKey]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-{0}-{1}', parameters('prefix'), parameters('environment')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "eventGrid-deployment",
+      "resourceGroup": "[format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('egt-{0}-events-{1}', parameters('prefix'), parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "8409761758636064373"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Event Grid topic"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the Event Grid topic"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the resource"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.EventGrid/topics",
+              "apiVersion": "2023-12-15-preview",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "inputSchema": "CloudEventSchemaV1_0",
+                "publicNetworkAccess": "Enabled"
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.EventGrid/topics', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "endpoint": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.EventGrid/topics', parameters('name')), '2023-12-15-preview').endpoint]"
+            },
+            "key": {
+              "type": "string",
+              "value": "[listKeys(resourceId('Microsoft.EventGrid/topics', parameters('name')), '2023-12-15-preview').key1]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-{0}-{1}', parameters('prefix'), parameters('environment')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "appServicePlan-deployment",
+      "resourceGroup": "[format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('asp-{0}-consumption-{1}', parameters('prefix'), parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "2256721379635141538"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the App Service Plan"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the App Service Plan"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the resource"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/serverfarms",
+              "apiVersion": "2023-01-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "Y1",
+                "tier": "Dynamic"
+              },
+              "kind": "functionapp",
+              "properties": {
+                "reserved": true
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/serverfarms', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-{0}-{1}', parameters('prefix'), parameters('environment')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "keyVault-deployment",
+      "resourceGroup": "[format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('kv-{0}-{1}', parameters('prefix'), parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "secretUserPrincipalIds": {
+            "value": []
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "12392714805704229669"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Key Vault"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the Key Vault"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the resource"
+              }
+            },
+            "secretUserPrincipalIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "List of principal IDs that need Key Vault Secrets User access"
+              }
+            }
+          },
+          "variables": {
+            "keyVaultSecretsUserRoleId": "4633458b-17de-408a-b874-0445c86b69e6"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.KeyVault/vaults",
+              "apiVersion": "2023-07-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "sku": {
+                  "family": "A",
+                  "name": "standard"
+                },
+                "tenantId": "[subscription().tenantId]",
+                "enableRbacAuthorization": true,
+                "enableSoftDelete": true,
+                "softDeleteRetentionInDays": 90,
+                "enablePurgeProtection": true,
+                "networkAcls": {
+                  "defaultAction": "Allow",
+                  "bypass": "AzureServices"
+                }
+              }
+            },
+            {
+              "copy": {
+                "name": "secretUserRoleAssignments",
+                "count": "[length(parameters('secretUserPrincipalIds'))]"
+              },
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('name'))]",
+              "name": "[guid(resourceId('Microsoft.KeyVault/vaults', parameters('name')), parameters('secretUserPrincipalIds')[copyIndex()], variables('keyVaultSecretsUserRoleId'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('keyVaultSecretsUserRoleId'))]",
+                "principalId": "[parameters('secretUserPrincipalIds')[copyIndex()]]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "vaultUri": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults', parameters('name')), '2023-07-01').vaultUri]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-{0}-{1}', parameters('prefix'), parameters('environment')))]"
+      ]
+    },
+    {
+      "copy": {
+        "name": "functionApps",
+        "count": "[length(variables('serviceConfig').services)]"
+      },
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('{0}-service-deployment', variables('serviceConfig').services[copyIndex()].name)]",
+      "resourceGroup": "[format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "functionAppName": {
+            "value": "[format('func-{0}-{1}-{2}', parameters('prefix'), variables('serviceConfig').services[copyIndex()].name, parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[union(parameters('tags'), createObject('service', variables('serviceConfig').services[copyIndex()].name))]"
+          },
+          "appServicePlanId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'appServicePlan-deployment'), '2025-04-01').outputs.id.value]"
+          },
+          "storageAccountName": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'functionStorage-deployment'), '2025-04-01').outputs.name.value]"
+          },
+          "appInsightsInstrumentationKey": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'appInsights-deployment'), '2025-04-01').outputs.instrumentationKey.value]"
+          },
+          "appInsightsConnectionString": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'appInsights-deployment'), '2025-04-01').outputs.connectionString.value]"
+          },
+          "cosmosEndpoint": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'cosmosDb-deployment'), '2025-04-01').outputs.endpoint.value]"
+          },
+          "cosmosDatabaseName": {
+            "value": "[variables('serviceConfig').services[copyIndex()].database]"
+          },
+          "eventGridTopicEndpoint": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'eventGrid-deployment'), '2025-04-01').outputs.endpoint.value]"
+          },
+          "keyVaultUri": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'keyVault-deployment'), '2025-04-01').outputs.vaultUri.value]"
+          },
+          "serviceUrls": {
+            "value": "[variables('serviceUrlsMap')]"
+          },
+          "requiresAzureAd": "[if(contains(variables('serviceConfig').services[copyIndex()], 'requiresAzureAd'), createObject('value', coalesce(tryGet(variables('serviceConfig').services[copyIndex()], 'requiresAzureAd'), false())), createObject('value', false()))]",
+          "azureAdTenantId": {
+            "value": "[parameters('azureAdTenantId')]"
+          },
+          "azureAdClientId": {
+            "value": "[parameters('azureAdClientId')]"
+          },
+          "authRedirectUri": {
+            "value": "[format('https://func-{0}-{1}-{2}.azurewebsites.net/api/auth/callback/b2b', parameters('prefix'), variables('serviceConfig').services[copyIndex()].name, parameters('environment'))]"
+          },
+          "environmentName": {
+            "value": "[parameters('environment')]"
+          },
+          "frontendUrl": "[if(not(empty(parameters('frontendUrl'))), createObject('value', parameters('frontendUrl')), if(equals(parameters('environment'), 'dev'), createObject('value', 'http://localhost:3000'), createObject('value', format('https://{0}-{1}.azurewebsites.net', parameters('prefix'), parameters('environment')))))]",
+          "additionalCorsOrigins": {
+            "value": []
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "14688758769131685053"
+            }
+          },
+          "parameters": {
+            "functionAppName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Function App"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the Function App"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the resource"
+              }
+            },
+            "appServicePlanId": {
+              "type": "string",
+              "metadata": {
+                "description": "The ID of the App Service Plan"
+              }
+            },
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the storage account for function runtime"
+              }
+            },
+            "appInsightsInstrumentationKey": {
+              "type": "string",
+              "metadata": {
+                "description": "Application Insights instrumentation key"
+              }
+            },
+            "appInsightsConnectionString": {
+              "type": "string",
+              "metadata": {
+                "description": "Application Insights connection string"
+              }
+            },
+            "cosmosEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Cosmos DB endpoint"
+              }
+            },
+            "cosmosDatabaseName": {
+              "type": "string",
+              "metadata": {
+                "description": "Cosmos DB database name for this service"
+              }
+            },
+            "eventGridTopicEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Event Grid topic endpoint"
+              }
+            },
+            "keyVaultUri": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault URI"
+              }
+            },
+            "serviceUrls": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Service-to-service URLs map"
+              }
+            },
+            "requiresAzureAd": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Whether this service requires Azure AD configuration"
+              }
+            },
+            "azureAdTenantId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Azure AD Tenant ID (if applicable)"
+              }
+            },
+            "azureAdClientId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Azure AD Client ID (if applicable)"
+              }
+            },
+            "authRedirectUri": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Callback URI for Azure AD (if applicable)"
+              }
+            },
+            "environmentName": {
+              "type": "string",
+              "defaultValue": "dev",
+              "metadata": {
+                "description": "Environment name (dev, staging, prod)"
+              }
+            },
+            "frontendUrl": {
+              "type": "string",
+              "defaultValue": "http://localhost:3000",
+              "metadata": {
+                "description": "Frontend application URL for CORS"
+              }
+            },
+            "additionalCorsOrigins": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Additional allowed CORS origins (optional)"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2023-01-01",
+              "name": "[parameters('functionAppName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "functionapp,linux",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('appServicePlanId')]",
+                "reserved": true,
+                "httpsOnly": true,
+                "siteConfig": {
+                  "linuxFxVersion": "NODE|20",
+                  "alwaysOn": false,
+                  "functionAppScaleLimit": 200,
+                  "minimumElasticInstanceCount": 0,
+                  "appSettings": "[concat(createArray(createObject('name', 'AzureWebJobsStorage', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', parameters('storageAccountName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2023-01-01').keys[0].value)), createObject('name', 'FUNCTIONS_EXTENSION_VERSION', 'value', '~4'), createObject('name', 'FUNCTIONS_WORKER_RUNTIME', 'value', 'node'), createObject('name', 'WEBSITE_NODE_DEFAULT_VERSION', 'value', '~20'), createObject('name', 'APPINSIGHTS_INSTRUMENTATIONKEY', 'value', parameters('appInsightsInstrumentationKey')), createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'value', parameters('appInsightsConnectionString')), createObject('name', 'COSMOS_ENDPOINT', 'value', parameters('cosmosEndpoint')), createObject('name', 'COSMOS_DATABASE_ID', 'value', parameters('cosmosDatabaseName')), createObject('name', 'COSMOS_KEY', 'value', format('@Microsoft.KeyVault(SecretUri={0}secrets/cosmos-key/)', parameters('keyVaultUri'))), createObject('name', 'EVENT_GRID_TOPIC_ENDPOINT', 'value', parameters('eventGridTopicEndpoint')), createObject('name', 'EVENT_GRID_TOPIC_KEY', 'value', format('@Microsoft.KeyVault(SecretUri={0}secrets/event-grid-topic-key/)', parameters('keyVaultUri'))), createObject('name', 'INTERNAL_SERVICE_KEY', 'value', format('@Microsoft.KeyVault(SecretUri={0}secrets/internal-service-key/)', parameters('keyVaultUri'))), createObject('name', 'JWT_SECRET', 'value', format('@Microsoft.KeyVault(SecretUri={0}secrets/jwt-secret/)', parameters('keyVaultUri')))), map(items(parameters('serviceUrls')), lambda('item', createObject('name', lambdaVariables('item').key, 'value', lambdaVariables('item').value))), if(parameters('requiresAzureAd'), createArray(createObject('name', 'AZURE_AD_TENANT_ID', 'value', parameters('azureAdTenantId')), createObject('name', 'AZURE_AD_CLIENT_ID', 'value', parameters('azureAdClientId')), createObject('name', 'AZURE_AD_CLIENT_SECRET', 'value', format('@Microsoft.KeyVault(SecretUri={0}secrets/azure-ad-client-secret/)', parameters('keyVaultUri'))), createObject('name', 'AUTH_REDIRECT_URI', 'value', parameters('authRedirectUri')), createObject('name', 'COOKIE_DOMAIN', 'value', 'azurewebsites.net'), createObject('name', 'COOKIE_SECURE', 'value', 'true')), createArray()))]",
+                  "cors": {
+                    "allowedOrigins": "[union(createArray('https://portal.azure.com', parameters('frontendUrl')), if(equals(parameters('environmentName'), 'dev'), createArray('http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000'), createArray()), createArray('https://*.azurewebsites.net'), parameters('additionalCorsOrigins'))]",
+                    "supportCredentials": true
+                  },
+                  "ftpsState": "Disabled"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "functionAppName": {
+              "type": "string",
+              "value": "[parameters('functionAppName')]"
+            },
+            "functionAppId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+            },
+            "principalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2023-01-01', 'full').identity.principalId]"
+            },
+            "defaultHostName": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2023-01-01').defaultHostName]"
+            },
+            "url": {
+              "type": "string",
+              "value": "[format('https://{0}', reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2023-01-01').defaultHostName)]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'appInsights-deployment')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'appServicePlan-deployment')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'cosmosDb-deployment')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'eventGrid-deployment')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'functionStorage-deployment')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'keyVault-deployment')]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-{0}-{1}', parameters('prefix'), parameters('environment')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "keyVault-rbac-deployment",
+      "resourceGroup": "[format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "keyVaultName": {
+            "value": "[format('kv-{0}-{1}', parameters('prefix'), parameters('environment'))]"
+          },
+          "secretUserPrincipalIds": {
+            "copy": [
+              {
+                "name": "value",
+                "count": "[length(variables('serviceConfig').services)]",
+                "input": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', format('{0}-service-deployment', variables('serviceConfig').services[copyIndex('value')].name)), '2025-04-01').outputs.principalId.value]"
+              }
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "18392687451080491323"
+            }
+          },
+          "parameters": {
+            "keyVaultName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the existing Key Vault"
+              }
+            },
+            "secretUserPrincipalIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "List of principal IDs that need Key Vault Secrets User access"
+              }
+            }
+          },
+          "variables": {
+            "keyVaultSecretsUserRoleId": "4633458b-17de-408a-b874-0445c86b69e6"
+          },
+          "resources": [
+            {
+              "copy": {
+                "name": "secretUserRoleAssignments",
+                "count": "[length(parameters('secretUserPrincipalIds'))]"
+              },
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('keyVaultName'))]",
+              "name": "[guid(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), parameters('secretUserPrincipalIds')[copyIndex()], variables('keyVaultSecretsUserRoleId'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('keyVaultSecretsUserRoleId'))]",
+                "principalId": "[parameters('secretUserPrincipalIds')[copyIndex()]]",
+                "principalType": "ServicePrincipal"
+              }
+            }
+          ],
+          "outputs": {
+            "keyVaultId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+            },
+            "keyVaultName": {
+              "type": "string",
+              "value": "[parameters('keyVaultName')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "functionApps",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-{0}-{1}', parameters('prefix'), parameters('environment')))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "resourceGroupName": {
+      "type": "string",
+      "value": "[format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))]"
+    },
+    "location": {
+      "type": "string",
+      "value": "[parameters('location')]"
+    },
+    "cosmosDbEndpoint": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'cosmosDb-deployment'), '2025-04-01').outputs.endpoint.value]"
+    },
+    "cosmosDbAccountName": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'cosmosDb-deployment'), '2025-04-01').outputs.accountName.value]"
+    },
+    "eventGridTopicEndpoint": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'eventGrid-deployment'), '2025-04-01').outputs.endpoint.value]"
+    },
+    "eventGridTopicName": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'eventGrid-deployment'), '2025-04-01').outputs.name.value]"
+    },
+    "keyVaultUri": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'keyVault-deployment'), '2025-04-01').outputs.vaultUri.value]"
+    },
+    "keyVaultName": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'keyVault-deployment'), '2025-04-01').outputs.name.value]"
+    },
+    "appInsightsName": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'appInsights-deployment'), '2025-04-01').outputs.name.value]"
+    },
+    "functionStorageAccountName": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'functionStorage-deployment'), '2025-04-01').outputs.name.value]"
+    },
+    "documentStorageAccountName": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', 'documentStorage-deployment'), '2025-04-01').outputs.name.value]"
+    },
+    "functionApps": {
+      "type": "array",
+      "copy": {
+        "count": "[length(variables('serviceConfig').services)]",
+        "input": {
+          "serviceName": "[variables('serviceConfig').services[copyIndex()].name]",
+          "functionAppName": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', format('{0}-service-deployment', variables('serviceConfig').services[copyIndex()].name)), '2025-04-01').outputs.functionAppName.value]",
+          "url": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', format('{0}-service-deployment', variables('serviceConfig').services[copyIndex()].name)), '2025-04-01').outputs.url.value]",
+          "principalId": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}-{1}', parameters('prefix'), parameters('environment'))), 'Microsoft.Resources/deployments', format('{0}-service-deployment', variables('serviceConfig').services[copyIndex()].name)), '2025-04-01').outputs.principalId.value]"
+        }
+      }
+    }
+  }
+}

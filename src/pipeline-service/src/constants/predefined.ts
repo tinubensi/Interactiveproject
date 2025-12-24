@@ -79,6 +79,16 @@ export const PREDEFINED_STAGES: StageDefinition[] = [
     order: 5,
   },
   {
+    id: 'revision-requested',
+    name: 'Revision Requested',
+    description: 'Customer has requested changes to the quotation',
+    icon: 'edit',
+    triggerEvent: 'quotation.revision_requested',
+    progressPercent: 60,
+    applicableFor: ['medical', 'motor', 'general', 'marine'],
+    order: 5.5,
+  },
+  {
     id: 'pending-review',
     name: 'Pending Review',
     description: 'Awaiting review or customer response',
@@ -495,6 +505,8 @@ export const EVENT_TO_STAGE_MAP: Record<string, PredefinedStageId> = {
   'plans.fetch_completed': 'plans-available',
   'quotation.created': 'quotation-created',
   'quotation.sent': 'quotation-sent',
+  'quotation.viewed': 'quotation-sent', // Viewing happens after sending
+  'quotation.revision_requested': 'revision-requested',
   'quotation.pending_approval': 'pending-review',
   'quotation.approved': 'approved',
   'quotation.rejected': 'rejected',
@@ -505,25 +517,42 @@ export const EVENT_TO_STAGE_MAP: Record<string, PredefinedStageId> = {
 };
 
 /**
+ * Action events (Pipeline → Services)
+ */
+export const PIPELINE_ACTION_EVENTS = [
+  'pipeline.action.fetch_plans',
+  'pipeline.action.send_quotation',
+  'pipeline.action.issue_policy',
+] as const;
+
+/**
+ * Completion events (Services → Pipeline)
+ * Format: service.{actionCompleted}.completed or service.{actionCompleted}.failed
+ */
+export const SERVICE_COMPLETION_EVENTS = [
+  'service.fetch_plans.completed',
+  'service.fetch_plans.failed',
+  'service.send_quotation.completed',
+  'service.send_quotation.failed',
+  'service.issue_policy.completed',
+  'service.issue_policy.failed',
+] as const;
+
+/**
  * All events that the pipeline orchestrator should listen to
  */
 export const PIPELINE_EVENTS = [
   'lead.created',
-  'plans.fetch_started',
-  'plans.fetch_completed',
-  'quotation.created',
-  'quotation.sent',
-  'quotation.pending_approval',
-  'quotation.approved',
-  'quotation.rejected',
-  'policy.requested',
-  'policy.issued',
-  'lead.lost',
-  'lead.cancelled',
+  ...SERVICE_COMPLETION_EVENTS,
   'customer.responded',
   'document.uploaded',
   'payment.received',
   'pipeline.manual_advance',
   'pipeline.approval.decided',
-];
+  'quotation.created',
+  'quotation.viewed',
+  'quotation.revision_requested',
+  'quotation.approved',
+  'policy.issued',
+] as const;
 

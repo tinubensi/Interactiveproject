@@ -52,33 +52,16 @@ export async function handlePolicyIssued(
       return;
     }
 
-    // Fallback: No pipeline active - use hardcoded stage change
-    context.log(`Lead ${data.leadId} has no active pipeline - using hardcoded stage change`);
+    // ERROR: No pipeline active - Pipeline Service is sole authority for stage updates
+    context.error(`Lead ${data.leadId} has no active pipeline - cannot update stage. Pipeline Service must handle all stage changes.`);
 
-    // Update lead with stage change
+    // Still update policy reference but NO stage updates
     await cosmosService.updateLead(lead.id, lead.lineOfBusiness, {
       policyId: data.policyId,
-      currentStage: 'Policy Issued',
-      stageId: 'stage-6',
       updatedAt: new Date()
     });
 
-    // Create timeline entry
-    await cosmosService.createTimelineEntry({
-      id: uuidv4(),
-      leadId: lead.id,
-      stage: 'Policy Issued',
-      previousStage: lead.currentStage,
-      stageId: 'stage-6',
-      remark: `Policy ${data.policyNumber} issued successfully`,
-      changedBy: 'system',
-      changedByName: 'System',
-      quotationId: data.quotationId,
-      policyId: data.policyId,
-      timestamp: new Date()
-    });
-
-    context.log(`Lead updated: ${lead.referenceId} - Policy Issued`);
+    context.warn(`Updated policy reference for lead ${data.leadId} but did NOT change stage - no pipeline instance found`);
   } catch (error: any) {
     context.error('Handle policy issued error:', error);
   }

@@ -45,7 +45,7 @@ function getClient(): EventGridPublisherClient<'EventGrid'> {
 /**
  * Publish an event to Event Grid
  */
-async function publishEvent(
+export async function publishEvent(
   eventType: string,
   subject: string,
   data: Record<string, unknown>,

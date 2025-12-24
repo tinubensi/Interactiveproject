@@ -17,6 +17,11 @@ import './functions/policies/listPolicies';
 
 // Import all event handlers
 import './functions/events/handleQuotationApproved';
+import './functions/events/handlePipelineAction';
+
+// Import Durable Functions orchestrator (optional enhancement)
+// Uncomment when Durable Functions extension is configured
+// import './functions/orchestrators/policyIssuanceOrchestrator';
 
 console.log('Policy Service loaded');
 
