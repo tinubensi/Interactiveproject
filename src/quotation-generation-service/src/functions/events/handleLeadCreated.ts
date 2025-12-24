@@ -1,6 +1,6 @@
 /**
  * Handle Lead Created Event
- * Auto-triggers plan fetching when a lead is created
+ * Checks for plans in database (RPA is triggered by Lead Service)
  * Listens to lead.created event from Lead Service
  */
 
@@ -67,7 +67,10 @@ export async function handleLeadCreated(
       vendorCount: vendors.length
     });
 
-    // Fetch plans
+    // 📦 FETCH PLANS FROM DATABASE (RPA is triggered by Lead Service)
+    // Note: RPA may still be running, so plans might not be available yet
+    context.log(`📦 Checking for RPA plans in database...`);
+    
     const { plans, successfulVendors, failedVendors } = await planFetchingService.fetchPlansForLead({
       leadId: data.leadId,
       lineOfBusiness: data.lineOfBusiness,
@@ -76,13 +79,29 @@ export async function handleLeadCreated(
       fetchRequestId: fetchRequest.id
     });
 
-    // Save plans
-    await cosmosService.createPlans(plans);
+    if (plans.length === 0) {
+      context.log(`⏳ No plans found yet - RPA is still running in background`);
+      context.log(`Plans will be available once RPA completes (typically 3-5 minutes)`);
+      
+      // Update fetch request as pending (RPA still running)
+      await cosmosService.updateFetchRequest(fetchRequest.id, data.leadId, {
+        status: 'fetching',
+        totalVendors: vendors.length,
+        successfulVendors: [],
+        failedVendors: [],
+        totalPlansFound: 0
+      });
+      
+      return;
+    }
+
+    context.log(`✅ Found ${plans.length} RPA plans from ${successfulVendors.length} vendor(s)`);
 
     // Mark recommended plan
     const recommendedPlan = planFetchingService.calculateRecommendedPlan(plans);
     if (recommendedPlan) {
       await cosmosService.updatePlan(recommendedPlan.id, data.leadId, { isRecommended: true });
+      context.log(`⭐ Marked plan "${recommendedPlan.planName}" as recommended`);
     }
 
     // Update fetch request
@@ -95,7 +114,7 @@ export async function handleLeadCreated(
       completedAt: new Date()
     });
 
-    // Publish fetch completed event with plans for Lead Service to save
+    // Publish fetch completed event with plans for Lead Service
     await eventGridService.publishPlansFetchCompleted({
       leadId: data.leadId,
       fetchRequestId: fetchRequest.id,
@@ -105,7 +124,7 @@ export async function handleLeadCreated(
       plans // Include full plans array for Lead Service
     });
 
-    context.log(`Auto-fetched ${plans.length} plans for lead ${data.leadId}`);
+    context.log(`🎉 Successfully processed ${plans.length} REAL plans from insurance portals for lead ${data.leadId}`);
   } catch (error: any) {
     context.error('Handle lead created error:', error);
   }

@@ -153,6 +153,58 @@ export async function createLead(
       });
       eventPublished = true;
       context.log('lead.created event published successfully to Event Grid');
+      
+      // 🤖 TRIGGER RPA DIRECTLY TO FETCH REAL PLANS FROM PORTALS
+      // This runs immediately after lead creation (no waiting in quotation service)
+      try {
+        context.log('🤖 Triggering RPA to fetch plans from insurance portals...');
+        
+        const rpaResponse = await fetch(
+          'https://crm-vendor-rpa-func.azurewebsites.net/api/rpa_trigger_http?code=FPmIXNzY8tz3Q0hLlOEcB5a3m59gFdqzM-eYvDnCmxEQAzFuvmPpGg==',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              leadId: createdLead.id,
+              lineOfBusiness: createdLead.lineOfBusiness,
+              businessType: createdLead.businessType,
+              lobData: createdLead.lobData,
+              formData: createdLead.formData
+            })
+          }
+        );
+
+        if (rpaResponse.ok) {
+          const rpaResult: any = await rpaResponse.json();
+          context.log(`✅ RPA triggered successfully for ${rpaResult.vendorsTriggered?.length || 0} vendor(s)`);
+          
+          // Update lead stage to "Plans Fetching"
+          await cosmosService.updateLead(createdLead.id, createdLead.lineOfBusiness, {
+            currentStage: 'Plans Fetching',
+            stageId: 'stage-1',
+            updatedAt: new Date()
+          });
+          
+          // Create timeline entry
+          await cosmosService.createTimelineEntry({
+            id: uuidv4(),
+            leadId: createdLead.id,
+            stage: 'Plans Fetching',
+            stageId: 'stage-1',
+            remark: `RPA bots triggered to fetch plans from ${rpaResult.vendorsTriggered?.length || 0} vendor(s)`,
+            changedBy: 'system',
+            changedByName: 'RPA System',
+            timestamp: new Date()
+          });
+        } else {
+          const errorText = await rpaResponse.text();
+          context.warn(`⚠️ RPA trigger failed: ${rpaResponse.status} - ${errorText}`);
+        }
+      } catch (rpaError: any) {
+        context.error('❌ Failed to trigger RPA:', rpaError.message);
+        // Don't fail the lead creation - RPA can be triggered manually later
+      }
+      
     } catch (eventError: any) {
       context.warn('Failed to publish lead.created event to Event Grid:', eventError.message);
       

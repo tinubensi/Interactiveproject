@@ -120,20 +120,20 @@ export async function handlePlansFetched(
     }
 
     // Check if this lead is managed by a pipeline
-    const hasPipeline = await isLeadManagedByPipeline(data.leadId);
+    const hasPipeline = await isLeadManagedByPipeline(eventData.leadId);
     if (hasPipeline) {
-      context.log(`Lead ${data.leadId} is managed by pipeline - skipping hardcoded stage change`);
+      context.log(`Lead ${eventData.leadId} is managed by pipeline - skipping hardcoded stage change`);
       // Still update plan count but don't change stage
-      await cosmosService.updateLead(data.leadId, lead.lineOfBusiness, {
-        planFetchRequestId: data.fetchRequestId,
-        plansCount: data.plans?.length || data.totalPlans,
+      await cosmosService.updateLead(eventData.leadId, lead.lineOfBusiness, {
+        planFetchRequestId: eventData.fetchRequestId,
+        plansCount: eventData.plans?.length || eventData.totalPlans,
         updatedAt: new Date()
       });
       return;
     }
 
     // Fallback: No pipeline active - use hardcoded stage change
-    context.log(`Lead ${data.leadId} has no active pipeline - using hardcoded stage change`);
+    context.log(`Lead ${eventData.leadId} has no active pipeline - using hardcoded stage change`);
 
     // Update lead status to "Plans Available"
     try {

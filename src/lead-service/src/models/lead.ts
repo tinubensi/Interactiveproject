@@ -72,49 +72,53 @@ export interface Lead {
 }
 
 /**
- * Medical/Pet Insurance Data
- * Reference: Petli lead.js fields
+ * Medical/Health Insurance Data (Human)
+ * Fields required by health insurance portals (Watania, Nextcare, Daman, etc.)
  */
 export interface MedicalData {
-  // Individual Pet
-  petName?: string;
-  petType?: string; // "dog", "cat", etc. (reference to pet_types)
-  petGender?: string; // reference to gender_types
-  petBirthday?: string; // Date of birth
-  petBreed?: string; // reference to breeds
-  breedType?: string; // reference to breed_types
-  isPureBreed?: boolean;
-  isMicrochipped?: boolean;
-  microchipId?: string;
-  isNeutered?: boolean;
-  hasHealthIssues?: boolean;
-  healthIssuesDescription?: string;
-  weightInKg?: number;
-  veterinary?: string; // Vet clinic name
+  // REQUIRED - Personal Information
+  dateOfBirth: string; // ISO format: "1990-01-15" (will be converted to DD-MM-YYYY for portals)
+  gender: 'Male' | 'Female';
+  nationality: string; // e.g., "United Arab Emirates", "India", "Pakistan"
   
-  // Group (Multiple Pets)
-  numberOfPets?: number;
-  pets?: Array<{
-    petName: string;
-    petType: string;
-    petGender: string;
-    petBirthday: string;
-    petBreed: string;
-    isPureBreed: boolean;
-    isMicrochipped: boolean;
-    microchipId?: string;
-    isNeutered: boolean;
-    hasHealthIssues: boolean;
-    healthIssuesDescription?: string;
-    weightInKg?: number;
+  // OPTIONAL - Emirates/Visa Information
+  emiratesId?: string; // Format: 784-xxxx-xxxxxxx-x
+  passportNumber?: string;
+  visaType?: 'Employment' | 'Residence' | 'Investor' | 'Student' | 'Tourist';
+  visaFileNumber?: string;
+  visaExpiryDate?: string; // ISO format or DD-MM-YYYY
+  
+  // OPTIONAL - Income & Eligibility
+  salaryRange?: 'Less than 5000' | '5000-10000' | '10000-20000' | '20000-50000' | 'Above 50000';
+  memberType?: 'UAE National' | 'GCC National' | 'Expat';
+  maritalStatus?: 'Single' | 'Married' | 'Divorced' | 'Widowed';
+  
+  // OPTIONAL - Current Insurance Status
+  currentlyInsured?: boolean;
+  currentInsurer?: string;
+  currentPolicyExpiryDate?: string;
+  
+  // OPTIONAL - Medical History (for better quotes)
+  hasPreExistingConditions?: boolean;
+  preExistingConditions?: string[]; // e.g., ["Diabetes", "Hypertension"]
+  isSmoker?: boolean;
+  height?: number; // in cm
+  weight?: number; // in kg
+  bloodGroup?: string; // e.g., "O+", "A+", "B+", "AB+"
+  
+  // OPTIONAL - Coverage Preferences
+  coverageType?: 'Individual' | 'Family';
+  numberOfDependents?: number;
+  dependents?: Array<{
+    name: string;
+    relationship: 'Spouse' | 'Child' | 'Parent';
+    dateOfBirth: string;
+    gender: 'Male' | 'Female';
   }>;
   
-  // Human Medical (Future)
-  // Add human medical fields here when needed
-  dateOfBirth?: string;
-  gender?: string;
-  bloodGroup?: string;
-  preExistingConditions?: string[];
+  // OPTIONAL - Additional Info
+  residentialLocation?: string; // Emirate-level detail (can use emirate from Lead)
+  address?: string;
 }
 
 /**

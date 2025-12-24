@@ -38,6 +38,18 @@ export function isValidBusinessType(type: string): type is BusinessType {
 }
 
 /**
+ * Validate date format (ISO format: YYYY-MM-DD)
+ */
+export function isValidDateFormat(date: string): boolean {
+  const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!isoDateRegex.test(date)) return false;
+  
+  // Check if it's a valid date
+  const dateObj = new Date(date);
+  return dateObj instanceof Date && !isNaN(dateObj.getTime());
+}
+
+/**
  * Validate create lead request
  */
 export function validateCreateLeadRequest(request: CreateLeadRequest): { valid: boolean; errors: string[] } {
@@ -106,14 +118,28 @@ function validateLOBData(lob: LineOfBusiness, businessType: BusinessType, lobDat
 
   switch (lob) {
     case 'medical':
-      if (businessType === 'individual') {
-        if (!lobData.petName) errors.push('petName is required for medical individual');
-        if (!lobData.petType) errors.push('petType is required for medical individual');
-        if (!lobData.petBirthday) errors.push('petBirthday is required for medical individual');
-      } else if (businessType === 'group') {
-        if (!lobData.numberOfPets) errors.push('numberOfPets is required for medical group');
-        if (!lobData.pets || !Array.isArray(lobData.pets) || lobData.pets.length === 0) {
-          errors.push('pets array is required for medical group');
+      // Human health insurance validation
+      if (!lobData.dateOfBirth) errors.push('dateOfBirth is required for medical insurance');
+      if (!lobData.gender) errors.push('gender is required for medical insurance');
+      if (!lobData.nationality) errors.push('nationality is required for medical insurance');
+      
+      // Validate gender if provided
+      if (lobData.gender && !['Male', 'Female'].includes(lobData.gender)) {
+        errors.push('gender must be either "Male" or "Female"');
+      }
+      
+      // Validate date of birth format if provided
+      if (lobData.dateOfBirth && !isValidDateFormat(lobData.dateOfBirth)) {
+        errors.push('dateOfBirth must be in ISO format (YYYY-MM-DD)');
+      }
+      
+      // Family coverage validation
+      if (lobData.coverageType === 'Family') {
+        if (!lobData.numberOfDependents || lobData.numberOfDependents < 1) {
+          errors.push('numberOfDependents is required for Family coverage');
+        }
+        if (!lobData.dependents || !Array.isArray(lobData.dependents) || lobData.dependents.length === 0) {
+          errors.push('dependents array is required for Family coverage');
         }
       }
       break;
