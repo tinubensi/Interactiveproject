@@ -129,7 +129,7 @@ async function processSingleEvent(
   context.log(`Event data: ${JSON.stringify(eventData, null, 2)}`);
 
   // Check if this is a relevant event
-  if (!PIPELINE_EVENTS.includes(eventType)) {
+  if (!(PIPELINE_EVENTS as readonly string[]).includes(eventType)) {
     context.log(`Event type ${eventType} is not handled by pipeline orchestrator`);
     return;
   }

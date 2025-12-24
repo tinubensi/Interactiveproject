@@ -154,6 +154,66 @@ export async function createLead(
       });
       eventPublished = true;
       context.log('lead.created event published successfully to Event Grid');
+      
+      // 🤖 TRIGGER RPA DIRECTLY TO FETCH REAL PLANS FROM PORTALS
+      // This runs immediately after lead creation (no waiting in quotation service)
+      try {
+        context.log('🤖 Triggering RPA to fetch plans from insurance portals...');
+        
+        // Get RPA credentials from environment variables (secure)
+        const RPA_TRIGGER_URL = process.env.RPA_TRIGGER_URL || 
+          'https://crm-rpa-trigger.azurewebsites.net/api/rpa/trigger';
+        const RPA_TRIGGER_KEY = process.env.RPA_TRIGGER_KEY || '';
+        
+        const fullUrl = RPA_TRIGGER_KEY ? `${RPA_TRIGGER_URL}?code=${RPA_TRIGGER_KEY}` : RPA_TRIGGER_URL;
+        
+        const rpaResponse = await fetch(fullUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              leadId: createdLead.id,
+              lineOfBusiness: createdLead.lineOfBusiness,
+              businessType: createdLead.businessType,
+              lobData: createdLead.lobData,
+              formData: createdLead.formData
+            }),
+            signal: AbortSignal.timeout(10000) // 10 second timeout
+          }
+        );
+
+        context.log(`RPA Response Status: ${rpaResponse.status}`);
+
+        if (rpaResponse.ok) {
+          const rpaResult: any = await rpaResponse.json();
+          context.log(`✅ RPA triggered successfully for ${rpaResult.vendorsTriggered?.length || 0} vendor(s)`);
+          
+          // Update lead stage to "Plans Fetching"
+          await cosmosService.updateLead(createdLead.id, createdLead.lineOfBusiness, {
+            currentStage: 'Plans Fetching',
+            stageId: 'stage-1',
+            updatedAt: new Date()
+          });
+          
+          // Create timeline entry
+          await cosmosService.createTimelineEntry({
+            id: uuidv4(),
+            leadId: createdLead.id,
+            stage: 'Plans Fetching',
+            stageId: 'stage-1',
+            remark: `RPA bots triggered to fetch plans from ${rpaResult.vendorsTriggered?.length || 0} vendor(s)`,
+            changedBy: 'system',
+            changedByName: 'RPA System',
+            timestamp: new Date()
+          });
+        } else {
+          const errorText = await rpaResponse.text();
+          context.error(`❌ RPA trigger failed: ${rpaResponse.status} - ${errorText}`);
+        }
+      } catch (rpaError: any) {
+        context.error('❌ Failed to trigger RPA:', rpaError.message);
+        // Don't fail the lead creation - RPA can be triggered manually later
+      }
+      
     } catch (eventError: any) {
       context.warn('Failed to publish lead.created event to Event Grid:', eventError.message);
     }

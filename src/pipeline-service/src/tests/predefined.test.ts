@@ -170,18 +170,18 @@ describe('Predefined Constants', () => {
 
   describe('PIPELINE_EVENTS', () => {
     it('should include lead.created event', () => {
-      assert.ok(PIPELINE_EVENTS.includes('lead.created'), 'Should include lead.created');
+      assert.ok((PIPELINE_EVENTS as readonly string[]).includes('lead.created'), 'Should include lead.created');
     });
 
     it('should include quotation events', () => {
-      assert.ok(PIPELINE_EVENTS.includes('quotation.created'), 'Should include quotation.created');
-      assert.ok(PIPELINE_EVENTS.includes('quotation.viewed'), 'Should include quotation.viewed');
-      assert.ok(PIPELINE_EVENTS.includes('quotation.revision_requested'), 'Should include quotation.revision_requested');
-      assert.ok(PIPELINE_EVENTS.includes('quotation.approved'), 'Should include quotation.approved');
+      assert.ok((PIPELINE_EVENTS as readonly string[]).includes('quotation.created'), 'Should include quotation.created');
+      assert.ok((PIPELINE_EVENTS as readonly string[]).includes('quotation.viewed'), 'Should include quotation.viewed');
+      assert.ok((PIPELINE_EVENTS as readonly string[]).includes('quotation.revision_requested'), 'Should include quotation.revision_requested');
+      assert.ok((PIPELINE_EVENTS as readonly string[]).includes('quotation.approved'), 'Should include quotation.approved');
     });
 
     it('should include policy events', () => {
-      assert.ok(PIPELINE_EVENTS.includes('policy.issued'), 'Should include policy.issued');
+      assert.ok((PIPELINE_EVENTS as readonly string[]).includes('policy.issued'), 'Should include policy.issued');
     });
   });
 });

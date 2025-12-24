@@ -5,6 +5,7 @@
 
 import { CosmosClient, Container, Database, SqlQuerySpec, SqlParameter } from '@azure/cosmos';
 import { Lead, Timeline, Stage, CreateLeadRequest, UpdateLeadRequest, LeadListRequest, LeadListResponse } from '../models/lead';
+import axios from 'axios';
 
 // Plan interface (matches quotation-generation-service)
 export interface Plan {
@@ -142,10 +143,16 @@ class CosmosService {
 
   /**
    * Create a new lead
+   * Note: RPA triggering is handled by createLead.ts function, not here
    */
   async createLead(lead: Lead): Promise<Lead> {
     const { resource } = await this.leadsContainer.items.create(lead);
-    return resource as Lead;
+    const createdLead = resource as Lead;
+    
+    // ✅ RPA is triggered from createLead.ts function (not here)
+    // This prevents duplicate RPA triggers
+    
+    return createdLead;
   }
 
   /**

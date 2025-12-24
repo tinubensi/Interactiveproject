@@ -2,7 +2,7 @@
  * Azure AD Group to Role Mapper
  */
 
-import { AZURE_AD_GROUP_MAPPING } from '@nectaria/shared-types';
+import { AZURE_AD_GROUP_MAPPING } from '../constants/roles';
 
 /**
  * Map Azure AD groups to application roles
