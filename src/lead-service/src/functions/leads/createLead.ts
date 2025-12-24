@@ -160,9 +160,14 @@ export async function createLead(
       try {
         context.log('🤖 Triggering RPA to fetch plans from insurance portals...');
         
-        const rpaResponse = await fetch(
-          'https://crm-vendor-rpa-func.azurewebsites.net/api/rpa_trigger_http?code=FPmIXNzY8tz3Q0hLlOEcB5a3m59gFdqzM-eYvDnCmxEQAzFuvmPpGg==',
-          {
+        // Get RPA credentials from environment variables (secure)
+        const RPA_TRIGGER_URL = process.env.RPA_TRIGGER_URL || 
+          'https://crm-rpa-trigger.azurewebsites.net/api/rpa/trigger';
+        const RPA_TRIGGER_KEY = process.env.RPA_TRIGGER_KEY || '';
+        
+        const fullUrl = RPA_TRIGGER_KEY ? `${RPA_TRIGGER_URL}?code=${RPA_TRIGGER_KEY}` : RPA_TRIGGER_URL;
+        
+        const rpaResponse = await fetch(fullUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -171,9 +176,12 @@ export async function createLead(
               businessType: createdLead.businessType,
               lobData: createdLead.lobData,
               formData: createdLead.formData
-            })
+            }),
+            signal: AbortSignal.timeout(10000) // 10 second timeout
           }
         );
+
+        context.log(`RPA Response Status: ${rpaResponse.status}`);
 
         if (rpaResponse.ok) {
           const rpaResult: any = await rpaResponse.json();
@@ -199,7 +207,7 @@ export async function createLead(
           });
         } else {
           const errorText = await rpaResponse.text();
-          context.warn(`⚠️ RPA trigger failed: ${rpaResponse.status} - ${errorText}`);
+          context.error(`❌ RPA trigger failed: ${rpaResponse.status} - ${errorText}`);
         }
       } catch (rpaError: any) {
         context.error('❌ Failed to trigger RPA:', rpaError.message);

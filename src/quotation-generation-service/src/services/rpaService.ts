@@ -10,8 +10,11 @@ export class RPAService {
   constructor() {
     this.rpaUrl = process.env.RPA_TRIGGER_URL || 
       'https://crm-vendor-rpa-func.azurewebsites.net/api/rpa_trigger_http';
-    this.rpaKey = process.env.RPA_TRIGGER_KEY || 
-      'FPmIXNzY8tz3Q0hLlOEcB5a3m59gFdqzM-eYvDnCmxEQAzFuvmPpGg==';
+    this.rpaKey = process.env.RPA_TRIGGER_KEY || '';
+    
+    if (!this.rpaKey) {
+      console.warn('⚠️ RPA_TRIGGER_KEY not set in environment variables');
+    }
     
     console.log(`RPA Service initialized with URL: ${this.rpaUrl}`);
   }

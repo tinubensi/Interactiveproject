@@ -143,58 +143,16 @@ class CosmosService {
 
   /**
    * Create a new lead
+   * Note: RPA triggering is handled by createLead.ts function, not here
    */
   async createLead(lead: Lead): Promise<Lead> {
     const { resource } = await this.leadsContainer.items.create(lead);
     const createdLead = resource as Lead;
     
-    // 🆕 Trigger RPA for plan fetching (async, non-blocking)
-    this.triggerRPAForLead(createdLead).catch(error => {
-      console.error('⚠️ Failed to trigger RPA (lead created successfully):', error.message);
-    });
+    // ✅ RPA is triggered from createLead.ts function (not here)
+    // This prevents duplicate RPA triggers
     
     return createdLead;
-  }
-  
-  /**
-   * Trigger RPA to fetch insurance plans for a lead
-   * This is called asynchronously after lead creation
-   */
-  private async triggerRPAForLead(lead: Lead): Promise<void> {
-    try {
-      const RPA_TRIGGER_URL = process.env.RPA_TRIGGER_URL || 
-        'https://crm-rpa-trigger.azurewebsites.net/api/rpa/trigger';
-      
-      console.log(`🤖 Triggering RPA for lead: ${lead.id} (${lead.lineOfBusiness})`);
-      
-      const rpaPayload = {
-        id: lead.id,
-        leadId: lead.id,
-        lineOfBusiness: lead.lineOfBusiness,
-        businessType: lead.businessType,
-        lobData: lead.lobData,
-        firstName: lead.firstName,
-        lastName: lead.lastName,
-        email: lead.email,
-        phone: lead.phone,
-        emirate: lead.emirate
-      };
-      
-      const response = await axios.post(RPA_TRIGGER_URL, rpaPayload, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 10000  // 10 second timeout
-      });
-      
-      console.log(`✅ RPA triggered successfully: ${response.data.message}`);
-      console.log(`📊 Vendors triggered: ${response.data.vendorsTriggered?.join(', ') || 'none'}`);
-      
-      if (response.data.vendorsFailed && response.data.vendorsFailed.length > 0) {
-        console.warn(`⚠️ Some vendors failed:`, response.data.vendorsFailed);
-      }
-    } catch (error: any) {
-      console.error(`❌ RPA trigger error for lead ${lead.id}:`, error.message);
-      throw error;
-    }
   }
 
   /**
