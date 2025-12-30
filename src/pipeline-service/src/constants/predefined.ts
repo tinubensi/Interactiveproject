@@ -49,6 +49,16 @@ export const PREDEFINED_STAGES: StageDefinition[] = [
     order: 2,
   },
   {
+    id: 'plans-fetch-failed',
+    name: 'Plans Fetch Failed',
+    description: 'Failed to fetch insurance plans from vendors - retry available',
+    icon: 'alert-circle',
+    triggerEvent: 'plans.fetch_failed',
+    progressPercent: 20,
+    applicableFor: ['medical', 'motor', 'general', 'marine'],
+    order: 2.5,
+  },
+  {
     id: 'plans-available',
     name: 'Plans Available',
     description: 'Insurance plans have been fetched and are ready for review',
@@ -544,6 +554,10 @@ export const SERVICE_COMPLETION_EVENTS = [
 export const PIPELINE_EVENTS = [
   'lead.created',
   ...SERVICE_COMPLETION_EVENTS,
+  // RPA and Quotation Service events (using simplified naming)
+  'plans.fetch_started',
+  'plans.fetch_completed',
+  'plans.fetch_failed',
   'customer.responded',
   'document.uploaded',
   'payment.received',

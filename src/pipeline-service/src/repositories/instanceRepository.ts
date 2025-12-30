@@ -41,7 +41,11 @@ export async function createInstance(
 ): Promise<PipelineInstance> {
   const container = getInstancesContainer();
   const now = new Date().toISOString();
-  const instanceId = uuidv4();
+  
+  // IDEMPOTENCY FIX: Use deterministic ID based on leadId to prevent duplicates
+  // This ensures that if two events try to create an instance for the same lead,
+  // Cosmos DB will reject the second one with a 409 Conflict
+  const instanceId = `instance-${leadId}`;
 
   // Get the entry step
   const sortedSteps = [...pipeline.steps].sort((a, b) => a.order - b.order);

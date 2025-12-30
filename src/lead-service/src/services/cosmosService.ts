@@ -661,6 +661,7 @@ class CosmosService {
   async seedStages(): Promise<void> {
     const stages: Stage[] = [
       { id: 'stage-1', name: 'Plans Fetching', order: 1, applicableFor: ['medical', 'motor', 'general', 'marine'], isActive: true },
+      { id: 'stage-1-failed', name: 'Plans Fetch Failed', order: 1.5, applicableFor: ['medical', 'motor', 'general', 'marine'], isActive: true },
       { id: 'stage-2', name: 'Plans Available', order: 2, applicableFor: ['medical', 'motor', 'general', 'marine'], isActive: true },
       { id: 'stage-3', name: 'Quotation Created', order: 3, applicableFor: ['medical', 'motor', 'general', 'marine'], isActive: true },
       { id: 'stage-4', name: 'Quotation Sent', order: 4, applicableFor: ['medical', 'motor', 'general', 'marine'], isActive: true },

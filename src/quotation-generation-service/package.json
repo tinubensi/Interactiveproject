@@ -13,9 +13,12 @@
     "test:api": "bash scripts/test-api.sh"
   },
   "dependencies": {
+    "@azure/arm-appcontainers": "^2.0.0",
     "@azure/cosmos": "^4.0.0",
     "@azure/eventgrid": "^5.0.0",
     "@azure/functions": "^4.0.0",
+    "@azure/identity": "^4.0.0",
+    "@azure/storage-queue": "^12.17.0",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

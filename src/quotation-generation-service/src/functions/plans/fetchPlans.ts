@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
 import { planFetchingService } from '../../services/planFetchingService';
+import { rpaJobService } from '../../services/rpaJobService';
 import { FetchPlansRequest, PlanFetchRequest } from '../../models/plan';
 import { ensureAuthorized, requirePermission, QUOTE_PERMISSIONS, validateServiceKey } from '../../lib/auth';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
@@ -136,115 +137,58 @@ export async function fetchPlans(
       }
     }
 
-    // Fetch plans
-    const { plans, successfulVendors, failedVendors } = await planFetchingService.fetchPlansForLead({
-      leadId: body.leadId,
-      lineOfBusiness: body.lineOfBusiness,
-      businessType: body.businessType,
-      leadData: body.leadData,
-      fetchRequestId: fetchRequest.id
-    });
-
-    // Save plans to database
-    await cosmosService.createPlans(plans);
-
-    // Mark recommended plan
-    const recommendedPlan = planFetchingService.calculateRecommendedPlan(plans);
-    if (recommendedPlan) {
-      await cosmosService.updatePlan(recommendedPlan.id, body.leadId, { isRecommended: true });
-    }
-
-    // Update fetch request status
-    await cosmosService.updateFetchRequest(fetchRequest.id, body.leadId, {
-      status: 'completed',
-      totalVendors: vendors.length,
-      successfulVendors,
-      failedVendors,
-      totalPlansFound: plans.length,
-      completedAt: new Date()
-    });
-
-    // Publish plans.fetch_completed event to Event Grid (primary communication method)
-    let eventPublished = false;
-    try {
-      await eventGridService.publishPlansFetchCompleted({
+    // Separate RPA-enabled vendors from static-plan vendors
+    const rpaVendors = vendors.filter(v => v.rpaEnabled === true);
+    const staticVendors = vendors.filter(v => v.hasStaticPlans === true && v.rpaEnabled !== true);
+    
+    context.log(`Vendors breakdown: ${rpaVendors.length} RPA-enabled, ${staticVendors.length} static plans`);
+    
+    // Trigger RPA jobs for RPA-enabled vendors only
+    const vendorIds = rpaVendors.map(v => v.id);
+    let rpaJobsTriggered = 0;
+    
+    if (vendorIds.length === 0) {
+      context.log('No RPA-enabled vendors found, skipping RPA triggering');
+    } else {
+      context.log(`Triggering RPA jobs for ${vendorIds.length} RPA-enabled vendor(s)...`);
+      
+      // Use rpaJobService for direct job triggering
+      // This queues messages AND manually starts Container Job executions
+      const rpaResult = await rpaJobService.triggerMultipleJobs({
         leadId: body.leadId,
-        fetchRequestId: fetchRequest.id,
-        totalPlans: plans.length,
-        successfulVendors,
-        failedVendors,
-        plans // Include full plans array for Lead Service
+        leadData: body.leadData,
+        vendorIds,
+        lineOfBusiness: body.lineOfBusiness,
+        businessType: body.businessType,
+        fetchRequestId: fetchRequest.id
       });
-      eventPublished = true;
-      context.log('plans.fetch_completed event published successfully to Event Grid');
-
-      // HTTP Fallback: Also notify pipeline service directly
-      try {
-        await notifyPipelineService('plans.fetch_completed', {
-          leadId: body.leadId,
-          lineOfBusiness: body.lineOfBusiness,
-          businessType: body.businessType,
-          fetchRequestId: fetchRequest.id,
-          totalPlans: plans.length,
-          successfulVendors,
-          failedVendors,
-        }, { log: context.log.bind(context) });
-      } catch (fallbackError) {
-        context.warn(`[HTTP Fallback] Failed to notify pipeline service: ${fallbackError}`);
-      }
-
-      // Delayed HTTP fallback check REMOVED
-      // We rely on the immediate HTTP fallback (sent above) and Event Grid
-      // This removes the 5 second blocking wait
-
-    } catch (eventError: any) {
-      context.warn('Failed to publish plans.fetch_completed event to Event Grid:', eventError.message);
-
-      // HTTP Fallback: Only call Lead Service directly if Event Grid fails
-      // This ensures plans are saved even if Event Grid is unavailable
-      try {
-        const leadServiceUrl = process.env.LEAD_SERVICE_URL || 'https://lead-service.azurewebsites.net/api';
-        context.log(`Event Grid failed, using HTTP fallback to save plans at ${leadServiceUrl}/leads/${body.leadId}/save-plans`);
-
-        const response = await fetch(`${leadServiceUrl}/leads/${body.leadId}/save-plans`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            leadId: body.leadId,
-            fetchRequestId: fetchRequest.id,
-            totalPlans: plans.length,
-            successfulVendors,
-            failedVendors,
-            plans
-          })
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          context.warn(`Failed to save plans to Lead Service via HTTP fallback: ${response.status} - ${errorText}`);
-        } else {
-          context.log('Plans saved to Lead Service via HTTP fallback successfully');
-        }
-      } catch (httpError: any) {
-        context.error('HTTP fallback to Lead Service also failed:', httpError.message);
+      
+      rpaJobsTriggered = rpaResult.success;
+      context.log(`RPA jobs triggered: ${rpaResult.success} successful, ${rpaResult.failed} failed`);
+      
+      if (rpaResult.failed > 0) {
+        context.warn(`⚠️ ${rpaResult.failed} RPA jobs failed to start`);
       }
     }
 
-    context.log(`Plans fetched successfully for lead ${body.leadId}: ${plans.length} plans from ${successfulVendors.length} vendors`);
+    // DIRECT JOB TRIGGERING: Jobs started immediately, no reliance on KEDA
+    // RPA container will publish plans.fetch_completed when it finishes
+    context.log(`Plan fetching initiated for lead ${body.leadId}`);
+    context.log(`  - RPA jobs triggered: ${rpaJobsTriggered}`);
+    context.log(`  - Static plans available: ${staticVendors.length}`);
+    context.log(`RPA will publish plans.fetch_completed event when processing is complete`);
 
     return withCors(request, {
-      status: 200,
+      status: 202, // Accepted - processing will continue asynchronously
       jsonBody: {
         success: true,
-        message: 'Plans fetched successfully',
+        message: 'Plan fetching started',
         data: {
+          leadId: body.leadId,
           fetchRequestId: fetchRequest.id,
-          totalPlans: plans.length,
-          vendors: successfulVendors,
-          plans,
-          recommendedPlanId: recommendedPlan?.id
+          status: 'fetching',
+          rpaJobsTriggered: rpaJobsTriggered,
+          staticPlansCount: staticVendors.length
         }
       }
     });

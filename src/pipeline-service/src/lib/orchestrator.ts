@@ -87,6 +87,7 @@ import {
 const STAGE_NAME_TO_LEAD_SERVICE_ID: Record<string, string> = {
   'Lead Created': 'stage-0', // Initial stage - use stage-0 to avoid conflict
   'Plans Fetching': 'stage-1',
+  'Plans Fetch Failed': 'stage-1-failed',
   'Plans Available': 'stage-2',
   'Quotation Created': 'stage-3',
   'Quotation Sent': 'stage-4',
@@ -149,6 +150,11 @@ export async function processEvent(
     // Check if this is a service completion event
     if (eventType.startsWith('service.')) {
       return await handleServiceCompletion(eventType, eventData, log, requestId);
+    }
+
+    // Handle refetch plans action
+    if (eventType === 'pipeline.action.refetch_plans') {
+      return await handleRefetchPlans(eventData, log);
     }
 
     // For all other events, find the active instance for this lead
@@ -235,14 +241,7 @@ async function handleLeadCreated(
     return { processed: false, error: 'Missing lineOfBusiness' };
   }
 
-  // Check if there's already an active instance for this lead
-  const existingInstance = await getInstanceByLeadId(leadId);
-  if (existingInstance) {
-    log(`[LEAD CREATED] ⚠ Lead ${leadId} already has an active pipeline instance: ${existingInstance.instanceId}`);
-    return { processed: false, error: 'Pipeline instance already exists' };
-  }
-
-  // Find the active pipeline for this LOB
+  // Find the active pipeline for this LOB first (before checking for instance)
   log(`[LEAD CREATED] Looking for active pipeline for ${lineOfBusiness}/${businessType || 'individual'}`);
   const pipeline = await getActivePipelineForLOB(lineOfBusiness, businessType);
   if (!pipeline) {
@@ -251,11 +250,47 @@ async function handleLeadCreated(
   }
   log(`[LEAD CREATED] ✓ Found pipeline: ${pipeline.name} (${pipeline.pipelineId})`);
 
-  // Create a new instance
-  log(`[LEAD CREATED] Creating pipeline instance for lead ${leadId}...`);
-  let instance = await createInstance(pipeline, leadId, 'lead.created');
-  log(`[LEAD CREATED] ✓ Created pipeline instance ${instance.instanceId} for lead ${leadId}`);
-  log(`[LEAD CREATED] Initial step: ${instance.currentStepId} (${instance.currentStepType})`);
+  // ATOMIC IDEMPOTENCY: Check and create in a try-catch to handle race conditions
+  // This prevents duplicate pipelines when multiple events arrive simultaneously
+  let instance: any;
+  let isNewInstance = false;
+  
+  try {
+    // First, check if instance already exists
+    const existingInstance = await getInstanceByLeadId(leadId);
+    if (existingInstance) {
+      log(`[LEAD CREATED] ⚠ Lead ${leadId} already has active pipeline instance: ${existingInstance.instanceId}`);
+      instance = existingInstance;
+      isNewInstance = false;
+    } else {
+      // No existing instance, try to create
+      log(`[LEAD CREATED] Creating pipeline instance for lead ${leadId}...`);
+      instance = await createInstance(pipeline, leadId, 'lead.created');
+      log(`[LEAD CREATED] ✓ Created pipeline instance ${instance.instanceId} for lead ${leadId}`);
+      log(`[LEAD CREATED] Initial step: ${instance.currentStepId} (${instance.currentStepType})`);
+      isNewInstance = true;
+    }
+  } catch (error: any) {
+    // Handle race condition: another event created the instance between our check and create
+    if (error.code === 409 || error.message?.includes('conflict')) {
+      log(`[LEAD CREATED] ⚠ Conflict detected - another process created instance. Fetching existing...`);
+      const existingInstance = await getInstanceByLeadId(leadId);
+      if (existingInstance) {
+        instance = existingInstance;
+        isNewInstance = false;
+      } else {
+        throw new Error('Failed to retrieve instance after conflict');
+      }
+    } else {
+      throw error; // Re-throw unexpected errors
+    }
+  }
+  
+  // Skip event publishing if this is a duplicate event (instance already existed)
+  if (!isNewInstance) {
+    log(`[LEAD CREATED] ⚠ This is a duplicate event - skipping event publishing`);
+    return { processed: true, instanceId: instance.instanceId };
+  }
 
   // Track pipeline instance creation
   trackPipelineEvent('PipelineInstanceCreated', {
@@ -435,6 +470,114 @@ async function handleLeadCreated(
 }
 
 /**
+ * Handle refetch plans action - retry fetching plans after failure
+ */
+async function handleRefetchPlans(
+  eventData: EventData,
+  log: (...args: unknown[]) => void
+): Promise<ProcessEventResult> {
+  const { leadId, lineOfBusiness } = eventData;
+
+  log(`[REFETCH_PLANS] Processing refetch plans action for lead ${leadId}`);
+
+  if (!leadId || !lineOfBusiness) {
+    log(`[REFETCH_PLANS] ✗ Missing leadId or lineOfBusiness`);
+    return { processed: false, error: 'Missing required fields' };
+  }
+
+  // Get the pipeline instance
+  const instance = await getInstanceByLeadId(leadId);
+  if (!instance) {
+    log(`[REFETCH_PLANS] ✗ No active pipeline instance found for lead ${leadId}`);
+    return { processed: false, error: 'No active pipeline instance' };
+  }
+
+  log(`[REFETCH_PLANS] Found instance ${instance.instanceId} at stage "${instance.currentStageName}"`);
+
+  // Get the pipeline to find Plans Fetching stage
+  const pipeline = await getPipeline(instance.pipelineId);
+  const plansFetchingStep = pipeline.steps.find(
+    s => s.type === 'stage' && (s as StageStep).stageName === 'Plans Fetching'
+  ) as StageStep | undefined;
+
+  if (!plansFetchingStep) {
+    log(`[REFETCH_PLANS] ✗ Plans Fetching stage not found in pipeline`);
+    return { processed: false, error: 'Plans Fetching stage not found' };
+  }
+
+  // Move instance to Plans Fetching stage
+  log(`[REFETCH_PLANS] Moving instance to Plans Fetching stage`);
+  await moveToStep(instance.instanceId, plansFetchingStep, 'refetch_plans');
+  
+  // Update lead stage to Plans Fetching
+  const freshInstance = await getInstance(instance.instanceId);
+  await executeStageStep(freshInstance, plansFetchingStep, log);
+
+  // Trigger quotation service to refetch plans
+  const quotationGenServiceUrl = getServiceUrl('quotation-gen');
+  const fetchUrl = `${quotationGenServiceUrl}/api/plans/fetch`;
+
+  log(`[REFETCH_PLANS] Triggering plan fetch for lead ${leadId}`);
+  log(`[REFETCH_PLANS] Quotation service URL: ${fetchUrl}`);
+
+  try {
+    // Get complete lead data
+    let leadData = {};
+    const completeLead = await getLead(leadId, lineOfBusiness);
+    if (completeLead) {
+      leadData = {
+        ...completeLead.lobData,
+        dateOfBirth: completeLead.lobData?.dateOfBirth,
+        gender: completeLead.lobData?.gender,
+        estimatedPremium: completeLead.lobData?.estimatedPremium,
+        coverageAmount: completeLead.lobData?.coverageAmount,
+      };
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (process.env.INTERNAL_SERVICE_KEY) {
+      headers['x-service-key'] = process.env.INTERNAL_SERVICE_KEY;
+    }
+
+    const fetchResponse = await fetch(fetchUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        leadId,
+        lineOfBusiness,
+        businessType: instance.businessType || 'individual',
+        leadData,
+        forceRefresh: true,
+      }),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (fetchResponse.ok) {
+      log(`[REFETCH_PLANS] ✓ Plan refetch triggered successfully`);
+      return {
+        processed: true,
+        action: 'refetch_triggered',
+      };
+    } else {
+      const errorText = await fetchResponse.text();
+      log(`[REFETCH_PLANS] ✗ Plan refetch failed: ${fetchResponse.status} - ${errorText}`);
+      return {
+        processed: false,
+        error: `Refetch failed: ${fetchResponse.status}`,
+      };
+    }
+  } catch (error: any) {
+    log(`[REFETCH_PLANS] ✗ Error triggering refetch: ${error.message}`);
+    return {
+      processed: false,
+      error: error.message,
+    };
+  }
+}
+
+/**
  * Handle an event for a specific step
  */
 async function handleEventForStep(
@@ -456,6 +599,30 @@ async function handleEventForStep(
   log(`[EVENT MATCHING] Received event: ${eventType}`);
   log(`[EVENT MATCHING] Instance status: ${instance.status}`);
   log(`[EVENT MATCHING] Instance progress: ${instance.progressPercent}%`);
+
+  // Handle error events - plans.fetch_failed
+  if (eventType === 'plans.fetch_failed') {
+    log(`[ERROR EVENT] Received plans.fetch_failed for lead ${instance.leadId}`);
+    
+    // Find "Plans Fetch Failed" stage
+    const failedStageStep = pipeline.steps.find(
+      s => s.type === 'stage' && (s as StageStep).stageName === 'Plans Fetch Failed'
+    ) as StageStep | undefined;
+    
+    if (failedStageStep) {
+      log(`[ERROR EVENT] Moving to Plans Fetch Failed stage`);
+      await moveToStep(instance.instanceId, failedStageStep, 'plans.fetch_failed');
+      
+      // Execute the failed stage step to update lead stage
+      const freshInstance = await getInstance(instance.instanceId);
+      await executeStageStep(freshInstance, failedStageStep, log);
+      
+      return { processed: true, action: 'moved_to_failed_stage' };
+    } else {
+      log(`[ERROR EVENT] No Plans Fetch Failed stage defined in pipeline`);
+      return { processed: false, error: 'No error stage defined' };
+    }
+  }
 
   switch (currentStep.type) {
     case 'stage':

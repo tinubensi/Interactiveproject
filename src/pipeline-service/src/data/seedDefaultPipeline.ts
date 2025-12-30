@@ -23,9 +23,10 @@ export function generateDefaultHealthInsurancePipeline(
   const pipelineId = uuidv4();
 
   // Step IDs (pre-generated for decision branching)
-  const stepIds = {
+const stepIds = {
     leadCreated: uuidv4(),
     plansFetching: uuidv4(),
+    plansFetchFailed: uuidv4(),
     plansAvailable: uuidv4(),
     hotLeadDecision: uuidv4(),
     hotLeadNotification: uuidv4(),
@@ -67,6 +68,19 @@ export function generateDefaultHealthInsurancePipeline(
       stageName: 'Plans Fetching',
       name: 'Plans Fetching',
       description: 'Fetching insurance plans from vendors',
+    } satisfies StageStep,
+
+    // Step 2.5: Plans Fetch Failed (Error State)
+    {
+      id: stepIds.plansFetchFailed,
+      order: 2.5,
+      enabled: true,
+      type: 'stage' as const,
+      stageId: 'plans-fetch-failed' as const,
+      stageName: 'Plans Fetch Failed',
+      name: 'Plans Fetch Failed',
+      description: 'Failed to fetch insurance plans - user can retry',
+      allowedActions: ['REFETCH_PLANS'],
     } satisfies StageStep,
 
     // Step 3: Plans Available

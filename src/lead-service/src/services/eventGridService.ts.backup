@@ -16,18 +16,11 @@ class EventGridService {
     this.topicEndpoint = process.env.EVENT_GRID_TOPIC_ENDPOINT || '';
     const topicKey = process.env.EVENT_GRID_TOPIC_KEY || '';
 
-    console.log('========================================');
-    console.log('EVENT GRID SERVICE INITIALIZATION');
-    console.log('========================================');
-    console.log(`Endpoint: ${this.topicEndpoint ? this.topicEndpoint : 'NOT SET'}`);
-    console.log(`Key: ${topicKey ? 'SET (length: ' + topicKey.length + ')' : 'NOT SET'}`);
-    console.log('Timestamp:', new Date().toISOString());
+    console.log(`[Event Grid] Initializing... Endpoint: ${this.topicEndpoint ? 'Set' : 'Missing'}, Key: ${topicKey ? 'Set' : 'Missing'}`);
 
     // Only initialize if endpoint is configured
     if (this.topicEndpoint && topicKey) {
       try {
-        console.log('Attempting to create Event Grid client...');
-        
         // Allow insecure connection for localhost development
         const clientOptions = this.topicEndpoint.includes('localhost') || this.topicEndpoint.includes('127.0.0.1')
           ? { allowInsecureConnection: true }
@@ -40,21 +33,14 @@ class EventGridService {
           clientOptions
         );
         this.enabled = true;
-        console.log('✅ ✅ ✅ EVENT GRID CLIENT INITIALIZED SUCCESSFULLY ✅ ✅ ✅');
-        console.log('Endpoint:', this.topicEndpoint);
-        console.log('========================================');
+        console.log(`✅ Event Grid client initialized successfully. Endpoint: ${this.topicEndpoint}`);
       } catch (error) {
-        console.error('❌ ❌ ❌ EVENT GRID INITIALIZATION FAILED ❌ ❌ ❌');
-        console.error('Error:', error);
-        console.error('========================================');
+        console.error('❌ Event Grid initialization failed:', error);
         this.client = null;
         this.enabled = false;
       }
     } else {
-      console.warn('⚠️  ⚠️  ⚠️  EVENT GRID NOT CONFIGURED ⚠️  ⚠️  ⚠️');
-      console.warn(`Endpoint: ${this.topicEndpoint || 'MISSING'}`);
-      console.warn(`Key: ${topicKey ? 'Set' : 'MISSING'}`);
-      console.warn('========================================');
+      console.warn(`⚠️  Event Grid not configured - Endpoint: ${this.topicEndpoint || 'MISSING'}, Key: ${topicKey ? 'Set' : 'MISSING'}`);
       this.client = null;
       this.enabled = false;
     }
@@ -69,12 +55,9 @@ class EventGridService {
     data: any,
     dataVersion: string = '1.0'
   ): Promise<void> {
-    console.log(`[Event Grid] Attempting to publish: ${eventType}`);
-    
     if (!this.enabled || !this.client) {
       const errorMsg = `Event Grid not enabled or client not initialized. Cannot publish ${eventType} for ${subject}`;
       console.warn(`[EVENT GRID DISABLED] ${errorMsg}`);
-      console.warn(`Enabled: ${this.enabled}, Client: ${!!this.client}`);
       // Throw error to trigger HTTP fallback
       throw new Error(errorMsg);
     }
@@ -89,11 +72,10 @@ class EventGridService {
         dataVersion
       };
 
-      console.log(`[Event Grid] Publishing event ID: ${event.id}`);
       await this.client.send([event] as any);
-      console.log(`✅ ✅ Event published successfully: ${eventType} for ${subject}`);
+      console.log(`✅ Event published successfully: ${eventType} for ${subject}`);
     } catch (error) {
-      console.error(`❌ ❌ Failed to publish event ${eventType} for ${subject}:`, error);
+      console.error(`❌ Failed to publish event ${eventType} for ${subject}:`, error);
       // Throw error so callers can implement fallback logic
       throw error;
     }
@@ -244,3 +226,4 @@ class EventGridService {
 }
 
 export const eventGridService = new EventGridService();
+

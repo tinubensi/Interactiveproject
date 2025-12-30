@@ -10,6 +10,18 @@ import { Plan, Vendor, LineOfBusiness, PremiumItem } from '../models/plan';
 
 export const STATIC_VENDORS: Omit<Vendor, 'createdAt' | 'updatedAt'>[] = [
   {
+    id: 'vendor-watania',
+    name: 'Watania International',
+    code: 'watania',
+    lineOfBusiness: 'medical',
+    logo: 'https://www.watania.com/logo.png',
+    website: 'https://www.watania.com',
+    rpaEnabled: true,
+    hasStaticPlans: false,
+    isActive: true,
+    priority: 1
+  },
+  {
     id: 'vendor-takaful',
     name: 'Takaful Emarat',
     code: 'TAKAFUL',
@@ -19,7 +31,7 @@ export const STATIC_VENDORS: Omit<Vendor, 'createdAt' | 'updatedAt'>[] = [
     rpaEnabled: false,
     hasStaticPlans: true,
     isActive: true,
-    priority: 1
+    priority: 2
   },
   {
     id: 'vendor-daman',

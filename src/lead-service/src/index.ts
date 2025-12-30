@@ -28,6 +28,7 @@ import './functions/metadata/getGenderTypes';
 import './functions/metadata/getEmirates';
 
 import './functions/events/handlePlansFetched';
+import './functions/events/handlePlansFetchFailed';
 import './functions/events/handleQuotationCreated';
 import './functions/events/handlePolicyIssued';
 
