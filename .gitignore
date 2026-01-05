@@ -19,3 +19,5 @@ src/*/.nyc_output/
 src/*/local.settings.json
 src/*/*.zip
 *.zip
+# Utility scripts with potential secrets
+clear-cosmos-data.js

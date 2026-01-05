@@ -140,8 +140,11 @@ class CosmosService {
 
   async getPlansForLead(leadId: string): Promise<Plan[]> {
     const query: SqlQuerySpec = {
-      query: 'SELECT * FROM c WHERE c.leadId = @leadId ORDER BY c.annualPremium ASC',
-      parameters: [{ name: '@leadId', value: leadId }]
+      query: 'SELECT * FROM c WHERE c.leadId = @leadId AND c.type = @type ORDER BY c.annualPremium ASC',
+      parameters: [
+        { name: '@leadId', value: leadId },
+        { name: '@type', value: 'plan' }
+      ]
     };
     const { resources } = await this.plansContainer.items.query<Plan>(query).fetchAll();
     return resources;
@@ -150,9 +153,12 @@ class CosmosService {
   async listPlans(request: PlanListRequest): Promise<PlanListResponse> {
     const { leadId, page = 1, limit = 20, sortBy = 'annualPremium', sortOrder = 'asc', filters = {} } = request;
 
-    // Build query
-    const conditions: string[] = ['c.leadId = @leadId'];
-    const parameters: Array<{ name: string; value: any }> = [{ name: '@leadId', value: leadId }];
+    // Build query - filter by leadId and type='plan' to exclude RPA diagnostics
+    const conditions: string[] = ['c.leadId = @leadId', 'c.type = @type'];
+    const parameters: Array<{ name: string; value: any }> = [
+      { name: '@leadId', value: leadId },
+      { name: '@type', value: 'plan' }
+    ];
     let paramIndex = 0;
 
     if (filters.isAvailable !== undefined) {

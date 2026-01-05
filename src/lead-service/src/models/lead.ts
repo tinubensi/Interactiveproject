@@ -286,7 +286,7 @@ export interface CreateLeadRequest {
   // Common fields
   lineOfBusiness: LineOfBusiness;
   businessType: BusinessType;
-  customerId: string;
+  customerId?: string; // Optional - will be auto-generated if not provided
   firstName: string;
   lastName: string;
   email: string;

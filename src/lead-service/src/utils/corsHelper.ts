@@ -18,6 +18,19 @@ const ALLOWED_ORIGINS = [
  */
 export function getCorsHeaders(request: HttpRequest): Record<string, string> {
   const requestOrigin = request.headers.get('origin');
+  const serviceKey = request.headers.get('x-service-key');
+
+  // If service key is present, this is a service-to-service call
+  // Allow it regardless of origin
+  if (serviceKey) {
+    return {
+      'Access-Control-Allow-Origin': requestOrigin || '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-ms-client-request-id, x-service-key',
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Max-Age': '86400',
+    };
+  }
 
   // If no origin header, check referer as fallback (for same-origin requests that might be proxied)
   let origin = requestOrigin;
@@ -43,17 +56,19 @@ export function getCorsHeaders(request: HttpRequest): Record<string, string> {
     normalizedOrigin === allowed.toLowerCase().replace(/\/$/, '') // Remove trailing slash
   );
 
-  // If origin is not in allowed list, check if it's localhost with any port
+  // If origin is not in allowed list, check if it's localhost with any port or Azure Functions domain
   const isLocalhost = normalizedOrigin.startsWith('http://localhost:') ||
                       normalizedOrigin.startsWith('https://localhost:');
+  
+  const isAzureFunctions = normalizedOrigin.includes('.azurewebsites.net');
 
-  // Use the origin if it's allowed or localhost, otherwise use the first allowed origin
-  const allowedOrigin = (isAllowed || isLocalhost) ? origin : ALLOWED_ORIGINS[0];
+  // Use the origin if it's allowed, localhost, or Azure Functions domain
+  const allowedOrigin = (isAllowed || isLocalhost || isAzureFunctions) ? origin : ALLOWED_ORIGINS[0];
 
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-ms-client-request-id',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-ms-client-request-id, x-service-key',
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Max-Age': '86400',
   };

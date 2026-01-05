@@ -5,15 +5,25 @@
 
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { cosmosService } from '../../services/cosmosService';
-import { ensureAuthorized, requirePermission, QUOTE_PERMISSIONS } from '../../lib/auth';
+import { ensureAuthorized, requirePermission, validateServiceKey, QUOTE_PERMISSIONS } from '../../lib/auth';
 
 export async function getPlanById(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
-    const userContext = await ensureAuthorized(request);
-    await requirePermission(userContext.userId, QUOTE_PERMISSIONS.QUOTES_READ);
+    // CRITICAL FIX: Allow service key authentication for internal service calls
+    // This allows Quotation Service to fetch plans without user authentication
+    const isServiceCall = validateServiceKey(request);
+
+    if (!isServiceCall) {
+      // For user calls, require authentication
+      const userContext = await ensureAuthorized(request);
+      await requirePermission(userContext.userId, QUOTE_PERMISSIONS.QUOTES_READ);
+    } else {
+      context.log('Get plan by ID request authenticated via service key (internal service call)');
+    }
+
     const id = request.params.id;
     const leadId = request.query.get('leadId');
 

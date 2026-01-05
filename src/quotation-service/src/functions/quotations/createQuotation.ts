@@ -27,6 +27,10 @@ export async function createQuotation(
     await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTATIONS_CREATE);
     const body: CreateQuotationRequest = await request.json() as CreateQuotationRequest;
 
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/1d4bfb26-61e5-4cd1-bed5-3fc2ec2611a5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'createQuotation.ts:30',message:'createQuotation request received',data:{leadId:body.leadId,customerId:body.customerId,planIds:body.planIds,planCount:body.planIds?.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
+
     if (!body.leadId || !body.customerId || !body.planIds || body.planIds.length === 0) {
       return withCors(request, {
         status: 400,
@@ -39,7 +43,14 @@ export async function createQuotation(
     // Fetch selected plans from Plan Service (or mock for now)
     const selectedPlans = await fetchPlansFromPlanService(body.planIds, body.leadId);
     
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/1d4bfb26-61e5-4cd1-bed5-3fc2ec2611a5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'createQuotation.ts:44',message:'Plans fetched from service',data:{requestedPlanIds:body.planIds,fetchedPlansCount:selectedPlans.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,E'})}).catch(()=>{});
+    // #endregion
+    
     if (selectedPlans.length === 0) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/1d4bfb26-61e5-4cd1-bed5-3fc2ec2611a5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'createQuotation.ts:50',message:'ERROR: No plans found - returning 404',data:{requestedPlanIds:body.planIds,leadId:body.leadId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,E'})}).catch(()=>{});
+      // #endregion
       return withCors(request, {
         status: 404,
         jsonBody: {
@@ -185,30 +196,58 @@ export async function createQuotation(
   }
 }
 
-// Fetch actual plans from quotation-generation-service
+// CRITICAL FIX: Fetch plans from lead-service, not quotation-generation-service
+// Plans are stored in lead-service after being fetched by RPA
 async function fetchPlansFromPlanService(planIds: string[], leadId: string): Promise<any[]> {
-  const QUOTATION_GEN_SERVICE_URL = process.env.QUOTATION_GEN_SERVICE_URL || 'http://localhost:7072/api';
+  const LEAD_SERVICE_URL = process.env.LEAD_SERVICE_URL || 'http://localhost:7078';
+  const INTERNAL_SERVICE_KEY = process.env.INTERNAL_SERVICE_KEY;
   
-  const plans: any[] = [];
+  // Azure Functions use /api prefix by default
+  const baseUrl = LEAD_SERVICE_URL.includes('/api') ? LEAD_SERVICE_URL : `${LEAD_SERVICE_URL}/api`;
   
-  for (const planId of planIds) {
-    try {
-      const response = await fetch(`${QUOTATION_GEN_SERVICE_URL}/plans/${planId}?leadId=${leadId}`);
-      
-      if (response.ok) {
-        const result = await response.json() as { success?: boolean; data?: { plan?: any } };
-        if (result.success && result.data?.plan) {
-          plans.push(result.data.plan);
-        }
-      } else {
-        console.warn(`Failed to fetch plan ${planId}: ${response.status}`);
-      }
-    } catch (error) {
-      console.error(`Error fetching plan ${planId}:`, error);
+  try {
+    // Build headers for service-to-service authentication
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (INTERNAL_SERVICE_KEY) {
+      headers['x-service-key'] = INTERNAL_SERVICE_KEY;
     }
+    
+    console.log(`Fetching plans for lead ${leadId} from ${baseUrl}/leads/${leadId}/plans`);
+    
+    // Fetch all plans for the lead from lead-service
+    const response = await fetch(`${baseUrl}/leads/${leadId}/plans`, { headers });
+    
+    console.log(`Lead service response: ${response.status} ${response.statusText}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.warn(`Failed to fetch plans from lead-service: ${response.status} - ${errorText}`);
+      return [];
+    }
+    
+    const result = await response.json() as { success?: boolean; data?: any[] };
+    
+    console.log(`Lead service returned success=${result.success}, data count=${result.data?.length || 0}`);
+    
+    if (!result.success || !result.data) {
+      console.warn('No plans data returned from lead-service');
+      return [];
+    }
+    
+    // Filter to only the requested plan IDs
+    const allPlans = result.data;
+    const requestedPlans = allPlans.filter((plan: any) => planIds.includes(plan.id));
+    
+    console.log(`Found ${requestedPlans.length} of ${planIds.length} requested plans. Requested IDs: ${planIds.join(', ')}`);
+    
+    return requestedPlans;
+  } catch (error) {
+    console.error(`Error fetching plans from lead-service:`, error);
+    return [];
   }
-  
-  return plans;
 }
 
 function getDefaultTerms(lob: string): string {

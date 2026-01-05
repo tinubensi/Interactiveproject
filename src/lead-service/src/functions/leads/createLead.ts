@@ -90,14 +90,20 @@ export async function createLead(
       assignedTo = 'technical-default';
     }
 
+    // Generate lead ID
+    const leadId = uuidv4();
+    
+    // Generate customerId if not provided (use lead ID as base)
+    const customerId = body.customerId || `customer-${leadId}`;
+
     // Create lead object
     const lead: any = {
       type: 'lead', // Required for Cosmos DB queries
-      id: uuidv4(),
+      id: leadId,
       referenceId,
       lineOfBusiness: body.lineOfBusiness,
       businessType: body.businessType,
-      customerId: body.customerId,
+      customerId: customerId,
       firstName,
       lastName,
       fullName,

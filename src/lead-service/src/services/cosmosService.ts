@@ -42,6 +42,21 @@ export interface Plan {
   rawPlanData?: any;
 }
 
+// VendorExecution interface for RPA diagnostic and error tracking
+export interface VendorExecution {
+  id: string;
+  leadId: string; // partition key
+  vendorId: string;
+  executionType: 'diagnostic' | 'error';
+  stage?: string; // for diagnostics: parsing, credentials, browser_launch, etc.
+  status: 'success' | 'failed' | 'timeout' | 'started' | 'completed';
+  message: string;
+  details?: Record<string, any>;
+  error?: string;
+  traceback?: string;
+  timestamp: string;
+}
+
 class CosmosService {
   private client: CosmosClient;
   private database: Database;
@@ -49,6 +64,7 @@ class CosmosService {
   private timelinesContainer: Container;
   private stagesContainer: Container;
   private plansContainer: Container;
+  private vendorExecutionsContainer: Container;
 
   constructor() {
     // Support both connection string (Azure) and separate endpoint/key (emulator)
@@ -75,6 +91,7 @@ class CosmosService {
     this.timelinesContainer = this.database.container('timelines');
     this.stagesContainer = this.database.container('stages');
     this.plansContainer = this.database.container('plans');
+    this.vendorExecutionsContainer = this.database.container('vendorExecutions');
   }
 
   /**
@@ -129,6 +146,27 @@ class CosmosService {
           automatic: true,
           includedPaths: [{ path: '/*' }],
           excludedPaths: [{ path: '/_etag/?' }]
+        }
+      });
+
+      await this.database.containers.createIfNotExists({
+        id: 'vendorExecutions',
+        partitionKey: { paths: ['/leadId'] },
+        indexingPolicy: {
+          indexingMode: 'consistent',
+          automatic: true,
+          includedPaths: [{ path: '/*' }],
+          excludedPaths: [{ path: '/_etag/?' }],
+          compositeIndexes: [
+            [
+              { path: '/leadId', order: 'ascending' },
+              { path: '/timestamp', order: 'descending' }
+            ],
+            [
+              { path: '/vendorId', order: 'ascending' },
+              { path: '/timestamp', order: 'descending' }
+            ]
+          ]
         }
       });
 
@@ -714,11 +752,15 @@ class CosmosService {
 
   /**
    * Get all plans for a lead
+   * Filters out RPA diagnostic and error documents
    */
   async getPlansForLead(leadId: string): Promise<Plan[]> {
     const query: SqlQuerySpec = {
-      query: 'SELECT * FROM c WHERE c.leadId = @leadId ORDER BY c.annualPremium ASC',
-      parameters: [{ name: '@leadId', value: leadId }]
+      query: 'SELECT * FROM c WHERE c.leadId = @leadId AND c.type = @type ORDER BY c.annualPremium ASC',
+      parameters: [
+        { name: '@leadId', value: leadId },
+        { name: '@type', value: 'plan' }
+      ]
     };
 
     const { resources } = await this.plansContainer.items.query<Plan>(query).fetchAll();
@@ -760,6 +802,7 @@ class CosmosService {
 
   /**
    * Delete all plans for a lead (for re-fetching)
+   * Only deletes actual plans (type="plan"), not RPA diagnostics or errors
    */
   async deletePlansForLead(leadId: string): Promise<void> {
     const plans = await this.getPlansForLead(leadId);
@@ -774,15 +817,74 @@ class CosmosService {
 
   /**
    * Get plans count for a lead
+   * Only counts actual plans, not RPA diagnostics or errors
    */
   async getPlansCountForLead(leadId: string): Promise<number> {
     const query: SqlQuerySpec = {
-      query: 'SELECT VALUE COUNT(1) FROM c WHERE c.leadId = @leadId',
-      parameters: [{ name: '@leadId', value: leadId }]
+      query: 'SELECT VALUE COUNT(1) FROM c WHERE c.leadId = @leadId AND c.type = @type',
+      parameters: [
+        { name: '@leadId', value: leadId },
+        { name: '@type', value: 'plan' }
+      ]
     };
 
     const { resources } = await this.plansContainer.items.query(query).fetchAll();
     return resources[0] || 0;
+  }
+
+  // ==================== VENDOR EXECUTIONS ====================
+
+  /**
+   * Create a vendor execution record (RPA diagnostic or error)
+   */
+  async createVendorExecution(execution: VendorExecution): Promise<VendorExecution> {
+    const { resource } = await this.vendorExecutionsContainer.items.create(execution);
+    return resource as VendorExecution;
+  }
+
+  /**
+   * Get all vendor executions for a lead
+   */
+  async getVendorExecutionsForLead(leadId: string): Promise<VendorExecution[]> {
+    const query: SqlQuerySpec = {
+      query: 'SELECT * FROM c WHERE c.leadId = @leadId ORDER BY c.timestamp DESC',
+      parameters: [{ name: '@leadId', value: leadId }]
+    };
+
+    const { resources } = await this.vendorExecutionsContainer.items.query<VendorExecution>(query).fetchAll();
+    return resources;
+  }
+
+  /**
+   * Get vendor executions for a specific vendor and lead
+   */
+  async getVendorExecutionsByVendor(leadId: string, vendorId: string): Promise<VendorExecution[]> {
+    const query: SqlQuerySpec = {
+      query: 'SELECT * FROM c WHERE c.leadId = @leadId AND c.vendorId = @vendorId ORDER BY c.timestamp DESC',
+      parameters: [
+        { name: '@leadId', value: leadId },
+        { name: '@vendorId', value: vendorId }
+      ]
+    };
+
+    const { resources } = await this.vendorExecutionsContainer.items.query<VendorExecution>(query).fetchAll();
+    return resources;
+  }
+
+  /**
+   * Get vendor executions by type (diagnostic or error)
+   */
+  async getVendorExecutionsByType(leadId: string, executionType: 'diagnostic' | 'error'): Promise<VendorExecution[]> {
+    const query: SqlQuerySpec = {
+      query: 'SELECT * FROM c WHERE c.leadId = @leadId AND c.executionType = @executionType ORDER BY c.timestamp DESC',
+      parameters: [
+        { name: '@leadId', value: leadId },
+        { name: '@executionType', value: executionType }
+      ]
+    };
+
+    const { resources } = await this.vendorExecutionsContainer.items.query<VendorExecution>(query).fetchAll();
+    return resources;
   }
 }
 

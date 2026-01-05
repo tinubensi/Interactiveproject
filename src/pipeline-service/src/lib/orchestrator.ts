@@ -807,6 +807,184 @@ async function handleEventForStep(
 }
 
 // =============================================================================
+// Timeout Handling
+// =============================================================================
+
+/**
+ * Check if an instance has timed out while waiting for an event
+ * Default timeout: 10 minutes for plan fetching, 30 minutes for other stages
+ */
+export function hasTimedOut(instance: PipelineInstance): boolean {
+  if (!instance.waitingForEvent || instance.status !== 'active') {
+    return false;
+  }
+
+  // If explicit waitingUntil is set, use that
+  if (instance.waitingUntil) {
+    return new Date(instance.waitingUntil) < new Date();
+  }
+
+  // Otherwise use action deadline if present
+  if (instance.actionDeadline) {
+    return new Date(instance.actionDeadline) < new Date();
+  }
+
+  // Fallback: check if waiting for plans.fetch_completed
+  // Use 10 minutes timeout for plan fetching
+  if (instance.waitingForEvent === 'plans.fetch_completed') {
+    const timeoutMinutes = 10;
+    const startTime = instance.actionStartedAt ? new Date(instance.actionStartedAt) : new Date(instance.updatedAt);
+    const timeoutDate = new Date(startTime.getTime() + timeoutMinutes * 60 * 1000);
+    return new Date() > timeoutDate;
+  }
+
+  // No timeout configured
+  return false;
+}
+
+/**
+ * Handle timeout by auto-advancing the instance to the next stage
+ * Used when waiting for events that never arrive (e.g., RPA failures)
+ */
+export async function handleTimeout(
+  instance: PipelineInstance,
+  log: (...args: unknown[]) => void = console.log
+): Promise<ProcessEventResult> {
+  log(`[TIMEOUT] Handling timeout for instance ${instance.instanceId} waiting for ${instance.waitingForEvent}`);
+
+  try {
+    const pipeline = await getPipeline(instance.pipelineId);
+    if (!pipeline) {
+      log(`[TIMEOUT] Pipeline ${instance.pipelineId} not found`);
+      return { processed: false, error: 'Pipeline not found' };
+    }
+
+    const currentStep = pipeline.steps.find(s => s.id === instance.currentStepId);
+    if (!currentStep) {
+      log(`[TIMEOUT] Current step ${instance.currentStepId} not found`);
+      return { processed: false, error: 'Current step not found' };
+    }
+
+    // Get the next step
+    const nextStep = getNextEnabledStep(pipeline.steps, currentStep.id);
+    if (!nextStep) {
+      log(`[TIMEOUT] No next step found - completing pipeline`);
+      await completeInstance(instance, 'completed', log);
+      return { processed: true, action: 'completed_on_timeout' };
+    }
+
+    log(`[TIMEOUT] Auto-advancing to next step: ${nextStep.id} (${nextStep.type})`);
+
+    // Record timeout in history
+    const historyEntry: StepHistoryEntry = {
+      stepId: instance.currentStepId,
+      stepType: instance.currentStepType,
+      stageName: instance.currentStageName,
+      stepName: currentStep.name || instance.currentStageName,
+      enteredAt: instance.actionStartedAt || instance.updatedAt,
+      exitedAt: new Date().toISOString(),
+      outcome: 'timeout',
+      triggeredBy: 'system-timeout',
+      metadata: {
+        waitingForEvent: instance.waitingForEvent,
+        timeoutReason: `Timed out after 10 minutes waiting for ${instance.waitingForEvent}`,
+      },
+    };
+
+    instance.stepHistory.push(historyEntry);
+
+    // Clear waiting state
+    instance.waitingForEvent = undefined;
+    instance.waitingUntil = undefined;
+    instance.actionDeadline = undefined;
+    instance.actionStartedAt = undefined;
+
+    // Advance to next step
+    await moveToStep(instance.instanceId, nextStep, 'system-timeout', 'timeout', instance, instance.leadId);
+
+    // If next step is a stage, execute it
+    if (nextStep.type === 'stage') {
+      const stageStep = nextStep as StageStep;
+      const freshInstance = await getInstance(instance.instanceId);
+      await executeStageStep(freshInstance, stageStep, log);
+    }
+
+    log(`[TIMEOUT] Successfully advanced instance ${instance.instanceId} to ${nextStep.id}`);
+    
+    // Publish warning notification
+    try {
+      await publishPipelineNotificationRequired({
+        instanceId: instance.instanceId,
+        leadId: instance.leadId,
+        lineOfBusiness: instance.lineOfBusiness,
+        notificationType: 'timeout_warning',
+        channel: 'email',
+        recipientType: 'manager',
+        templateId: 'pipeline_timeout_warning',
+        customMessage: `Pipeline timed out waiting for ${instance.waitingForEvent}. Auto-advanced to next stage.`,
+        stageName: instance.currentStageName,
+      });
+    } catch (notifError) {
+      log(`[TIMEOUT] Failed to publish timeout notification: ${notifError}`);
+    }
+
+    return {
+      processed: true,
+      instanceId: instance.instanceId,
+      action: `timeout_advanced_to_${nextStep.id}`,
+    };
+  } catch (error) {
+    log(`[TIMEOUT] Error handling timeout: ${error}`);
+    return { processed: false, error: String(error) };
+  }
+}
+
+/**
+ * Check all active instances for timeouts and handle them
+ * This can be called by a timer function or manually
+ */
+export async function checkAndHandleTimeouts(
+  log: (...args: unknown[]) => void = console.log
+): Promise<{ checked: number; timedOut: number; handled: number }> {
+  log('[TIMEOUT CHECK] Checking for timed-out instances...');
+
+  try {
+    // Get all active instances waiting for events
+    const { listInstances } = await import('../repositories/instanceRepository');
+    const instances = await listInstances({ status: 'active' });
+
+    const waitingInstances = instances.filter(i => i.waitingForEvent);
+    log(`[TIMEOUT CHECK] Found ${waitingInstances.length} instances waiting for events`);
+
+    let timedOutCount = 0;
+    let handledCount = 0;
+
+    for (const instance of waitingInstances) {
+      if (hasTimedOut(instance)) {
+        timedOutCount++;
+        log(`[TIMEOUT CHECK] Instance ${instance.instanceId} has timed out`);
+
+        const result = await handleTimeout(instance, log);
+        if (result.processed) {
+          handledCount++;
+        }
+      }
+    }
+
+    log(`[TIMEOUT CHECK] Checked ${waitingInstances.length} instances, found ${timedOutCount} timeouts, handled ${handledCount}`);
+
+    return {
+      checked: waitingInstances.length,
+      timedOut: timedOutCount,
+      handled: handledCount,
+    };
+  } catch (error) {
+    log(`[TIMEOUT CHECK] Error: ${error}`);
+    return { checked: 0, timedOut: 0, handled: 0 };
+  }
+}
+
+// =============================================================================
 // Step Execution
 // =============================================================================
 
