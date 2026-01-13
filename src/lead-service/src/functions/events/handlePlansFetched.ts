@@ -110,9 +110,13 @@ export async function handlePlansFetched(
     
     // Query all plans for this lead from Cosmos DB
     const existingPlans = await cosmosService.getPlansForLead(leadId);
-    const totalPlansCount = existingPlans.length;
     
-    context.log(`Found ${totalPlansCount} total plans for lead ${leadId} in database`);
+    // Deduplicate plans by planCode to get accurate count
+    // (RPA may create duplicates due to Event Grid retries or multiple triggers)
+    const uniquePlanCodes = new Set(existingPlans.map(plan => plan.planCode));
+    const totalPlansCount = uniquePlanCodes.size;
+    
+    context.log(`Found ${existingPlans.length} total plans (${totalPlansCount} unique) for lead ${leadId} in database`);
 
     // Update stage immediately if we have ANY plans (don't wait for multiple vendors)
     if (totalPlansCount === 0) {

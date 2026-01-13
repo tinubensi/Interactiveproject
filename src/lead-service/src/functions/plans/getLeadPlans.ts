@@ -29,10 +29,23 @@ export async function getLeadPlans(
     }
 
     // Get plans from Lead Service DB
-    const plans = await cosmosService.getPlansForLead(leadId);
+    const allPlans = await cosmosService.getPlansForLead(leadId);
+    
+    // Deduplicate plans by planCode (keep the most recent one)
+    // This handles duplicates from Event Grid retries or multiple RPA triggers
+    const plansByCode = new Map<string, typeof allPlans[0]>();
+    for (const plan of allPlans) {
+      const existing = plansByCode.get(plan.planCode);
+      // Keep the plan with the latest fetchedAt timestamp
+      if (!existing || new Date(plan.fetchedAt) > new Date(existing.fetchedAt)) {
+        plansByCode.set(plan.planCode, plan);
+      }
+    }
+    
+    const plans = Array.from(plansByCode.values());
     const count = plans.length;
 
-    context.log(`Retrieved ${count} plans for lead ${leadId}`);
+    context.log(`Retrieved ${allPlans.length} plans (${count} unique) for lead ${leadId}`);
 
     return withCors(request, {
       status: 200,

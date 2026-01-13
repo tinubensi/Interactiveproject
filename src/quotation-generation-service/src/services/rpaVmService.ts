@@ -127,6 +127,13 @@ class RpaVmService {
       }
     }
     
+    // Wait for Cosmos DB eventual consistency
+    // This ensures plans are queryable before we return
+    if (vmResults.some(r => r.success && r.plans.length > 0)) {
+      console.log(`[RPA VM] Waiting 3 seconds for Cosmos DB to commit changes...`);
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+    
     return vmResults;
   }
 
@@ -154,6 +161,52 @@ class RpaVmService {
       
       await container.items.upsert(planDoc);
     }
+  }
+
+  /**
+   * Verify plans are saved and queryable in Cosmos DB
+   * This handles eventual consistency by actually querying the database
+   */
+  async verifyPlansInDB(leadId: string): Promise<{ count: number; vendors: string[] }> {
+    const connectionString = process.env.COSMOS_CONNECTION_STRING;
+    if (!connectionString) {
+      throw new Error('COSMOS_CONNECTION_STRING must be set');
+    }
+    
+    const { CosmosClient } = await import('@azure/cosmos');
+    const client = new CosmosClient(connectionString);
+    const database = client.database('lead-service-db');
+    const container = database.container('plans');
+    
+    // Use simple query to get all plans (avoid GROUP BY which can fail)
+    const { resources: plans } = await container.items
+      .query({
+        query: 'SELECT c.vendorId, c.planCode FROM c WHERE c.leadId = @leadId AND c.type = @type',
+        parameters: [
+          { name: '@leadId', value: leadId },
+          { name: '@type', value: 'plan' }
+        ]
+      })
+      .fetchAll();
+    
+    // Count unique vendors
+    const vendorSet = new Set<string>();
+    for (const plan of plans) {
+      if (plan.vendorId) {
+        vendorSet.add(plan.vendorId);
+      }
+    }
+    
+    // Count unique plans by planCode (deduplication)
+    const uniquePlanCodes = new Set(plans.map((p: any) => p.planCode));
+    const uniqueCount = uniquePlanCodes.size;
+    
+    console.log(`[RPA VM] Verified ${plans.length} total plans (${uniqueCount} unique) from ${vendorSet.size} vendors`);
+    
+    return { 
+      count: uniqueCount, // Return unique count, not total
+      vendors: Array.from(vendorSet) 
+    };
   }
 }
 

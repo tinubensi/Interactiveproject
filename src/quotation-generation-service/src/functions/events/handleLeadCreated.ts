@@ -67,21 +67,76 @@ async function handleLeadCreatedEvent(
       await cosmosService.createFetchRequest(fetchRequest);
       context.log(`Created fetch request: ${fetchRequest.id}`);
       
+      // Publish plans.fetch_started event BEFORE triggering RPA
+      // This allows Pipeline Service to update lead status to "Plans Fetching"
+      try {
+        await eventGridService.publishPlansFetchStarted({
+          leadId: leadId,
+          fetchRequestId: fetchRequest.id,
+          lineOfBusiness: lineOfBusiness,
+          vendorCount: rpaVendors.length
+        });
+        context.log(`✅ Published plans.fetch_started event`);
+      } catch (eventError) {
+        context.warn('⚠️ Failed to publish plans.fetch_started event:', eventError);
+        // Continue anyway - RPA can still run
+      }
+      
       // Trigger RPA via VM
+      // Build complete lead data for RPA (VM requires id field + all lead details)
+      const completeLeadData = {
+        id: leadId,
+        leadId: leadId,
+        firstName: eventData.firstName,
+        lastName: eventData.lastName,
+        email: eventData.email,
+        phone: eventData.phone,
+        emirate: eventData.emirate,
+        lineOfBusiness: lineOfBusiness,
+        businessType: eventData.businessType || 'individual',
+        ...lobData, // Spread lobData last so it can override any duplicates
+      };
+      
       const vendorIds = rpaVendors.map((v: any) => v.id);
       const vmResults = await rpaVmService.fetchPlansFromAllVendors(
         leadId,
-        lobData || {},
+        completeLeadData,
         vendorIds
       );
       
-      // Count successful vendors
+      // Count successful vendors from VM response
       const successfulVendorIds = vmResults.filter((r: any) => r.success).map((r: any) => r.vendorId);
-      const totalPlans = vmResults.reduce((sum: number, r: any) => sum + r.plans.length, 0);
+      const totalPlansFromVM = vmResults.reduce((sum: number, r: any) => sum + r.plans.length, 0);
       
-      context.log(`VM execution complete: ${successfulVendorIds.length}/${vendorIds.length} vendors successful, ${totalPlans} plans fetched`);
+      context.log(`VM execution complete: ${successfulVendorIds.length}/${vendorIds.length} vendors successful, ${totalPlansFromVM} plans fetched`);
       
-      // Update fetch request status
+      // ✅ VERIFY plans are actually saved and queryable in database
+      // This handles Cosmos DB eventual consistency
+      let totalPlans = totalPlansFromVM; // Default to VM response
+      
+      try {
+        context.log(`Verifying plans are saved in database...`);
+        const verification = await rpaVmService.verifyPlansInDB(leadId);
+        context.log(`✅ Verified ${verification.count} plans in DB from vendors: ${verification.vendors.join(', ')}`);
+        
+        // Use verified count if available, otherwise fallback to VM response
+        if (verification.count > 0) {
+          totalPlans = verification.count;
+          context.log(`Using verified count: ${totalPlans} plans`);
+        } else if (totalPlansFromVM > 0) {
+          context.log(`⚠️ Verification returned 0, using VM response: ${totalPlansFromVM} plans`);
+          totalPlans = totalPlansFromVM;
+        } else {
+          context.warn(`⚠️ Both verification and VM returned 0 plans`);
+          totalPlans = 0;
+        }
+      } catch (verifyError) {
+        context.error(`❌ Verification failed: ${verifyError}`);
+        context.log(`Falling back to VM response count: ${totalPlansFromVM} plans`);
+        totalPlans = totalPlansFromVM;
+      }
+      
+      // Update fetch request status with plan count
       await cosmosService.updateFetchRequest(fetchRequest.id, leadId, {
         status: 'completed',
         completedAt: new Date(),
@@ -89,7 +144,8 @@ async function handleLeadCreatedEvent(
         successfulVendors: successfulVendorIds
       });
       
-      // Publish completion event
+      // ALWAYS publish completion event (so pipeline can advance)
+      // Even if totalPlans is 0, pipeline needs to know RPA finished
       try {
         await eventGridService.publishPlansFetchCompleted({
           leadId: leadId,
@@ -99,9 +155,10 @@ async function handleLeadCreatedEvent(
           failedVendors: vendorIds.filter((id: string) => !successfulVendorIds.includes(id)),
           plans: []
         });
-        context.log('Published plans.fetch.completed event');
+        context.log(`✅ Published plans.fetch.completed event with ${totalPlans} plans`);
       } catch (eventError) {
-        context.warn('Failed to publish completion event:', eventError);
+        context.error('❌ CRITICAL: Failed to publish completion event:', eventError);
+        throw eventError; // Re-throw to ensure pipeline gets notified of failure
       }
       
       context.log(`✅ Successfully processed lead.created event for lead ${leadId}`);
