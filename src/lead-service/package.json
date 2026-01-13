@@ -2,7 +2,7 @@
   "name": "lead-service",
   "version": "1.0.0",
   "description": "Lead Management Service - Azure Functions",
-  "main": "dist/src/index.js",
+  "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",

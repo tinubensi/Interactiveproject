@@ -2,7 +2,7 @@
   "name": "quotation-generation-service",
   "version": "1.0.0",
   "description": "Quotation Generation Service - Plan Fetching and Comparison",
-  "main": "dist/src/index.js",
+  "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
@@ -19,6 +19,7 @@
     "@azure/functions": "^4.0.0",
     "@azure/identity": "^4.0.0",
     "@azure/storage-queue": "^12.17.0",
+    "axios": "^1.6.0",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

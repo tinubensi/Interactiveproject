@@ -14,6 +14,7 @@ import { Lead, CreateLeadRequest } from '../../models/lead';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
 import { ensureAuthorized, requirePermission, LEAD_PERMISSIONS } from '../../lib/auth';
 import { isLeadManagedByPipeline, notifyLeadCreated } from '../../services/pipelineServiceClient';
+import axios from 'axios';
 
 export async function createLead(
   request: HttpRequest,
@@ -145,6 +146,8 @@ export async function createLead(
 
     // Publish lead.created event to Event Grid (primary communication method)
     let eventPublished = false;
+    let httpFallbackTriggered = false;
+    
     try {
       await eventGridService.publishLeadCreated({
         leadId: createdLead.id,
@@ -159,40 +162,69 @@ export async function createLead(
         createdAt: createdLead.createdAt
       });
       eventPublished = true;
-      context.log('lead.created event published successfully to Event Grid');
+      context.log('✅ lead.created event published successfully to Event Grid');
       
     } catch (eventError: any) {
-      context.warn('Failed to publish lead.created event to Event Grid:', eventError.message);
-    }
-
-    // VALIDATION: Ensure Pipeline Service created a pipeline instance
-    // Pipeline Service must listen to lead.created events and create pipeline instances
-    if (eventPublished) {
-      context.log('Lead created event published. Pipeline creation will be handled asynchronously.');
-      // Removed blocking wait for pipeline creation to improve performance
-      // The frontend should handle the "pending pipeline" state gracefully
-    }
-
-    // HTTP Fallback: Also notify pipeline service directly to ensure immediate processing
-    // This provides robustness if Event Grid is slow or unavailable
-    let fallbackResult: any = { success: false, skipped: true };
-    try {
-      fallbackResult = await notifyLeadCreated(createdLead, { log: context.log.bind(context) });
-      if (!fallbackResult.success) {
-        context.warn(`[HTTP Fallback] Failed: ${fallbackResult.error}`);
+      context.error('❌ Failed to publish lead.created event to Event Grid:', eventError.message);
+      context.error('Stack:', eventError.stack);
+      
+      // HTTP FALLBACK: Directly call Pipeline Service
+      const PIPELINE_SERVICE_URL = process.env.PIPELINE_SERVICE_URL || 'https://func-nectaria-pipeline-dev.azurewebsites.net';
+      const INTERNAL_SERVICE_KEY = process.env.INTERNAL_SERVICE_KEY || 'dev-internal-service-key-nectaria-2024';
+      
+      try {
+        context.log(`[HTTP FALLBACK] Calling Pipeline Service directly at ${PIPELINE_SERVICE_URL}`);
+        
+        const fallbackResponse = await axios.post(
+          `${PIPELINE_SERVICE_URL}/api/pipeline/process-event`,
+          {
+            eventType: 'lead.created',
+            subject: `leads/${createdLead.id}`,
+            data: {
+              leadId: createdLead.id,
+              referenceId: createdLead.referenceId,
+              customerId: createdLead.customerId,
+              lineOfBusiness: createdLead.lineOfBusiness,
+              businessType: createdLead.businessType,
+              formId: createdLead.formId,
+              formData: createdLead.formData,
+              lobData: createdLead.lobData,
+              assignedTo: createdLead.assignedTo,
+              createdAt: createdLead.createdAt.toISOString()
+            }
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'x-service-key': INTERNAL_SERVICE_KEY
+            },
+            timeout: 5000 // 5 second timeout
+          }
+        );
+        
+        httpFallbackTriggered = true;
+        context.log(`✅ [HTTP FALLBACK] Pipeline Service responded: ${fallbackResponse.status}`);
+        
+      } catch (fallbackError: any) {
+        context.error(`❌ [HTTP FALLBACK] Failed to call Pipeline Service:`, fallbackError.message);
       }
-    } catch (fallbackError) {
-      context.warn(`[HTTP Fallback] Unexpected error: ${fallbackError}`);
-      fallbackResult = { success: false, error: String(fallbackError) };
     }
 
-    context.log(`Lead created successfully: ${createdLead.referenceId}`);
+    // Log trigger status
+    if (eventPublished) {
+      context.log(`[Event Grid] ✅ lead.created event published for lead ${createdLead.id}`);
+      context.log(`[Event Grid] Pipeline Service will receive event and orchestrate plan fetching`);
+    } else if (httpFallbackTriggered) {
+      context.log(`[HTTP Fallback] ✅ Pipeline Service called directly for lead ${createdLead.id}`);
+      context.log(`[HTTP Fallback] Plan fetching should proceed via HTTP fallback`);
+    } else {
+      context.error(`[CRITICAL] ❌ Both Event Grid AND HTTP fallback failed for lead ${createdLead.id}`);
+      context.error(`[CRITICAL] Manual intervention required to trigger plan fetching`);
+    }
     
-    // RPA triggering is now handled by Pipeline Service via workflow orchestration
-    // Lead Service only creates the lead and notifies Pipeline Service
-    context.log('Pipeline Service will orchestrate RPA via workflow');
+    context.log(`Lead created successfully: ${createdLead.referenceId}`);
 
-    // Return response
+    // Return response immediately (don't wait for RPA trigger)
     return withCors(request, {
       status: 201,
       jsonBody: {
@@ -203,7 +235,9 @@ export async function createLead(
           warnings: {
             isEmailRepeated,
             isPhoneRepeated,
-            fallbackDebug: fallbackResult
+            rpaTriggerStatus: eventPublished ? 'event_grid' : (httpFallbackTriggered ? 'http_fallback' : 'failed'),
+            eventPublished,
+            httpFallbackTriggered
           }
         }
       }

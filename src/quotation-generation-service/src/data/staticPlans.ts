@@ -16,7 +16,7 @@ export const STATIC_VENDORS: Omit<Vendor, 'createdAt' | 'updatedAt'>[] = [
     lineOfBusiness: 'medical',
     logo: 'https://www.watania.com/logo.png',
     website: 'https://www.watania.com',
-    rpaEnabled: true,
+    rpaEnabled: true, // Re-enabled for VM testing
     hasStaticPlans: false,
     isActive: true,
     priority: 1
@@ -28,8 +28,8 @@ export const STATIC_VENDORS: Omit<Vendor, 'createdAt' | 'updatedAt'>[] = [
     lineOfBusiness: 'medical',
     logo: 'https://example.com/logos/takaful.png',
     website: 'https://www.takafulemarat.ae',
-    rpaEnabled: false,
-    hasStaticPlans: true,
+    rpaEnabled: true,
+    hasStaticPlans: false,
     isActive: true,
     priority: 2
   },
@@ -96,12 +96,12 @@ export const STATIC_VENDORS: Omit<Vendor, 'createdAt' | 'updatedAt'>[] = [
   {
     id: 'vendor-alsagr',
     name: 'Al Sagr National Insurance',
-    code: 'ALSAGR',
+    code: 'alsagr',
     lineOfBusiness: 'medical',
     logo: 'https://example.com/logos/alsagr.png',
     website: 'https://www.alsagr.ae',
-    rpaEnabled: false,
-    hasStaticPlans: true,
+    rpaEnabled: true,
+    hasStaticPlans: false,
     isActive: true,
     priority: 7
   },

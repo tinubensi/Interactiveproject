@@ -20,11 +20,12 @@ interface PlansFetchedEvent {
   eventTime: string;
   data: {
     leadId: string;
-    fetchRequestId: string;
+    vendorId?: string; // Optional - present in per-vendor events
+    fetchRequestId?: string;
     totalPlans: number;
-    successfulVendors: string[];
-    failedVendors: string[];
-    plans: Plan[]; // Plans array included in event
+    successfulVendors?: string[];
+    failedVendors?: string[];
+    plans?: Plan[]; // Optional - plans are already saved to DB
     timestamp: Date;
   };
   dataVersion: string;
@@ -104,20 +105,23 @@ export async function handlePlansFetched(
 
     const lead = leads[0];
 
-    // Save plans to Lead Service DB (always do this regardless of pipeline)
-    if (eventData.plans && eventData.plans.length > 0) {
-      try {
-        // First, delete any existing plans for this lead (in case of re-fetch)
-        await cosmosService.deletePlansForLead(leadId);
-        
-        // Save new plans
-        const savedPlans = await cosmosService.createPlans(eventData.plans);
-        context.log(`Saved ${savedPlans.length} plans for lead ${leadId}`);
-      } catch (planError: any) {
-        context.error(`Failed to save plans for lead ${leadId}:`, planError);
-        // Continue to update status even if plan saving fails
-      }
+    // NOTE: Plans are already saved by RPA container - no need to save them again
+    // RPA container publishes per-vendor events, so we query DB for actual plan count
+    
+    // Query all plans for this lead from Cosmos DB
+    const existingPlans = await cosmosService.getPlansForLead(leadId);
+    const totalPlansCount = existingPlans.length;
+    
+    context.log(`Found ${totalPlansCount} total plans for lead ${leadId} in database`);
+
+    // Update stage immediately if we have ANY plans (don't wait for multiple vendors)
+    if (totalPlansCount === 0) {
+      context.log(`No plans found yet for lead ${leadId} - skipping stage update`);
+      context.log(`This event was from vendor: ${eventData.vendorId || 'unknown'} with ${eventData.totalPlans || 0} plans`);
+      return;
     }
+
+    context.log(`✅ Found ${totalPlansCount} plans - proceeding with stage update`);
 
     // Check if this lead is managed by a pipeline
     const hasPipeline = await isLeadManagedByPipeline(eventData.leadId);
@@ -126,23 +130,48 @@ export async function handlePlansFetched(
       // Still update plan count but don't change stage
       await cosmosService.updateLead(eventData.leadId, lead.lineOfBusiness, {
         planFetchRequestId: eventData.fetchRequestId,
-        plansCount: eventData.plans?.length || eventData.totalPlans,
+        plansCount: totalPlansCount,
         updatedAt: new Date()
       });
       return;
     }
 
-    // ERROR: No pipeline active - Pipeline Service is sole authority for stage updates
-    context.error(`Lead ${eventData.leadId} has no active pipeline - cannot update stage. Pipeline Service must handle all stage changes.`);
+    // No pipeline active - Update stage directly as fallback
+    context.log(`Lead ${eventData.leadId} has no active pipeline - updating stage directly as fallback`);
 
-    // Still update plan data but NO stage updates
+    // Check if already in "Plans Available" to avoid duplicate updates
+    if (lead.currentStage === 'Plans Available') {
+      context.log(`Lead ${leadId} already in "Plans Available" stage - updating plan count only`);
+      await cosmosService.updateLead(leadId, lead.lineOfBusiness, {
+        plansCount: totalPlansCount,
+        updatedAt: new Date()
+      });
+      return;
+    }
+
+    // Update lead status to "Plans Available" IMMEDIATELY
     await cosmosService.updateLead(leadId, lead.lineOfBusiness, {
+      currentStage: 'Plans Available',
+      stageId: 'stage-2',
       planFetchRequestId: eventData.fetchRequestId,
-      plansCount: eventData.plans?.length || eventData.totalPlans || 0,
+      plansCount: totalPlansCount,
       updatedAt: new Date()
     });
 
-    context.warn(`Updated plan data for lead ${leadId} but did NOT change stage - no pipeline instance found`);
+    // Create timeline entry
+    await cosmosService.createTimelineEntry({
+      id: uuidv4(),
+      leadId: leadId,
+      stage: 'Plans Available',
+      previousStage: lead.currentStage,
+      stageId: 'stage-2',
+      remark: `${totalPlansCount} plans available (auto-updated on first extraction)`,
+      changedBy: 'system',
+      changedByName: 'System',
+      timestamp: new Date()
+    });
+
+    context.log(`✅ Updated lead ${leadId} to "Plans Available" stage with ${totalPlansCount} plans`);
 
   } catch (error: any) {
     context.error('Handle plans fetched error:', error);

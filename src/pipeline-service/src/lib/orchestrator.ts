@@ -325,9 +325,7 @@ async function handleLeadCreated(
 
   // THEN trigger plan fetching (so events arrive after instance is ready)
   // This ensures plans.fetch_started and plans.fetch_completed events are processed correctly
-  const quotationGenServiceUrl =
-    process.env.QUOTATION_GEN_SERVICE_URL ||
-    'https://quotation-gen-service-74e1210c.azurewebsites.net';
+  const quotationGenServiceUrl = getServiceUrl('quotation-gen');
 
   try {
     const fetchUrl = `${quotationGenServiceUrl}/api/plans/fetch`;

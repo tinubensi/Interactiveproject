@@ -62,6 +62,7 @@ export async function isLeadManagedByPipeline(leadId: string): Promise<boolean> 
 
 /**
  * Notify Pipeline Service about lead creation (HTTP Fallback)
+ * UPDATED: Also triggers Quotation Service directly as emergency fallback
  */
 export async function notifyLeadCreated(
   lead: any,
@@ -69,54 +70,101 @@ export async function notifyLeadCreated(
 ): Promise<{ success: boolean; error?: any; status?: number; responseText?: string; payload?: any }> {
   const log = options.log || console.log;
 
-  if (!PIPELINE_SERVICE_URL) {
-    const msg = 'Pipeline service URL not configured';
-    log(`[HTTP Fallback] ${msg}`);
-    return { success: false, error: msg };
+  // Try Pipeline Service first
+  if (PIPELINE_SERVICE_URL) {
+    const requestId = uuidv4();
+    const payload = {
+      eventType: 'lead.created',
+      leadId: lead.id,
+      lineOfBusiness: lead.lineOfBusiness,
+      businessType: lead.businessType,
+      requestId,
+      data: {
+        ...lead,
+        leadId: lead.id
+      }
+    };
+
+    log(`[HTTP Fallback] Notifying pipeline service: lead.created for lead ${lead.id}`);
+
+    try {
+      const response = await fetch(
+        `${PIPELINE_SERVICE_URL}/api/pipeline/process-event`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-service-key': INTERNAL_SERVICE_KEY,
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      if (response.ok) {
+        const text = await response.text();
+        log(`[HTTP Fallback] Pipeline service success: ${text}`);
+        return { success: true, responseText: text, payload, status: response.status };
+      } else {
+        const text = await response.text();
+        log(`[HTTP Fallback] Pipeline service error: ${response.status} ${text}`);
+        // Don't return yet - try Quotation Service fallback
+      }
+    } catch (error: any) {
+      log(`[HTTP Fallback] Pipeline service failed: ${error.message}`);
+      // Don't return yet - try Quotation Service fallback
+    }
   }
 
-  // Generate request ID for deduplication
-  const requestId = uuidv4();
-
-  const payload = {
-    eventType: 'lead.created',
-    leadId: lead.id,
-    lineOfBusiness: lead.lineOfBusiness,
-    businessType: lead.businessType,
-    requestId, // Include request ID for deduplication
-    data: {
-      ...lead,
-      // Ensure IDs match what orchestrator expects
-      leadId: lead.id
-    }
-  };
-
-  log(`[HTTP Fallback] Notifying pipeline service: lead.created for lead ${lead.id} (requestId: ${requestId})`);
-
+  // EMERGENCY FALLBACK: Trigger Quotation Generation Service
+  log(`[EMERGENCY FALLBACK] Triggering Quotation Generation Service for lead ${lead.id}`);
+  
+  const QUOTATION_GEN_URL = process.env.QUOTATION_GEN_SERVICE_URL || 
+    'https://quotation-gen-service-74e1210c.azurewebsites.net/api';
+  
   try {
     const response = await fetch(
-      `${PIPELINE_SERVICE_URL}/api/pipeline/process-event`,
+      `${QUOTATION_GEN_URL}/plans/fetch`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-service-key': INTERNAL_SERVICE_KEY,
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          leadId: lead.id,
+          lineOfBusiness: lead.lineOfBusiness,
+          businessType: lead.businessType || 'individual',
+          leadData: lead.lobData || {}
+        })
       }
     );
 
-    if (!response.ok) {
-      const text = await response.text();
-      log(`[HTTP Fallback] Pipeline service returned error: ${response.status} ${text} (requestId: ${requestId})`);
-      return { success: false, status: response.status, responseText: text, error: `Status ${response.status}` };
+    if (response.ok) {
+      const result = await response.json();
+      const message = (result as any).message || 'Success';
+      log(`[EMERGENCY FALLBACK] ✅ Quotation Service triggered: ${message}`);
+      log(`[EMERGENCY FALLBACK] Response status: ${response.status}`);
+      log(`[EMERGENCY FALLBACK] RPA jobs triggered: ${(result as any).data?.rpaJobsTriggered || 'unknown'}`);
+      return { 
+        success: true, 
+        responseText: JSON.stringify(result), 
+        status: response.status 
+      };
     } else {
       const text = await response.text();
-      log(`[HTTP Fallback] Success: ${text} (requestId: ${requestId})`);
-      return { success: true, responseText: text, payload, status: response.status };
+      log(`[EMERGENCY FALLBACK] ❌ Quotation Service error: ${response.status} ${text}`);
+      log(`[EMERGENCY FALLBACK] URL attempted: ${QUOTATION_GEN_URL}/plans/fetch`);
+      return { 
+        success: false, 
+        status: response.status, 
+        responseText: text, 
+        error: `Quotation Service returned ${response.status}` 
+      };
     }
   } catch (error: any) {
-    log(`[HTTP Fallback] Failed to notify pipeline service: ${error.message} (requestId: ${requestId})`);
+    log(`[EMERGENCY FALLBACK] ❌ Failed to trigger Quotation Service: ${error.message}`);
+    log(`[EMERGENCY FALLBACK] URL attempted: ${QUOTATION_GEN_URL}/plans/fetch`);
+    log(`[EMERGENCY FALLBACK] Error details: ${error.stack || error}`);
     return { success: false, error: error.message };
   }
 }

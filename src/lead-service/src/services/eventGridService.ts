@@ -136,6 +136,13 @@ class EventGridService {
     assignedTo?: string;
     createdAt: Date;
   }): Promise<void> {
+    console.log('===========================================');
+    console.log('[DEBUG] publishLeadCreated called');
+    console.log('[DEBUG] Lead ID:', data.leadId);
+    console.log('[DEBUG] Event Grid enabled:', this.enabled);
+    console.log('[DEBUG] Event Grid client exists:', !!this.client);
+    console.log('===========================================');
+    
     await this.publishEvent(
       'lead.created',
       `leads/${data.leadId}`,
