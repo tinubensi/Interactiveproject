@@ -1,0 +1,7 @@
+{
+  "portalUrl": "https://sso.alsagrins.ae/login?pageId=298",
+  "searchUrl": "https://miportal.alsagrins.ae/quotationsearch",
+  "enable_screenshots": true,
+  "default_timeout": 60000,
+  "navigation_timeout": 90000
+}

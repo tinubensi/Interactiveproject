@@ -1,0 +1,35 @@
+{
+  "vendorId": "takaful",
+  "vendorName": "Takaful Emarat",
+  "portalUrl": "https://b2bhplus.takafulemarat.com/login",
+  "requiresAuth": true,
+  "authUrl": "https://b2bhplus.takafulemarat.com/login",
+  "timeout": 90000,
+  "log_level": "INFO",
+  "enable_screenshots": false,
+  "selectors": {
+    "username": "input[placeholder='Username']",
+    "password": "input[placeholder='Password']",
+    "loginButton": "button:has-text('Sign In')",
+    "newApplicationButton": "div:has-text('New Health+ Application')",
+    "emirateSelector": ".control__indicator",
+    "firstName": "input[name='first_name']",
+    "familyName": "input[name='family_name']",
+    "dobPicker": "input[placeholder='DD/MM/YYYY']",
+    "email": "input[name='email_']",
+    "phone": "input[name='contact_no']",
+    "saveButton": "button:has-text('Save & Proceed')",
+    "agreeButton": "button:has-text('I agree to the above')",
+    "customizePlanButton": "button:has-text('Customize plan')",
+    "advanceSearchButton": "button:has-text('Advance Search')",
+    "searchButton": "button:has-text('Search')",
+    "plansModal": "#pdfData"
+  }
+}
+
+
+
+
+
+
+

@@ -1,0 +1,194 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# PyTest
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.log
+.cache
+nosetests.xml
+
+# Azure Functions
+local.settings.json
+.python_packages/
+.venv/
+__blobstorage__/
+__queuestorage__/
+__azurite_db*__.json
+.azurite/
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+*.env
+queue-config.env
+# Note: Keep queue-config.env.example if you create one
+
+# Build artifacts and deployment packages
+*.zip
+*.tar.gz
+*.tar
+*.rar
+
+# Logs
+*.log
+logs/
+deploy.log
+
+# Test reports and artifacts
+test_reports/
+test-results.txt
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.pdf
+
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Docker
+*.dockerignore
+
+# GPG keys and certificates
+*.gpg
+*.pem
+*.key
+*.crt
+*.cer
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+
+# Test and Debug Scripts (keep essential deployment scripts)
+test_*.py
+debug_*.py
+inspect_*.py
+run_rpa_full_flow.py
+test_*.sh
+test-*.sh
+build_and_push_correct.sh
+
+# Backup and alternate versions
+function_app_backup.py
+function_app_full.py
+function_app_minimal*.py
+
+# Documentation - Reports and Status (keep core docs)
+*_REPORT.md
+*_STATUS.md
+*_COMPLETE.md
+*_SUMMARY.md
+*_GUIDE.md
+*_ANALYSIS.md
+*_FIXES.md
+*_INDEX.md
+BILLING_AND_STATUS.md
+BUG_FIXES_SUMMARY.md
+CURRENT_STATUS_AND_NEXT_STEPS.md
+DEBUG_REPORT.md
+FINAL_STATUS.md
+KEDA_MANUAL_CONFIGURATION.md
+
+# Test Results
+test-results.txt
+NEXT_STEPS.txt
+
+# Keep these important files (negation patterns):
+!requirements*.txt
+!pytest.ini
+!README.md
+!QUICKSTART.md
+!Dockerfile
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# Selenium and Browser drivers
+chromedriver
+geckodriver
+*.crx
+selenium-debug.log
+
+# Playwright browsers (if using Playwright)
+.playwright/
+
+# Node modules (if any JavaScript tooling)
+node_modules/
+

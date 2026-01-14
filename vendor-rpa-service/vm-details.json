@@ -1,0 +1,10 @@
+{
+  "fqdns": "",
+  "id": "/subscriptions/74e1210c-0bd1-499b-b1bb-13da8d8747bd/resourceGroups/Interactive-CRM-Dev/providers/Microsoft.Compute/virtualMachines/rpa-vm-production",
+  "location": "uaenorth",
+  "macAddress": "7C-ED-8D-AC-B3-C6",
+  "powerState": "VM running",
+  "privateIpAddress": "10.0.0.4",
+  "publicIpAddress": "20.203.51.248",
+  "resourceGroup": "Interactive-CRM-Dev"
+}

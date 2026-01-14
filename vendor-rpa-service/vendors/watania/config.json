@@ -1,0 +1,30 @@
+{
+  "vendorId": "watania",
+  "vendorName": "Watania Takaful",
+  "portalUrl": "https://connect.watania.ae/#/login-watania",
+  "requiresAuth": true,
+  "authUrl": "https://connect.watania.ae/#/login-watania",
+  "selectors": {
+    "username": "#username",
+    "password": "#password",
+    "loginButton": "#loginButton",
+    "navigateToQuoteFormButton": "#motorInsuranceLink",
+    "firstName": "#firstName",
+    "lastName": "#lastName",
+    "fullName": "#fullName",
+    "dob": "#dob",
+    "gender": "#gender",
+    "email": "#email",
+    "phone": "#phone",
+    "emirate": "#emirate",
+    "submitButton": "#submitQuote",
+    "quoteContainer": ".quote-results-container",
+    "premiumAmount": ".premium-amount",
+    "planName": ".plan-name",
+    "coverageAmount": ".coverage-amount"
+  },
+  "waitAfterSubmit": 5000,
+  "timeout": 90000,
+  "log_level": "INFO",
+  "enable_screenshots": true
+}
