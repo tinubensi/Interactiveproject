@@ -16,6 +16,7 @@ const mockCosmosService = {
 
 const mockEventGridService = {
   publishEvent: mock.fn(),
+  publishQuotationRejected: mock.fn(),
 };
 
 const mockTokenService = {
@@ -41,6 +42,7 @@ describe('Reject Plans API', () => {
     mockCosmosService.getQuotationByToken.mock.resetCalls();
     mockCosmosService.updateQuotation.mock.resetCalls();
     mockEventGridService.publishEvent.mock.resetCalls();
+    mockEventGridService.publishQuotationRejected.mock.resetCalls();
     mockTokenService.isValidTokenFormat.mock.resetCalls();
     mockTokenService.isTokenUsed.mock.resetCalls();
   });
@@ -103,6 +105,7 @@ describe('Reject Plans API', () => {
     mockCosmosService.getQuotationByToken.mock.mockImplementation(() => Promise.resolve(mockQuotation));
     mockCosmosService.updateQuotation.mock.mockImplementation(() => Promise.resolve());
     mockEventGridService.publishEvent.mock.mockImplementation(() => Promise.resolve());
+    mockEventGridService.publishQuotationRejected.mock.mockImplementation(() => Promise.resolve());
 
     const request = {
       params: { token: 'valid-token-123' },
@@ -122,18 +125,29 @@ describe('Reject Plans API', () => {
     assert.strictEqual(body.success, true);
     assert.ok(mockCosmosService.updateQuotation.mock.calls.length > 0);
     assert.ok(mockEventGridService.publishEvent.mock.calls.length > 0);
+    assert.ok(mockEventGridService.publishQuotationRejected.mock.calls.length > 0);
     
-    // Verify updateQuotation was called with correct status
+    // Verify updateQuotation was called with correct status and timestamp
     const updateCall = mockCosmosService.updateQuotation.mock.calls[0];
     assert.strictEqual(updateCall.arguments[2].status, 'rejected');
     assert.ok(updateCall.arguments[2].rejectionReason);
+    assert.ok(updateCall.arguments[2].rejectedAt, 'rejectedAt timestamp should be set');
+    assert.ok(updateCall.arguments[2].tokenUsedAt, 'tokenUsedAt timestamp should be set');
     
-    // Verify event was published with correct responseType
-    const eventCall = mockEventGridService.publishEvent.mock.calls.find(
+    // Verify customer.responded event was published with correct responseType
+    const customerRespondedCall = mockEventGridService.publishEvent.mock.calls.find(
       call => call.arguments[0] === 'customer.responded'
     );
-    assert.ok(eventCall);
-    assert.strictEqual(eventCall.arguments[2].responseType, 'reject_plans');
+    assert.ok(customerRespondedCall, 'customer.responded event should be published');
+    assert.strictEqual(customerRespondedCall.arguments[2].responseType, 'reject_plans');
+    assert.ok(customerRespondedCall.arguments[2].rejectedAt, 'Event should include rejectedAt timestamp');
+    
+    // Verify quotation.rejected event was published
+    const rejectedEventCall = mockEventGridService.publishQuotationRejected.mock.calls[0];
+    assert.ok(rejectedEventCall, 'publishQuotationRejected should be called');
+    assert.strictEqual(rejectedEventCall.arguments[0].quotationId, 'quotation-1');
+    assert.strictEqual(rejectedEventCall.arguments[0].leadId, 'lead-1');
+    assert.strictEqual(rejectedEventCall.arguments[0].reason, 'Plans not suitable');
   });
 });
 
