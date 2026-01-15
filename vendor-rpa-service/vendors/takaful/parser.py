@@ -3,9 +3,47 @@ Takaful Data Parser
 Transforms raw extracted data into standardized JSON schema for StandardPlan model
 """
 import re
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 from datetime import datetime
 import uuid
+
+# Metadata fields to exclude from benefits
+METADATA_FIELDS = {
+    'member name', 'member age', 'member gender', 'bmi', 'height', 'weight',
+    'height/weight', 'emirate', 'quotation number', 'visa type', 'min premium', 
+    'max premium', 'premium', 'price starting from', 'select plan', 'compare',
+    'download network link', 'policy exclusion link', 'table of benifits',
+    'table of benefits', 'policy wording', 'terms and conditions'
+}
+
+# Category keywords for semantic categorization
+CATEGORY_KEYWORDS = {
+    'outpatient': ['outpatient', 'out-patient', 'consultation', 'gp', 'specialist', 'op ', 'clinic'],
+    'inpatient': ['inpatient', 'in-patient', 'hospitalization', 'hospital', 'room', 'surgery', 'icu', 'ccu'],
+    'maternity': ['maternity', 'pregnancy', 'delivery', 'natal', 'newborn', 'c-section', 'caesarean', 'cesarean'],
+    'dental': ['dental', 'teeth', 'orthodontic'],
+    'optical': ['optical', 'vision', 'eye', 'glasses', 'contact lens', 'frames'],
+    'pharmacy': ['pharmacy', 'medication', 'medicine', 'drug'],
+    'emergency': ['emergency', 'ambulance'],
+    'diagnostics': ['diagnostic', 'lab', 'laboratory', 'test', 'scan', 'x-ray', 'mri'],
+    'physiotherapy': ['physiotherapy', 'physio', 'rehabilitation'],
+    'chronic': ['chronic', 'pre-existing', 'preexisting']
+}
+
+# Friendly category names
+CATEGORY_NAMES = {
+    'outpatient': 'Outpatient Benefits',
+    'inpatient': 'Inpatient Benefits',
+    'maternity': 'Maternity Benefits',
+    'dental': 'Dental Coverage',
+    'optical': 'Optical Coverage',
+    'pharmacy': 'Pharmacy Coverage',
+    'emergency': 'Emergency Services',
+    'diagnostics': 'Diagnostic Services',
+    'physiotherapy': 'Physiotherapy',
+    'chronic': 'Chronic & Pre-existing Conditions',
+    'other-coverage': 'Other Coverage Details'
+}
 
 
 class TakafulDataParser:
@@ -51,7 +89,9 @@ class TakafulDataParser:
         # Extract cost sharing details
         deductible = self._extract_deductible(coverage_details)
         coinsurance = self._extract_coinsurance(coverage_details)
-        copays = self._extract_copays(coverage_details)
+        
+        # Parse copay details using new method
+        structured_copays, _ = self._parse_copay_details(coverage_details)
         
         # Get leadId from form_data if available
         lead_id = form_data.get('leadId', 'unknown') if form_data else 'unknown'
@@ -91,15 +131,15 @@ class TakafulDataParser:
             "deductibleMetric": "AED",
             "coInsurance": float(coinsurance),
             "coInsuranceMetric": "%",
-            "copays": copays,
+            "copays": structured_copays,
             
             # Waiting Periods
             "waitingPeriod": 30,
             "waitingPeriodMetric": "days",
             "waitingPeriods": {"general": 30},
             
-            # Benefits - structured format
-            "benefits": self._format_benefits(coverage_details),
+            # Benefits - structured format using semantic categorization
+            "benefits": self._categorize_benefits(coverage_details),
             
             # Exclusions
             "exclusions": ["Subject to policy terms and conditions"],
@@ -268,6 +308,177 @@ class TakafulDataParser:
                     except:
                         pass
         return 0
+    
+    def _parse_copay_details(self, coverage_details: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+        """
+        Parse copay details from coverage_details, handling multi-line strings
+        
+        Returns:
+            Tuple of (structured_copays_dict, benefit_entries_list)
+        """
+        structured_copays = {}
+        benefit_entries = []
+        
+        # Look for co-pay related keys
+        for key, value in coverage_details.items():
+            key_lower = key.lower()
+            
+            if 'co-pay' in key_lower or 'copay' in key_lower:
+                value_str = str(value)
+                
+                # Check if it's a multi-line copay field
+                if '\n' in key or '\n' in value_str:
+                    # Parse multi-line format like:
+                    # Key: "Co-pay Consultation\nPharmacy\nDiagnostic"
+                    # Value: "20% (max AED 25)\n20%\n20%"
+                    
+                    key_lines = key.split('\n')
+                    value_lines = value_str.split('\n')
+                    
+                    # Extract service names from key
+                    services = []
+                    for line in key_lines:
+                        line_clean = line.strip().lower().replace('co-pay', '').replace('copay', '').strip()
+                        if line_clean and len(line_clean) > 2:
+                            services.append(line_clean)
+                    
+                    # Extract copay values
+                    copay_values = []
+                    for line in value_lines:
+                        line_clean = line.strip()
+                        if line_clean and (('%' in line_clean) or ('aed' in line_clean.lower())):
+                            copay_values.append(line_clean)
+                    
+                    # Match services to values
+                    for i, service in enumerate(services):
+                        if i < len(copay_values):
+                            value_for_service = copay_values[i]
+                        elif len(copay_values) == 1:
+                            value_for_service = copay_values[0]
+                        else:
+                            value_for_service = "20%"  # Default
+                        
+                        # Add to structured copays
+                        structured_copays[service] = value_for_service
+                        
+                        # Create benefit entry
+                        benefit_entries.append({
+                            'name': f"{service.capitalize()} Copay",
+                            'covered': True,
+                            'description': value_for_service,
+                            'limit': value_for_service,
+                            'category': 'outpatient'
+                        })
+                else:
+                    # Simple copay field
+                    # Extract max amount if present
+                    max_match = re.search(r'max AED\s*(\d+)', value_str)
+                    if max_match:
+                        structured_copays["maxAmount"] = int(max_match.group(1))
+                    
+                    # Extract percentage
+                    percent_match = re.search(r'(\d+)%', value_str)
+                    if percent_match:
+                        structured_copays["general"] = f"{percent_match.group(1)}%"
+                        
+                        benefit_entries.append({
+                            'name': 'General Copay',
+                            'covered': True,
+                            'description': value_str,
+                            'limit': value_str,
+                            'category': 'outpatient'
+                        })
+        
+        return structured_copays, benefit_entries
+    
+    def _categorize_benefits(self, coverage_details: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Categorize benefits semantically based on keywords
+        
+        Returns:
+            List of benefit categories with categorized benefits
+        """
+        # Parse copays first
+        structured_copays, copay_benefits = self._parse_copay_details(coverage_details)
+        
+        # Initialize categories dict
+        categorized = {cat_id: [] for cat_id in CATEGORY_KEYWORDS.keys()}
+        categorized['other-coverage'] = []
+        
+        # Add copay benefits to outpatient
+        for copay_benefit in copay_benefits:
+            categorized['outpatient'].append({
+                'name': copay_benefit['name'],
+                'covered': copay_benefit['covered'],
+                'description': copay_benefit['description'],
+                'limit': copay_benefit['limit']
+            })
+        
+        # Process each coverage detail
+        for key, value in coverage_details.items():
+            key_lower = key.lower()
+            value_str = str(value).strip()
+            
+            # Skip metadata fields
+            if key_lower in METADATA_FIELDS:
+                continue
+            
+            # Skip empty values
+            if not value_str or value_str == 'N/A' or value_str == ':':
+                continue
+            
+            # Skip if already processed as copay
+            if 'co-pay' in key_lower or 'copay' in key_lower:
+                continue
+            
+            # Skip TPA and Network (these are handled separately)
+            if key_lower in ['tpa', 'network']:
+                continue
+            
+            # Try to match to a category
+            matched_category = None
+            for cat_id, keywords in CATEGORY_KEYWORDS.items():
+                if any(kw in key_lower for kw in keywords):
+                    matched_category = cat_id
+                    break
+            
+            # If no match, put in other-coverage
+            if matched_category is None:
+                matched_category = 'other-coverage'
+            
+            # Create benefit entry
+            benefit_entry = {
+                'name': key,
+                'covered': True,
+                'description': value_str,
+                'limit': value_str
+            }
+            
+            categorized[matched_category].append(benefit_entry)
+        
+        # Build final structure - only include non-empty categories
+        result = []
+        for cat_id, benefits_list in categorized.items():
+            if len(benefits_list) > 0:
+                result.append({
+                    'categoryId': cat_id,
+                    'categoryName': CATEGORY_NAMES.get(cat_id, cat_id.replace('-', ' ').title()),
+                    'benefits': benefits_list
+                })
+        
+        # If no categories found, return default
+        if len(result) == 0:
+            result = [{
+                'categoryId': 'standard',
+                'categoryName': 'Standard Benefits',
+                'benefits': [{
+                    'name': 'Basic Health Coverage',
+                    'covered': True,
+                    'description': 'Basic health coverage as per policy terms'
+                }]
+            }]
+        
+        return result
     
     def _format_benefits(self, coverage_details: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Format benefits as categorized structure"""
