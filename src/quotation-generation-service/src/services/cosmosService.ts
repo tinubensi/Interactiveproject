@@ -150,6 +150,18 @@ class CosmosService {
     return resources;
   }
 
+  async countPlansForLead(leadId: string): Promise<number> {
+    const query: SqlQuerySpec = {
+      query: 'SELECT VALUE COUNT(1) FROM c WHERE c.leadId = @leadId AND c.type = @type',
+      parameters: [
+        { name: '@leadId', value: leadId },
+        { name: '@type', value: 'plan' }
+      ]
+    };
+    const { resources } = await this.plansContainer.items.query<number>(query).fetchAll();
+    return resources[0] || 0;
+  }
+
   async listPlans(request: PlanListRequest): Promise<PlanListResponse> {
     const { leadId, page = 1, limit = 20, sortBy = 'annualPremium', sortOrder = 'asc', filters = {} } = request;
 

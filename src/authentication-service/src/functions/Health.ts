@@ -98,3 +98,4 @@ app.http('Health', {
   route: 'auth/health',
   handler: Health,
 });
+

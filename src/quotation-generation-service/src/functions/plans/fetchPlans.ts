@@ -143,52 +143,89 @@ export async function fetchPlans(
     
     context.log(`Vendors breakdown: ${rpaVendors.length} RPA-enabled, ${staticVendors.length} static plans`);
     
-    // Trigger RPA jobs for RPA-enabled vendors only
+    // Trigger RPA via VM for RPA-enabled vendors
     const vendorIds = rpaVendors.map(v => v.id);
-    let rpaJobsTriggered = 0;
+    let totalPlans = 0;
+    let successfulVendors = 0;
     
     if (vendorIds.length === 0) {
-      context.log('No RPA-enabled vendors found, skipping RPA triggering');
+      context.log('No RPA-enabled vendors found, skipping RPA');
     } else {
-      context.log(`Triggering RPA jobs for ${vendorIds.length} RPA-enabled vendor(s)...`);
+      context.log(`Calling VM for ${vendorIds.length} RPA-enabled vendor(s)...`);
       
-      // Use rpaJobService for direct job triggering
-      // This queues messages AND manually starts Container Job executions
-      const rpaResult = await rpaJobService.triggerMultipleJobs({
-        leadId: body.leadId,
-        leadData: body.leadData,
-        vendorIds,
-        lineOfBusiness: body.lineOfBusiness,
-        businessType: body.businessType,
-        fetchRequestId: fetchRequest.id
-      });
+      // Import VM service
+      const { rpaVmService } = await import('../../services/rpaVmService');
       
-      rpaJobsTriggered = rpaResult.success;
-      context.log(`RPA jobs triggered: ${rpaResult.success} successful, ${rpaResult.failed} failed`);
-      
-      if (rpaResult.failed > 0) {
-        context.warn(`⚠️ ${rpaResult.failed} RPA jobs failed to start`);
+      if (!rpaVmService.isEnabled()) {
+        context.error('RPA VM service not configured!');
+        return withCors(request, {
+          status: 500,
+          jsonBody: {
+            success: false,
+            error: 'RPA VM service not configured (RPA_VM_URL missing)'
+          }
+        });
       }
+      
+      // Fetch plans from VM (blocks until complete)
+      const vmResults = await rpaVmService.fetchPlansFromAllVendors(
+        body.leadId,
+        body.leadData,
+        vendorIds
+      );
+      
+      // Count results and collect successful vendor IDs
+      const successfulVendorIds: string[] = [];
+      for (const result of vmResults) {
+        if (result.success) {
+          successfulVendors++;
+          totalPlans += result.plans.length;
+          successfulVendorIds.push(result.vendorId);
+        }
+      }
+      
+      context.log(`VM execution complete: ${successfulVendors}/${vendorIds.length} vendors successful, ${totalPlans} plans fetched`);
     }
 
-    // DIRECT JOB TRIGGERING: Jobs started immediately, no reliance on KEDA
-    // RPA container will publish plans.fetch_completed when it finishes
-    context.log(`Plan fetching initiated for lead ${body.leadId}`);
-    context.log(`  - RPA jobs triggered: ${rpaJobsTriggered}`);
-    context.log(`  - Static plans available: ${staticVendors.length}`);
-    context.log(`RPA will publish plans.fetch_completed event when processing is complete`);
+    // Update fetch request status
+    await cosmosService.updateFetchRequest(fetchRequest.id, fetchRequest.leadId, {
+      status: 'completed',
+      completedAt: new Date(),
+      totalPlansFound: totalPlans,
+      successfulVendors: vendorIds // Track all vendors for now
+    });
+
+    // Plans are already in Cosmos DB (saved by rpaVmService)
+    context.log(`Plan fetching completed for lead ${body.leadId}`);
+    context.log(`  - Plans fetched: ${totalPlans}`);
+    context.log(`  - Successful vendors: ${successfulVendors}/${vendorIds.length}`);
+
+    // Publish completion event (for pipeline service)
+    try {
+      await eventGridService.publishPlansFetchCompleted({
+        leadId: body.leadId,
+        fetchRequestId: fetchRequest.id,
+        totalPlans: totalPlans,
+        successfulVendors: vendorIds, // Array of vendor IDs
+        failedVendors: [], // Track failures if needed
+        plans: [] // Plans already saved to Cosmos
+      });
+    } catch (eventError) {
+      context.warn('Failed to publish completion event:', eventError);
+    }
 
     return withCors(request, {
-      status: 202, // Accepted - processing will continue asynchronously
+      status: 200, // Changed from 202 to 200 (synchronous now)
       jsonBody: {
         success: true,
-        message: 'Plan fetching started',
+        message: 'Plan fetching completed',
         data: {
           leadId: body.leadId,
           fetchRequestId: fetchRequest.id,
-          status: 'fetching',
-          rpaJobsTriggered: rpaJobsTriggered,
-          staticPlansCount: staticVendors.length
+          status: 'completed',
+          totalPlans: totalPlans,
+          successfulVendors: successfulVendors,
+          failedVendors: vendorIds.length - successfulVendors
         }
       }
     });

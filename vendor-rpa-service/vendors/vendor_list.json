@@ -1,0 +1,70 @@
+{
+  "medical": [
+    {
+      "id": "vendor-alsagr",
+      "name": "Alsagr Insurance",
+      "enabled": true,
+      "portalUrl": "https://alsagrinsurance.com/secure/product/list",
+      "requiresAuth": true,
+      "timeout": 420,
+      "priority": 1
+    },
+    {
+      "id": "vendor-takaful",
+      "name": "Takaful Emarat",
+      "enabled": true,
+      "portalUrl": "https://b2bhplus.takafulemarat.com/login",
+      "requiresAuth": true,
+      "timeout": 420,
+      "priority": 2
+    },
+    {
+      "id": "watania",
+      "name": "Watania Takaful",
+      "enabled": false,
+      "portalUrl": "https://www.watania.ae/",
+      "requiresAuth": true,
+      "timeout": 90,
+      "priority": 5
+    },
+    {
+      "id": "nextcare",
+      "name": "NextCare",
+      "enabled": false,
+      "portalUrl": "https://nextcare.ae/",
+      "requiresAuth": false,
+      "timeout": 90,
+      "priority": 5
+    },
+    {
+      "id": "daman",
+      "name": "Daman",
+      "enabled": false,
+      "portalUrl": "https://www.damanhealth.ae/",
+      "requiresAuth": false,
+      "timeout": 90,
+      "priority": 5
+    },
+    {
+      "id": "takaful",
+      "name": "Takaful Emarat (Old)",
+      "enabled": false,
+      "portalUrl": "https://b2bhplus.takafulemarat.com/login",
+      "requiresAuth": true,
+      "timeout": 90,
+      "priority": 99
+    }
+  ],
+  "motor": [
+    {
+      "id": "oman_insurance",
+      "name": "Oman Insurance",
+      "enabled": false,
+      "portalUrl": "https://www.omaninsurance.ae/",
+      "requiresAuth": false,
+      "timeout": 90,
+      "priority": 5
+    }
+  ]
+}
+

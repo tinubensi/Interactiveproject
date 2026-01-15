@@ -104,7 +104,8 @@ class RPAJobService {
   }> {
     console.log(`[RPA Job Service] Triggering ${params.vendorIds.length} RPA jobs for lead ${params.leadId}`);
 
-    // Step 1: Queue messages for all vendors
+    // Queue messages for all vendors
+    // The event-driven worker job (crm-rpa-worker-job) will automatically scale based on queue length
     const queueResult = await rpaQueueService.queueMultipleJobs({
       leadId: params.leadId,
       lineOfBusiness: params.lineOfBusiness,
@@ -114,37 +115,16 @@ class RPAJobService {
       fetchRequestId: params.fetchRequestId
     });
 
-    console.log(`[RPA Job Service] Queued ${queueResult.success} messages`);
+    console.log(`[RPA Job Service] ✅ Queued ${queueResult.success} messages`);
+    console.log(`[RPA Job Service] Event-driven worker job will auto-scale to process messages`);
 
-    // Step 2: Start Container Job executions (one per queued message)
-    let success = 0;
-    let failed = 0;
-    const executionNames: string[] = [];
-
-    for (let i = 0; i < queueResult.success; i++) {
-      try {
-        const result = await this.triggerJob();
-        
-        if (result.success && result.executionName) {
-          success++;
-          executionNames.push(result.executionName);
-        } else {
-          failed++;
-        }
-
-        // Small delay to avoid rate limiting
-        if (i < queueResult.success - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-      } catch (error: any) {
-        failed++;
-        console.error(`Error starting job execution:`, error);
-      }
-    }
-
-    console.log(`[RPA Job Service] Started ${success}/${queueResult.success} job executions successfully`);
-
-    return { success, failed, executionNames };
+    // Return success based on queue operations only
+    // No manual job triggering - let the event-driven scaling handle it
+    return { 
+      success: queueResult.success, 
+      failed: queueResult.failed, 
+      executionNames: [] // No manual executions
+    };
   }
 }
 
