@@ -63,13 +63,66 @@ export interface Plan {
   currency: string;
   
   // Coverage Details (from Petli plan model)
-  annualLimit: number; // aggregate_limit
+  annualLimit: number; // aggregate_limit (required) - for backward compatibility
+  
+  // Coverage Limits Object (Unified Structure V2 - optional)
+  coverageLimits?: {
+    annualLimit: number;
+    inpatientLimit?: number;
+    outpatientLimit?: number;
+    maternityLimit?: number;
+    emergencyLimit?: number;
+    pharmacyLimit?: number;
+    dentalLimit?: number;
+    opticalLimit?: number;
+    [key: string]: number | undefined;
+  };
+  
+  // Optional Coverage Sub-limits (Unified Structure v2 - for backward compatibility)
+  inpatientLimit?: number;
+  outpatientLimit?: number;
+  maternityLimit?: number;
+  emergencyLimit?: number;
+  pharmacyLimit?: number;
+  dentalLimit?: number;
+  opticalLimit?: number;
+  
+  // Cost Sharing (for backward compatibility)
   deductible: number;
   deductibleMetric?: string; // 'AED', 'percentage', etc.
   coInsurance: number; // percentage (0-100)
   coInsuranceMetric?: string;
-  waitingPeriod: number; // days
+  
+  // Cost Sharing Object (Unified Structure V2 - optional)
+  costSharing?: {
+    deductible: number;
+    deductibleMetric?: string;
+    coInsurance: number;
+    coInsuranceMetric?: string;
+    copays?: {
+      [service: string]: number | string;
+    };
+  };
+  
+  // Waiting Periods
+  waitingPeriod: number; // days (primary)
   waitingPeriodMetric?: string;
+  waitingPeriods?: {  // Optional detailed waiting periods (v2)
+    general?: number;
+    maternity?: number;
+    preexisting?: number;
+    dental?: number;
+    optical?: number;
+    [key: string]: number | undefined;
+  };
+  
+  // Network Information (Optional - v2)
+  network?: {
+    tpa?: string;           // Third-party administrator
+    networkName?: string;   // Network name
+    networkType?: string;   // 'basic', 'standard', 'premium', etc.
+    [key: string]: string | undefined;
+  };
   
   // Benefits Structure
   benefits: BenefitCategory[];

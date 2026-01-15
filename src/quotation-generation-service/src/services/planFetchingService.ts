@@ -113,12 +113,46 @@ class PlanFetchingService {
 
   /**
    * Transform StandardPlan from Cosmos DB to Plan model
+   * Supports Unified Structure V2 with optional sub-limits, network, copays, and waiting periods
    */
   private transformStandardPlanToPlan(standardPlan: any, fetchRequestId: string): Plan {
-    // Handle the new StandardPlan format from Watania parser
-    // Priority: Use direct fields (annualPremium, annualLimit) over nested (premium.amount, coverage.inpatient)
+    // Handle the new StandardPlan format from RPA parsers
+    // Priority: Use direct fields (annualPremium, annualLimit) over legacy fields
     
-    return {
+    // Build coverage limits object (Unified Structure V2)
+    const coverageLimits: any = {
+      annualLimit: standardPlan.annualLimit || standardPlan.coverageAmount || 0
+    };
+    
+    // Add optional sub-limits if available (don't include if undefined/null)
+    if (standardPlan.inpatientLimit) coverageLimits.inpatientLimit = standardPlan.inpatientLimit;
+    if (standardPlan.outpatientLimit) coverageLimits.outpatientLimit = standardPlan.outpatientLimit;
+    if (standardPlan.maternityLimit) coverageLimits.maternityLimit = standardPlan.maternityLimit;
+    if (standardPlan.emergencyLimit) coverageLimits.emergencyLimit = standardPlan.emergencyLimit;
+    if (standardPlan.pharmacyLimit) coverageLimits.pharmacyLimit = standardPlan.pharmacyLimit;
+    if (standardPlan.dentalLimit) coverageLimits.dentalLimit = standardPlan.dentalLimit;
+    if (standardPlan.opticalLimit) coverageLimits.opticalLimit = standardPlan.opticalLimit;
+    
+    // Build cost sharing object (Unified Structure V2)
+    const costSharing: any = {
+      deductible: standardPlan.deductible || 0,
+      deductibleMetric: standardPlan.deductibleMetric || 'AED',
+      coInsurance: standardPlan.coInsurance || 0,
+      coInsuranceMetric: standardPlan.coInsuranceMetric || '%'
+    };
+    
+    // Add copays if available
+    if (standardPlan.copays) {
+      costSharing.copays = standardPlan.copays;
+    }
+    
+    // Build waiting periods object (Unified Structure V2)
+    let waitingPeriods: any = undefined;
+    if (standardPlan.waitingPeriods) {
+      waitingPeriods = standardPlan.waitingPeriods;
+    }
+    
+    const transformedPlan: Plan = {
       id: standardPlan.id,
       leadId: standardPlan.leadId,
       fetchRequestId: fetchRequestId,
@@ -128,24 +162,45 @@ class PlanFetchingService {
       planName: standardPlan.planName,
       planCode: standardPlan.planCode,
       planType: standardPlan.planType || 'comprehensive',
-      // Direct field mapping for new StandardPlan format
+      // Pricing
       annualPremium: standardPlan.annualPremium || 0,
       monthlyPremium: standardPlan.monthlyPremium || (standardPlan.annualPremium / 12) || 0,
       currency: standardPlan.currency || 'AED',
-      annualLimit: standardPlan.annualLimit || 0,
-      deductible: standardPlan.deductible || 0,
-      coInsurance: standardPlan.coInsurance || 0,
+      // Coverage limits (Unified Structure V2)
+      coverageLimits: coverageLimits,
+      // For backward compatibility, keep top-level annualLimit
+      annualLimit: coverageLimits.annualLimit,
+      // Cost sharing (Unified Structure V2)
+      costSharing: costSharing,
+      // For backward compatibility, keep top-level deductible and coInsurance
+      deductible: costSharing.deductible,
+      coInsurance: costSharing.coInsurance,
+      // Waiting period (keep simple top-level for backward compatibility)
       waitingPeriod: this.parseWaitingPeriod(standardPlan.waitingPeriod),
+      // Benefits and exclusions
       benefits: this.transformBenefits(standardPlan.benefits),
       exclusions: standardPlan.exclusions || [],
+      // Metadata
       lineOfBusiness: standardPlan.lineOfBusiness || 'medical',
       isAvailable: standardPlan.isAvailable !== undefined ? standardPlan.isAvailable : true,
       isSelected: standardPlan.isSelected || false,
       isRecommended: standardPlan.isRecommended || false,
       fetchedAt: new Date(standardPlan.fetchedAt || Date.now()),
       source: standardPlan.source || 'rpa',
-      rawPlanData: standardPlan.rawPlanData || standardPlan
+      rawPlanData: standardPlan.rawPlanData || standardPlan.rawData || standardPlan
     };
+    
+    // Add optional unified structure fields if available
+    if (waitingPeriods) {
+      transformedPlan.waitingPeriods = waitingPeriods;
+    }
+    
+    // Add network object if available (Unified Structure V2)
+    if (standardPlan.network) {
+      transformedPlan.network = standardPlan.network;
+    }
+    
+    return transformedPlan;
   }
 
   /**
