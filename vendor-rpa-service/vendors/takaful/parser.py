@@ -56,6 +56,15 @@ class TakafulDataParser:
         # Get leadId from form_data if available
         lead_id = form_data.get('leadId', 'unknown') if form_data else 'unknown'
         
+        # Extract optional sub-limits (UNIFIED STRUCTURE V2)
+        inpatient_limit = self._extract_limit_from_details(coverage_details, ["inpatient", "in-patient"])
+        outpatient_limit = self._extract_limit_from_details(coverage_details, ["outpatient", "out-patient"])
+        maternity_limit = self._extract_limit_from_details(coverage_details, ["maternity", "pregnancy"])
+        pharmacy_limit = self._extract_limit_from_details(coverage_details, ["pharmacy", "medicine", "medication"])
+        dental_limit = self._extract_limit_from_details(coverage_details, ["dental", "teeth"])
+        optical_limit = self._extract_limit_from_details(coverage_details, ["optical", "vision", "eye"])
+        emergency_limit = self._extract_limit_from_details(coverage_details, ["emergency"])
+        
         # Build StandardPlan formatted dictionary
         standard_plan = {
             "id": f"plan-{uuid.uuid4()}",
@@ -74,15 +83,8 @@ class TakafulDataParser:
             "monthlyPremium": round(annual_premium / 12, 2) if annual_premium > 0 else 0.0,
             "currency": "AED",
             
-            # Coverage Limits
+            # Coverage Limits (required)
             "annualLimit": float(annual_limit),
-            "inpatientLimit": 0.0,
-            "outpatientLimit": 0.0,
-            "maternityLimit": 0.0,
-            "emergencyLimit": 0.0,
-            "pharmacyLimit": 0.0,
-            "dentalLimit": 0.0,
-            "opticalLimit": 0.0,
             
             # Cost Sharing
             "deductible": float(deductible),
@@ -115,6 +117,32 @@ class TakafulDataParser:
             # Raw Data (for debugging/reference)
             "rawPlanData": plan_data
         }
+        
+        # Add optional sub-limits only if extracted (don't hardcode zeros)
+        if inpatient_limit:
+            standard_plan["inpatientLimit"] = float(inpatient_limit)
+        if outpatient_limit:
+            standard_plan["outpatientLimit"] = float(outpatient_limit)
+        if maternity_limit:
+            standard_plan["maternityLimit"] = float(maternity_limit)
+        if emergency_limit:
+            standard_plan["emergencyLimit"] = float(emergency_limit)
+        if pharmacy_limit:
+            standard_plan["pharmacyLimit"] = float(pharmacy_limit)
+        if dental_limit:
+            standard_plan["dentalLimit"] = float(dental_limit)
+        if optical_limit:
+            standard_plan["opticalLimit"] = float(optical_limit)
+        
+        # Create network object if TPA or network data available (UNIFIED STRUCTURE V2)
+        tpa = plan_data.get("tpa")
+        network_name = plan_data.get("network")
+        if tpa or network_name:
+            standard_plan["network"] = {
+                "tpa": tpa,
+                "networkName": network_name,
+                "networkType": "standard"
+            }
         
         return standard_plan
     
@@ -214,6 +242,32 @@ class TakafulDataParser:
                 copays["maxAmount"] = int(max_match.group(1))
         
         return copays
+    
+    def _extract_limit_from_details(self, coverage_details: Dict[str, Any], keywords: List[str]) -> int:
+        """
+        Extract sub-limit from coverage details based on keywords
+        Returns 0 if not found (caller decides whether to include in plan)
+        """
+        for key, value in coverage_details.items():
+            key_lower = key.lower()
+            # Check if any keyword matches the key
+            if any(kw in key_lower for kw in keywords):
+                # Try to extract number from value
+                value_str = str(value)
+                match = re.search(r'AED\s*([\d,]+)', value_str)
+                if match:
+                    try:
+                        return int(match.group(1).replace(',', ''))
+                    except:
+                        pass
+                # Also try plain numbers
+                match = re.search(r'(\d+[,\d]*)', value_str)
+                if match:
+                    try:
+                        return int(match.group(1).replace(',', ''))
+                    except:
+                        pass
+        return 0
     
     def _format_benefits(self, coverage_details: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Format benefits as categorized structure"""

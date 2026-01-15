@@ -10,6 +10,7 @@
     "prestart": "npm run build",
     "clean": "rimraf dist",
     "setup": "npm run build && node dist/scripts/setup-database.js",
+    "test": "npm run build && node --test dist/tests/**/*.test.js",
     "test:api": "bash scripts/test-api.sh"
   },
   "dependencies": {
