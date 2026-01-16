@@ -41,27 +41,72 @@ class StandardLead(BaseModel):
 
 class StandardPlan(BaseModel):
     """
-    Standardized plan data structure
+    Standardized plan data structure - Unified Structure V2
     Clean interface for vendor adapters to produce
+    Supports optional sub-limits, network details, structured copays, and waiting periods
     """
+    # Core Identifiers
     id: str = Field(..., description="Unique plan identifier")
     leadId: str
     vendorId: str
     vendorName: str
+    vendorCode: Optional[str] = Field(default=None, description="Vendor short code (e.g., ALS, TKF, WAT)")
+    
+    # Plan Details
     planName: str
     planCode: Optional[str] = None
     planType: Optional[str] = None
+    
+    # Pricing
     annualPremium: float
     monthlyPremium: Optional[float] = None
     currency: str = Field(default="AED")
-    coverageAmount: float
+    
+    # Coverage Limits (required)
+    coverageAmount: float  # Deprecated: Use annualLimit for new implementations
+    annualLimit: Optional[float] = Field(default=None, description="Annual coverage limit (replaces coverageAmount)")
+    
+    # Optional Sub-Limits (Unified Structure V2)
+    inpatientLimit: Optional[float] = Field(default=None, description="Inpatient care annual limit")
+    outpatientLimit: Optional[float] = Field(default=None, description="Outpatient care annual limit")
+    maternityLimit: Optional[float] = Field(default=None, description="Maternity coverage limit")
+    emergencyLimit: Optional[float] = Field(default=None, description="Emergency care limit")
+    pharmacyLimit: Optional[float] = Field(default=None, description="Pharmacy/medication limit")
+    dentalLimit: Optional[float] = Field(default=None, description="Dental care limit")
+    opticalLimit: Optional[float] = Field(default=None, description="Optical/vision care limit")
+    
+    # Cost Sharing
     deductible: Optional[float] = None
+    deductibleMetric: Optional[str] = Field(default="AED", description="Metric for deductible (AED, USD, etc.)")
     coInsurance: Optional[float] = None
-    waitingPeriod: Optional[int] = Field(default=None, description="Waiting period in days")
-    benefits: Optional[List[str]] = Field(default_factory=list)
+    coInsuranceMetric: Optional[str] = Field(default="%", description="Metric for coInsurance (%, ratio)")
+    copays: Optional[Dict] = Field(default=None, description="Flexible copay structure (e.g., {gpVisit: 50, emergency: 100})")
+    
+    # Waiting Periods
+    waitingPeriod: Optional[int] = Field(default=None, description="General waiting period in days")
+    waitingPeriodMetric: Optional[str] = Field(default="days", description="Metric for waiting period")
+    waitingPeriods: Optional[Dict[str, int]] = Field(default=None, description="Structured waiting periods (e.g., {general: 30, maternity: 300})")
+    
+    # Network Information (Unified Structure V2)
+    network: Optional[Dict] = Field(default=None, description="Network details (e.g., {tpa: 'E-Care', networkName: 'Premium Network'})")
+    
+    # Benefits and Exclusions
+    benefits: Optional[List] = Field(default_factory=list, description="Benefits as list of strings or categorized structure")
     exclusions: Optional[List[str]] = Field(default_factory=list)
+    
+    # Metadata
+    lineOfBusiness: Optional[str] = Field(default="medical", description="Insurance line of business")
+    lobSpecificData: Optional[Dict] = Field(default=None, description="LOB-specific additional data")
+    isAvailable: Optional[bool] = Field(default=True)
+    isSelected: Optional[bool] = Field(default=False)
+    isRecommended: Optional[bool] = Field(default=False)
+    fetchRequestId: Optional[str] = Field(default="", description="Request ID for tracking")
     fetchedAt: str = Field(..., description="When the plan was fetched")
-    rawData: Optional[Dict] = Field(default=None, description="Raw vendor data for debugging")
+    source: Optional[str] = Field(default="rpa", description="Source of the plan data")
+    
+    # Raw Data
+    rawPlanData: Optional[Dict] = Field(default=None, description="Raw vendor data for debugging")
+    rawData: Optional[Dict] = Field(default=None, description="DEPRECATED: Use rawPlanData instead")
 
 
 class VendorConfig(BaseModel):

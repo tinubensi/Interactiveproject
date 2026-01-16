@@ -107,7 +107,7 @@ class WataniaDataParser:
             "leadId": lead_id,
             "vendorId": self.vendor_info["vendorId"],
             "vendorName": self.vendor_info["vendorName"],
-            "vendorCode": "WTN",
+            "vendorCode": "WAT",  # Updated to match unified standard
             
             # Basic Info
             "planName": plan_name,
@@ -119,15 +119,8 @@ class WataniaDataParser:
             "monthlyPremium": float(monthly_premium),
             "currency": "AED",
             
-            # Coverage Limits - Complete
+            # Coverage Limits - Required
             "annualLimit": float(annual_limit),
-            "inpatientLimit": float(coverage_limits.get('inpatientLimit', 0)),
-            "outpatientLimit": float(coverage_limits.get('outpatientLimit', 0)),
-            "maternityLimit": float(coverage_limits.get('maternityLimit', 0)),
-            "emergencyLimit": float(coverage_limits.get('emergencyLimit', 0)),
-            "pharmacyLimit": float(coverage_limits.get('pharmacyLimit', 0)),
-            "dentalLimit": float(coverage_limits.get('dentalLimit', 0)),
-            "opticalLimit": float(coverage_limits.get('opticalLimit', 0)),
             
             # Cost Sharing - Complete
             "deductible": float(deductible),
@@ -169,6 +162,33 @@ class WataniaDataParser:
             }
         }
         
+        # Add optional sub-limits only if available (UNIFIED STRUCTURE V2)
+        if coverage_limits.get('inpatientLimit', 0) > 0:
+            standard_plan["inpatientLimit"] = float(coverage_limits['inpatientLimit'])
+        if coverage_limits.get('outpatientLimit', 0) > 0:
+            standard_plan["outpatientLimit"] = float(coverage_limits['outpatientLimit'])
+        if coverage_limits.get('maternityLimit', 0) > 0:
+            standard_plan["maternityLimit"] = float(coverage_limits['maternityLimit'])
+        if coverage_limits.get('emergencyLimit', 0) > 0:
+            standard_plan["emergencyLimit"] = float(coverage_limits['emergencyLimit'])
+        if coverage_limits.get('pharmacyLimit', 0) > 0:
+            standard_plan["pharmacyLimit"] = float(coverage_limits['pharmacyLimit'])
+        if coverage_limits.get('dentalLimit', 0) > 0:
+            standard_plan["dentalLimit"] = float(coverage_limits['dentalLimit'])
+        if coverage_limits.get('opticalLimit', 0) > 0:
+            standard_plan["opticalLimit"] = float(coverage_limits['opticalLimit'])
+        
+        # Create network object if TPA or network data available (UNIFIED STRUCTURE V2)
+        tpa = plan_data.get("tpa")
+        network_name = plan_data.get("network")
+        network_type = plan_data.get("networkType")
+        if tpa or network_name:
+            standard_plan["network"] = {
+                "tpa": tpa,
+                "networkName": network_name,
+                "networkType": network_type or "standard"
+            }
+        
         return standard_plan
     
     def parse_plan(self, plan_data: Dict[str, Any], form_data: Dict[str, Any] = None) -> Dict[str, Any]:
@@ -182,8 +202,11 @@ class WataniaDataParser:
         Returns:
             Dictionary in StandardPlan format
         """
-        plan_name = plan_data.get('sub_plan_name', 'Unknown Plan')
-        pricing_str = plan_data.get('pricing', '0')
+        # Support both 'sub_plan_name' and 'plan_name'
+        plan_name = plan_data.get('plan_name') or plan_data.get('sub_plan_name', 'Unknown Plan')
+        
+        # Support both direct 'premium' field and 'pricing'
+        pricing_str = plan_data.get('premium') or plan_data.get('pricing', '0')
         
         # Extract annual premium from pricing string
         annual_premium = self._extract_premium(pricing_str)
@@ -206,13 +229,16 @@ class WataniaDataParser:
         # Get leadId from form_data if available
         lead_id = form_data.get('leadId', 'unknown') if form_data else 'unknown'
         
+        # Extract coverage details if provided
+        coverage_details = plan_data.get('coverage_details', {})
+        
         # Build StandardPlan formatted dictionary matching quotation-generation-service Plan interface
         standard_plan = {
             "id": f"plan-{uuid.uuid4()}",
             "leadId": lead_id,
             "vendorId": self.vendor_info["vendorId"],
             "vendorName": self.vendor_info["vendorName"],
-            "vendorCode": "WTN",  # Watania vendor code
+            "vendorCode": "WAT",  # Updated to match unified standard
             "planName": plan_name,
             "planCode": plan_code,
             "planType": plan_type,
@@ -238,6 +264,43 @@ class WataniaDataParser:
             "source": "rpa",  # Sourced from RPA
             "rawPlanData": plan_data  # Renamed from rawData
         }
+        
+        # Add optional copays if available (UNIFIED STRUCTURE V2)
+        copays = self._extract_copays_from_coverage(coverage_details)
+        if copays:
+            standard_plan["copays"] = copays
+        
+        # Add optional waiting periods structure (UNIFIED STRUCTURE V2)
+        waiting_periods = self._extract_waiting_periods_from_coverage(coverage_details)
+        if waiting_periods:
+            standard_plan["waitingPeriods"] = waiting_periods
+        
+        # Add optional sub-limits only if available (UNIFIED STRUCTURE V2)
+        # This ensures consistency with parse_plan_comprehensive method
+        if coverage_details.get('inpatientLimit', 0) > 0:
+            standard_plan["inpatientLimit"] = float(coverage_details['inpatientLimit'])
+        if coverage_details.get('outpatientLimit', 0) > 0:
+            standard_plan["outpatientLimit"] = float(coverage_details['outpatientLimit'])
+        if coverage_details.get('maternityLimit', 0) > 0:
+            standard_plan["maternityLimit"] = float(coverage_details['maternityLimit'])
+        if coverage_details.get('emergencyLimit', 0) > 0:
+            standard_plan["emergencyLimit"] = float(coverage_details['emergencyLimit'])
+        if coverage_details.get('pharmacyLimit', 0) > 0:
+            standard_plan["pharmacyLimit"] = float(coverage_details['pharmacyLimit'])
+        if coverage_details.get('dentalLimit', 0) > 0:
+            standard_plan["dentalLimit"] = float(coverage_details['dentalLimit'])
+        if coverage_details.get('opticalLimit', 0) > 0:
+            standard_plan["opticalLimit"] = float(coverage_details['opticalLimit'])
+        
+        # Create network object if TPA or network data available (UNIFIED STRUCTURE V2)
+        tpa = plan_data.get("tpa")
+        network_name = plan_data.get("network")
+        if tpa or network_name:
+            standard_plan["network"] = {
+                "tpa": tpa,
+                "networkName": network_name,
+                "networkType": "standard"
+            }
         
         return standard_plan
     
@@ -266,7 +329,7 @@ class WataniaDataParser:
             if part and not part.startswith('('):
                 code_parts.append(part[:3].upper())
         
-        return f"WTN-{'-'.join(code_parts)}" if code_parts else f"WTN-{uuid.uuid4().hex[:8].upper()}"
+        return f"WAT-{'-'.join(code_parts)}" if code_parts else f"WAT-{uuid.uuid4().hex[:8].upper()}"
     
     def _determine_plan_type(self, premium: int) -> str:
         """Determine plan type based on premium"""
@@ -586,5 +649,69 @@ class WataniaDataParser:
             ]
         
         return exclusions[:5]  # Limit to 5 exclusions
+    
+    def _extract_copays_from_coverage(self, coverage_details: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract copays structure from coverage details
+        Returns dict with service-specific copays or None
+        """
+        copays = {}
+        
+        for key, value in coverage_details.items():
+            key_lower = key.lower()
+            value_str = str(value)
+            
+            # Check for copay/co-payment mentions
+            if 'copay' in key_lower or 'co-pay' in key_lower or 'co-payment' in key_lower:
+                # Extract percentage
+                percent_match = re.search(r'(\d+)%', value_str)
+                if percent_match:
+                    copays["percentage"] = int(percent_match.group(1))
+                
+                # Extract max amount
+                max_match = re.search(r'max\s+AED\s*(\d+)', value_str, re.IGNORECASE)
+                if max_match:
+                    copays["maxAmount"] = int(max_match.group(1))
+                
+                # Store raw text if available
+                if not copays.get("percentage"):
+                    copays["general"] = value_str
+        
+        return copays if copays else {}
+    
+    def _extract_waiting_periods_from_coverage(self, coverage_details: Dict[str, Any]) -> Dict[str, int]:
+        """
+        Extract waiting periods structure from coverage details
+        Returns dict with service-specific waiting periods or None
+        """
+        waiting_periods = {}
+        
+        for key, value in coverage_details.items():
+            key_lower = key.lower()
+            value_str = str(value)
+            
+            # Extract waiting period in days/months
+            days_match = re.search(r'(\d+)\s*days?', value_str, re.IGNORECASE)
+            months_match = re.search(r'(\d+)\s*months?', value_str, re.IGNORECASE)
+            
+            if 'waiting' in key_lower:
+                if 'maternity' in key_lower or 'pregnancy' in key_lower:
+                    if months_match:
+                        waiting_periods["maternity"] = int(months_match.group(1)) * 30  # Convert to days
+                    elif days_match:
+                        waiting_periods["maternity"] = int(days_match.group(1))
+                elif 'pre-existing' in key_lower or 'preexisting' in key_lower:
+                    if days_match:
+                        waiting_periods["preexisting"] = int(days_match.group(1))
+                    elif months_match:
+                        waiting_periods["preexisting"] = int(months_match.group(1)) * 30
+                else:
+                    # General waiting period
+                    if days_match:
+                        waiting_periods["general"] = int(days_match.group(1))
+                    elif months_match:
+                        waiting_periods["general"] = int(months_match.group(1)) * 30
+        
+        return waiting_periods if waiting_periods else {}
 
 

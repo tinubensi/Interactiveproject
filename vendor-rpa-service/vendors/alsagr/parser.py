@@ -228,6 +228,17 @@ class AlsagrParser:
                 # Store modal text for reference
                 if "modal_text" in modal_data:
                     plan_data["rawPlanData"]["modal_text"] = self.clean_text(modal_data["modal_text"])
+                
+                # Create structured network object from modal data (Unified Structure V2)
+                tpa_from_modal = plan_data["lobSpecificData"].get("tpa")
+                network_from_modal = plan_data["lobSpecificData"].get("network")
+                
+                if tpa_from_modal or network_from_modal:
+                    plan_data["network"] = {
+                        "tpa": tpa_from_modal,
+                        "networkName": network_from_modal,
+                        "networkType": "local"  # default, can be overridden
+                    }
             
             # Premium from HTML (second priority)
             if "html_premium" in html_data and html_data["html_premium"]:
@@ -528,11 +539,7 @@ class AlsagrParser:
             "deductibleMetric": "AED",
             "coInsurance": 0,
             "coInsuranceMetric": "%",
-            "networkType": "local",
-            "networkProvider": None,
-            "tpaProvider": None,
-            "geographicalScope": None,
-            "preExistingConditions": None,
+            "lobSpecificData": {},
             "benefits": [],
             "exclusions": [],
             "rawPlanData": {
@@ -676,26 +683,26 @@ class AlsagrParser:
                             if percent_match:
                                 plan_data["coInsurance"] = float(percent_match.group(1))
                         
-                        # Extract additional metadata fields
+                        # Extract additional metadata fields (store in lobSpecificData temporarily)
                         elif "network" in benefit_lower:
-                            plan_data["networkProvider"] = value_str
+                            plan_data["lobSpecificData"]["_networkProvider"] = value_str
                             # Determine network type
                             if "gn" in value_str.lower() or "worldwide" in value_str.lower():
-                                plan_data["networkType"] = "global"
+                                plan_data["lobSpecificData"]["_networkType"] = "global"
                             else:
-                                plan_data["networkType"] = "local"
+                                plan_data["lobSpecificData"]["_networkType"] = "local"
                         
                         elif "tpa" in benefit_lower:
-                            plan_data["tpaProvider"] = value_str
+                            plan_data["lobSpecificData"]["_tpaProvider"] = value_str
                         
                         elif "geographical" in benefit_lower or "scope" in benefit_lower:
-                            plan_data["geographicalScope"] = value_str
+                            plan_data["lobSpecificData"]["geographicalScope"] = value_str
                             # Also update network type based on geographical scope
                             if "worldwide" in value_str.lower() or "international" in value_str.lower():
-                                plan_data["networkType"] = "international"
+                                plan_data["lobSpecificData"]["_networkType"] = "international"
                         
                         elif "preexisting" in benefit_lower or "pre-existing" in benefit_lower or "chronic" in benefit_lower:
-                            plan_data["preExistingConditions"] = value_str
+                            plan_data["lobSpecificData"]["preExistingConditions"] = value_str
                     
                     except Exception as e:
                         # Log individual benefit errors but continue processing
@@ -753,6 +760,18 @@ class AlsagrParser:
         except Exception as e:
             # Store error in raw data
             plan_data["rawPlanData"]["parse_error"] = str(e)
+        
+        # Create structured network object (Unified Structure V2)
+        network_provider = plan_data["lobSpecificData"].pop("_networkProvider", None)
+        tpa_provider = plan_data["lobSpecificData"].pop("_tpaProvider", None)
+        network_type = plan_data["lobSpecificData"].pop("_networkType", "local")
+        
+        if network_provider or tpa_provider:
+            plan_data["network"] = {
+                "tpa": tpa_provider,
+                "networkName": network_provider,
+                "networkType": network_type
+            }
         
         return plan_data
 
