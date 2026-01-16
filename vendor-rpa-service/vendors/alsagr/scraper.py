@@ -251,6 +251,13 @@ class AlsagrScraper:
                             },
                             form_data=self.form_data
                         )
+                        
+                        # Download PDF for additional data extraction
+                        pdf_path = await self._download_plan_pdf(download_button, index)
+                        if pdf_path:
+                            plan['pdf_path'] = pdf_path
+                            self.logger.info(f"  ✓ PDF downloaded: {pdf_path}")
+                        
                         structured_plans.append(plan)
                         self.logger.info(f"  ✓ Plan parsed successfully from JSON")
                     except Exception as e:
@@ -266,3 +273,39 @@ class AlsagrScraper:
 
         self.logger.info(f"\n✅ Successfully extracted {len(structured_plans)} plans")
         return structured_plans
+    
+    async def _download_plan_pdf(self, download_button, index: int) -> Optional[str]:
+        """
+        Downloads the plan PDF by clicking the download button.
+        Returns the path to the downloaded PDF file, or None if download fails.
+        """
+        try:
+            # Construct filename
+            import time
+            filename = f"plan_{index}_{int(time.time())}.pdf"
+            filepath = os.path.join(self.download_dir, filename)
+            
+            # Click download button and handle popup
+            async with self.page.expect_popup() as page1_info:
+                await download_button.click()
+            
+            page1 = await page1_info.value
+            await page1.wait_for_load_state("networkidle", timeout=10000)
+            
+            # If the popup URL is a PDF, download it
+            if page1.url.endswith(".pdf"):
+                # Get PDF content
+                response = await page1.request.fetch(page1.url)
+                body = await response.body()
+                with open(filepath, "wb") as f:
+                    f.write(body)
+            else:
+                # Fallback: Print to PDF if it's an HTML view
+                await page1.pdf(path=filepath)
+            
+            await page1.close()
+            return filepath
+            
+        except Exception as e:
+            self.logger.warning(f"  ⚠️ Failed to download PDF: {e}")
+            return None
