@@ -53,7 +53,7 @@ class TakafulDataParser:
     
     def __init__(self):
         self.vendor_info = {
-            "vendorId": "takaful",
+            "vendorId": "vendor-takaful",
             "vendorName": "Takaful Emarat"
         }
     
