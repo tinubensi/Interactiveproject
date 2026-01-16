@@ -1,5 +1,5 @@
 {
-  "vendorId": "takaful",
+  "vendorId": "vendor-takaful",
   "vendorName": "Takaful Emarat",
   "portalUrl": "https://b2bhplus.takafulemarat.com/login",
   "requiresAuth": true,
