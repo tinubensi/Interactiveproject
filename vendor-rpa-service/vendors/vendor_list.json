@@ -19,6 +19,15 @@
       "priority": 2
     },
     {
+      "id": "vendor-sukoon",
+      "name": "Sukoon Insurance",
+      "enabled": true,
+      "portalUrl": "https://individualonline.sukoon.com",
+      "requiresAuth": true,
+      "timeout": 420,
+      "priority": 3
+    },
+    {
       "id": "watania",
       "name": "Watania Takaful",
       "enabled": false,
