@@ -62,6 +62,7 @@ export interface Lead {
   plansCount?: number; // Number of plans fetched
   currentQuotationId?: string; // Reference to QuotationDB.quotations
   policyId?: string; // Reference to PolicyDB.policies
+  revisionRequestedQuotationIds?: string[]; // Track quotations that were revision-requested
   
   // Metadata
   createdAt: Date;

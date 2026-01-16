@@ -5,6 +5,13 @@
  * with the Azure Functions runtime.
  */
 
+// Polyfill for crypto.randomUUID() if not available globally
+// Required for Azure Cosmos SDK in Azure Functions runtime
+import { webcrypto } from 'crypto';
+if (!globalThis.crypto) {
+  globalThis.crypto = webcrypto as any;
+}
+
 // Import all function handlers
 import './functions/CallbackB2B';
 import './functions/DeleteSession';

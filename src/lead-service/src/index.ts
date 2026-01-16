@@ -30,6 +30,7 @@ import './functions/metadata/getEmirates';
 import './functions/events/handlePlansFetched';
 import './functions/events/handlePlansFetchFailed';
 import './functions/events/handleQuotationCreated';
+import './functions/events/handleQuotationRevisionRequested';
 import './functions/events/handlePolicyIssued';
 
 // All functions are auto-registered via app.http() and app.eventGrid() calls

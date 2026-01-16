@@ -12,6 +12,7 @@
 // Import all HTTP functions
 import './functions/quotations/createQuotation';
 import './functions/quotations/getQuotationById';
+import './functions/quotations/getQuotationHistory';
 import './functions/quotations/listQuotations';
 import './functions/quotations/changeStatus';
 import './functions/quotations/reviseQuotation';
