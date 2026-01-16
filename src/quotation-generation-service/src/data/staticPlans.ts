@@ -34,66 +34,6 @@ export const STATIC_VENDORS: Omit<Vendor, 'createdAt' | 'updatedAt'>[] = [
     priority: 2
   },
   {
-    id: 'vendor-daman',
-    name: 'Daman',
-    code: 'DAMAN',
-    lineOfBusiness: 'medical',
-    logo: 'https://example.com/logos/daman.png',
-    website: 'https://www.damanhealth.ae',
-    rpaEnabled: false,
-    hasStaticPlans: true,
-    isActive: true,
-    priority: 2
-  },
-  {
-    id: 'vendor-nextcare',
-    name: 'Nextcare',
-    code: 'NEXTCARE',
-    lineOfBusiness: 'medical',
-    logo: 'https://example.com/logos/nextcare.png',
-    website: 'https://www.nextcare.com',
-    rpaEnabled: false,
-    hasStaticPlans: true,
-    isActive: true,
-    priority: 3
-  },
-  {
-    id: 'vendor-adnic',
-    name: 'Abu Dhabi National Insurance Company',
-    code: 'ADNIC',
-    lineOfBusiness: 'medical',
-    logo: 'https://example.com/logos/adnic.png',
-    website: 'https://www.adnic.ae',
-    rpaEnabled: false,
-    hasStaticPlans: true,
-    isActive: true,
-    priority: 4
-  },
-  {
-    id: 'vendor-dic',
-    name: 'Dubai Insurance Company',
-    code: 'DIC',
-    lineOfBusiness: 'medical',
-    logo: 'https://example.com/logos/dic.png',
-    website: 'https://www.dubaiins.ae',
-    rpaEnabled: false,
-    hasStaticPlans: true,
-    isActive: true,
-    priority: 5
-  },
-  {
-    id: 'vendor-oic',
-    name: 'Oman Insurance Company',
-    code: 'OIC',
-    lineOfBusiness: 'medical',
-    logo: 'https://example.com/logos/oic.png',
-    website: 'https://www.omaninsurance.ae',
-    rpaEnabled: false,
-    hasStaticPlans: true,
-    isActive: true,
-    priority: 6
-  },
-  {
     id: 'vendor-alsagr',
     name: 'Al Sagr National Insurance',
     code: 'alsagr',
@@ -103,20 +43,21 @@ export const STATIC_VENDORS: Omit<Vendor, 'createdAt' | 'updatedAt'>[] = [
     rpaEnabled: true,
     hasStaticPlans: false,
     isActive: true,
-    priority: 7
+    priority: 4
   },
   {
-    id: 'vendor-metlife',
-    name: 'MetLife (Alico)',
-    code: 'METLIFE',
+    id: 'vendor-sukoon',
+    name: 'Sukoon Insurance',
+    code: 'sukoon',
     lineOfBusiness: 'medical',
-    logo: 'https://example.com/logos/metlife.png',
-    website: 'https://www.metlife-gulf.com',
-    rpaEnabled: false,
-    hasStaticPlans: true,
+    logo: 'https://individualonline.sukoon.com/logo.png',
+    website: 'https://individualonline.sukoon.com',
+    rpaEnabled: true,
+    hasStaticPlans: false,
     isActive: true,
-    priority: 8
-  }
+    priority: 3
+  },
+  
 ];
 
 // ==================== MEDICAL (HUMAN) PLANS ====================

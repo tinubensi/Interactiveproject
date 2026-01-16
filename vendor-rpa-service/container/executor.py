@@ -819,6 +819,14 @@ async def execute_rpa_task():
                     scraper = AlsagrScraper(bot.page, bot_config, vendor_payload)
                     raw_plans = await scraper.extract_all_plans(bot)
                     logger.info(f"Extracted {len(raw_plans)} plans from Alsagr portal")
+                elif registry_vendor_id == 'sukoon':
+                    # Import Sukoon scraper
+                    from vendors.sukoon.scraper import SukoonScraper
+                    
+                    # Pass vendor_payload (which includes leadId) to scraper
+                    scraper = SukoonScraper(bot.page, bot_config, vendor_payload)
+                    raw_plans = await scraper.extract_all_plans(bot)
+                    logger.info(f"Extracted {len(raw_plans)} plans from Sukoon portal")
                 else:
                     # Generic extraction (placeholder for other vendors)
                     logger.warning(f"No specific scraper for {registry_vendor_id}, using generic extraction")
@@ -834,6 +842,7 @@ async def execute_rpa_task():
                     'alsagr': 900.0,   # 15 minutes - increased for safety (was 600s/10min)
                     'watania': 300.0,  # 5 minutes - complex extraction
                     'takaful': 180.0,  # 3 minutes - standard extraction
+                    'sukoon': 180.0,   # 3 minutes - standard extraction
                 }
                 
                 extraction_timeout = extraction_timeouts.get(registry_vendor_id, 120.0)
