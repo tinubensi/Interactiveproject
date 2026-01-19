@@ -39,7 +39,7 @@ export async function getQuotationHistory(
         SELECT * FROM c 
         WHERE c.leadId = @leadId 
         AND (NOT IS_DEFINED(c.deletedAt) OR c.deletedAt = null)
-        ORDER BY c.version DESC, c.createdAt DESC
+        ORDER BY c.version DESC
       `,
       parameters: [{ name: '@leadId', value: leadId }]
     };
@@ -56,13 +56,13 @@ export async function getQuotationHistory(
         try {
           const plans = await cosmosService.getQuotationPlans(quotation.id);
           return {
-            ...quotation,
+            quotation: quotation,
             plans: plans || []
           };
         } catch (error) {
           context.warn(`Failed to fetch plans for quotation ${quotation.id}:`, error);
           return {
-            ...quotation,
+            quotation: quotation,
             plans: []
           };
         }

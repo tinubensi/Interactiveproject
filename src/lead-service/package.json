@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "start": "npx func start --port 7075",
+    "start": "npx func start --port 7078",
     "prestart": "npm run build",
     "clean": "rimraf dist",
     "setup": "npm run build && node dist/scripts/setup-database.js",
