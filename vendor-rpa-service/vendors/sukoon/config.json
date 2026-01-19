@@ -1,0 +1,7 @@
+{
+  "portalUrl": "https://individualonline.sukoon.com/SignIn?ReturnUrl=%2Fhealth-insurance%2FHome",
+  "requiresAuth": true,
+  "timeout": 420,
+  "priority": 3,
+  "linesOfBusiness": ["Medical"]
+}

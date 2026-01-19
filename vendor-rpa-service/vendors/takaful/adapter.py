@@ -17,7 +17,7 @@ class TakafulAdapter(VendorAdapter):
     """
     
     def __init__(self):
-        super().__init__(vendor_id="takaful", vendor_name="Takaful Emarat")
+        super().__init__(vendor_id="vendor-takaful", vendor_name="Takaful Emarat")
     
     def prepare_vendor_payload(self, standard_lead: Dict[str, Any]) -> Dict[str, Any]:
         """
