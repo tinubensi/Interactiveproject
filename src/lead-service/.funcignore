@@ -1,16 +1,26 @@
+# Git and IDE files
 .git
 .gitignore
-.env
-.env.*
 .cursor
 .vscode
+
+# Environment files
+.env
+.env.*
+local.settings.json
+
+# Logs and temporary files
 logs
 tmp
-*.pdf
-*.zip
+*.log
+
+# Build artifacts not needed in deployment
 src/
 tsconfig.json
 *.test.ts
+*.test.js
+
+# Scripts and docs
 scripts/
 check_lead_db.js
 init-plans.js
@@ -19,3 +29,14 @@ README.md
 API.md
 GETTING_STARTED.md
 Lead-Service.postman_collection.json
+
+# Large files
+*.pdf
+*.zip
+
+# DO NOT IGNORE (these are needed):
+# dist/
+# node_modules/
+# package.json
+# package-lock.json
+# host.json

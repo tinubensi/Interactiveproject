@@ -12,6 +12,7 @@
 // Import all HTTP functions
 import './functions/quotations/createQuotation';
 import './functions/quotations/getQuotationById';
+import './functions/quotations/getQuotationHistory';
 import './functions/quotations/listQuotations';
 import './functions/quotations/changeStatus';
 import './functions/quotations/reviseQuotation';
@@ -21,6 +22,8 @@ import './functions/quotations/approveReject';
 // Import customer-facing public endpoints
 import './functions/customer/getQuotationByToken';
 import './functions/customer/selectPlan';
+import './functions/customer/rejectPlans';
+import './functions/customer/requestRevision';
 
 // Import all event handlers
 import './functions/events/handlePlansSelected';

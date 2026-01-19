@@ -103,6 +103,7 @@ export async function rejectPlans(
       status: 'rejected',
       tokenUsedAt: now,
       rejectionReason: rejectionReason,
+      rejectedAt: now,
     });
 
     context.log('Quotation updated to rejected status');
@@ -121,6 +122,18 @@ export async function rejectPlans(
       context.log('Published customer.responded event (reject_plans)');
     } catch (eventError) {
       context.warn('Failed to publish customer.responded event:', eventError);
+    }
+
+    // Publish quotation.rejected event for audit/notifications
+    try {
+      await eventGridService.publishQuotationRejected({
+        quotationId: quotation.id,
+        leadId: quotation.leadId,
+        reason: rejectionReason,
+      });
+      context.log('Published quotation.rejected event');
+    } catch (eventError) {
+      context.warn('Failed to publish quotation.rejected event:', eventError);
     }
 
     return withCors(request, {
