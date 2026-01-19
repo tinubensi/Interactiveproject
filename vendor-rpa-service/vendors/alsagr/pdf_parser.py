@@ -15,6 +15,7 @@ def clean_text(text: str) -> str:
     Removes Arabic characters, replacement characters, and extra whitespace.
     """
     if not text:
+        
         return ""
     
     # Remove Unicode replacement character
