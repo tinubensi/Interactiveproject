@@ -1,0 +1,524 @@
+"""
+Alsagr PDF Parser - COORDINATE-AWARE EXTRACTION
+Extracts detailed plan data from downloaded PDF files using layout-aware methods
+Version 2.0 - Enhanced with coordinate-based extraction for table-heavy PDFs
+"""
+import pdfplumber
+import re
+import os
+import sys
+from typing import Dict, Any, Optional, List
+from collections import defaultdict
+
+
+def clean_text(text: str) -> str:
+    """
+    Removes Arabic characters, replacement characters, and extra whitespace.
+    """
+    if not text:
+        return ""
+    
+    # Remove Unicode replacement character
+    text = text.replace('\ufffd', '')
+    text = text.replace('�', '')
+    
+    # Remove Arabic characters (Unicode range 0600-06FF) and Arabic Supplement (0750-077F)
+    text = re.sub(r'[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]+', '', text)
+    
+    # Remove other non-printable characters and control characters
+    text = re.sub(r'[\x00-\x1F\x7F-\x9F]+', ' ', text)
+    
+    # Remove extra spaces/newlines
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
+
+
+def cluster_words_by_y(words: List[Dict], y_tolerance: int = 3) -> List[List[Dict]]:
+    """
+    Group words into rows based on Y-coordinate proximity.
+    Returns list of rows, each row is a list of word dicts.
+    """
+    if not words:
+        return []
+    
+    # Sort words by y-coordinate (top to bottom)
+    sorted_words = sorted(words, key=lambda w: w['top'])
+    
+    rows = []
+    current_row = [sorted_words[0]]
+    current_y = sorted_words[0]['top']
+    
+    for word in sorted_words[1:]:
+        # If word is within y_tolerance of current row, add to current row
+        if abs(word['top'] - current_y) <= y_tolerance:
+            current_row.append(word)
+        else:
+            # Start new row
+            rows.append(current_row)
+            current_row = [word]
+            current_y = word['top']
+    
+    # Add last row
+    if current_row:
+        rows.append(current_row)
+    
+    return rows
+
+
+def sort_row_by_x(row: List[Dict]) -> List[Dict]:
+    """
+    Sort words in a row by X-coordinate (left to right).
+    """
+    return sorted(row, key=lambda w: w['x0'])
+
+
+def extract_text_with_layout(page) -> str:
+    """
+    Extract text from page using coordinate-aware method.
+    Handles positioned glyphs, multi-column layouts, and tables.
+    """
+    # Extract words with coordinates
+    words = page.extract_words(
+        use_text_flow=False,
+        keep_blank_chars=False,
+        x_tolerance=3,
+        y_tolerance=3
+    )
+    
+    if not words:
+        # Fallback: try extract_chars if words extraction fails
+        chars = page.extract_chars()
+        if not chars:
+            return ""
+        
+        # Build words from chars by grouping adjacent characters
+        words = []
+        current_word = None
+        
+        for char in sorted(chars, key=lambda c: (c['top'], c['x0'])):
+            char_text = char.get('text', '').strip()
+            if not char_text:
+                continue
+                
+            if current_word is None:
+                current_word = {
+                    'text': char_text,
+                    'x0': char['x0'],
+                    'x1': char['x1'],
+                    'top': char['top'],
+                    'bottom': char['bottom']
+                }
+            else:
+                # Check if char is adjacent to current word
+                x_distance = char['x0'] - current_word['x1']
+                y_distance = abs(char['top'] - current_word['top'])
+                
+                if x_distance < 5 and y_distance < 3:
+                    # Extend current word
+                    current_word['text'] += char_text
+                    current_word['x1'] = char['x1']
+                    current_word['bottom'] = max(current_word['bottom'], char['bottom'])
+                else:
+                    # Save current word and start new one
+                    words.append(current_word)
+                    current_word = {
+                        'text': char_text,
+                        'x0': char['x0'],
+                        'x1': char['x1'],
+                        'top': char['top'],
+                        'bottom': char['bottom']
+                    }
+        
+        if current_word:
+            words.append(current_word)
+    
+    if not words:
+        return ""
+    
+    # Group words into rows
+    rows = cluster_words_by_y(words, y_tolerance=3)
+    
+    # Reconstruct text row by row
+    text_lines = []
+    for row in rows:
+        # Sort words in row from left to right
+        sorted_row = sort_row_by_x(row)
+        
+        # Join words with spaces
+        row_text = ' '.join([w['text'] for w in sorted_row])
+        
+        if row_text.strip():
+            text_lines.append(row_text)
+    
+    return '\n'.join(text_lines)
+
+
+def extract_table_data(page) -> List[List[str]]:
+    """
+    Extract structured table data from page using coordinate-based grouping.
+    Returns list of table rows (each row is a list of cell values).
+    """
+    words = page.extract_words(
+        use_text_flow=False,
+        keep_blank_chars=False,
+        x_tolerance=2,
+        y_tolerance=2
+    )
+    
+    if not words:
+        return []
+    
+    # Group into rows
+    rows = cluster_words_by_y(words, y_tolerance=3)
+    
+    # Detect columns by analyzing X-positions across all rows
+    all_x_positions = []
+    for row in rows:
+        for word in row:
+            all_x_positions.append(word['x0'])
+    
+    if not all_x_positions:
+        return []
+    
+    # Sort and cluster X positions to find column boundaries
+    all_x_positions.sort()
+    column_boundaries = [all_x_positions[0]]
+    
+    for x in all_x_positions[1:]:
+        if x - column_boundaries[-1] > 30:  # Minimum column width
+            column_boundaries.append(x)
+    
+    # Build table structure
+    table_rows = []
+    for row in rows:
+        sorted_row = sort_row_by_x(row)
+        
+        # Assign words to columns
+        row_cells = defaultdict(list)
+        for word in sorted_row:
+            # Find which column this word belongs to
+            col_idx = 0
+            for i, boundary in enumerate(column_boundaries):
+                if word['x0'] >= boundary - 10:
+                    col_idx = i
+            
+            row_cells[col_idx].append(word['text'])
+        
+        # Convert to list
+        max_col = max(row_cells.keys()) if row_cells else 0
+        cell_list = []
+        for i in range(max_col + 1):
+            cell_list.append(' '.join(row_cells.get(i, [])))
+        
+        if any(cell.strip() for cell in cell_list):
+            table_rows.append(cell_list)
+    
+    return table_rows
+
+
+async def parse_plan_pdf(pdf_path: str, base_plan_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Parses the insurance plan PDF and enriches the base plan data.
+    Uses COORDINATE-AWARE extraction for table-heavy PDFs.
+    
+    Args:
+        pdf_path: Path to the downloaded PDF file
+        base_plan_data: Existing plan data from API/modal extraction
+    
+    Returns:
+        Enriched plan data with PDF-extracted information
+    """
+    try:
+        # Check if PDF file exists and has content
+        if not os.path.exists(pdf_path):
+            print(f"  ⚠️ PDF file does not exist: {pdf_path}", file=sys.stderr)
+            base_plan_data["rawPlanData"]["pdf_error"] = "File not found"
+            return base_plan_data
+        
+        file_size = os.path.getsize(pdf_path)
+        print(f"  📄 PDF file size: {file_size} bytes", file=sys.stderr)
+        
+        if file_size < 100:
+            print(f"  ⚠️ PDF file is very small ({file_size} bytes), might be corrupt", file=sys.stderr)
+        
+        full_text = ""
+        all_table_rows = []
+        
+        with pdfplumber.open(pdf_path) as pdf:
+            print(f"  📖 PDF opened, pages: {len(pdf.pages)}", file=sys.stderr)
+            
+            for page_num, page in enumerate(pdf.pages):
+                # Use COORDINATE-AWARE extraction instead of naive extract_text()
+                text = extract_text_with_layout(page)
+                
+                if text:
+                    print(f"  ✓ Page {page_num+1} extracted {len(text)} chars (coordinate-aware)", file=sys.stderr)
+                    
+                    # Filter Arabic line by line
+                    lines = text.split('\n')
+                    cleaned_lines = []
+                    for line in lines:
+                        cleaned = clean_text(line)
+                        # Only keep lines that have at least some alphanumeric content
+                        if re.search(r'[a-zA-Z0-9]', cleaned):
+                            cleaned_lines.append(cleaned)
+                    
+                    page_text = "\n".join(cleaned_lines)
+                    if page_text.strip():
+                        full_text += page_text + "\n"
+                else:
+                    print(f"  ⚠️ Page {page_num+1} returned no text", file=sys.stderr)
+                
+                # Also extract structured table data
+                table_data = extract_table_data(page)
+                if table_data:
+                    print(f"  📊 Page {page_num+1} extracted {len(table_data)} table rows", file=sys.stderr)
+                    all_table_rows.extend(table_data)
+        
+        print(f"  📝 Total extracted text: {len(full_text)} characters", file=sys.stderr)
+        print(f"  📋 Total table rows: {len(all_table_rows)}", file=sys.stderr)
+        
+        if len(full_text) == 0:
+            print(f"  ❌ No text could be extracted from PDF!", file=sys.stderr)
+            print(f"  💡 This PDF may be image-based or corrupted", file=sys.stderr)
+        
+        # Store raw table data for debugging
+        if "rawPlanData" not in base_plan_data:
+            base_plan_data["rawPlanData"] = {}
+        if all_table_rows:
+            base_plan_data["rawPlanData"]["table_rows"] = all_table_rows[:50]  # First 50 rows
+        
+        # Extract Waiting Period
+        waiting_period_match = re.search(r'(\d+)\s*(?:-)?months?\s+waiting\s+period', full_text, re.IGNORECASE)
+        if not waiting_period_match:
+            waiting_period_match = re.search(r'waiting\s+period[:\s]+(\d+)\s*(?:-)?months?', full_text, re.IGNORECASE)
+        
+        if waiting_period_match:
+            try:
+                months = int(waiting_period_match.group(1))
+                days = months * 30  # Convert months to days
+                base_plan_data["waitingPeriod"] = days
+                base_plan_data["waitingPeriodMetric"] = "days"
+                if "waitingPeriods" not in base_plan_data:
+                    base_plan_data["waitingPeriods"] = {}
+                base_plan_data["waitingPeriods"]["general"] = days
+                print(f"  ⏱️  Extracted waiting period: {months} months ({days} days)", file=sys.stderr)
+            except:
+                pass
+        
+        # Also check for specific waiting periods (days)
+        if base_plan_data.get("waitingPeriod", 0) == 0:
+            days_match = re.search(r'(\d+)\s+days?\s+waiting\s+period', full_text, re.IGNORECASE)
+            if days_match:
+                try:
+                    days = int(days_match.group(1))
+                    base_plan_data["waitingPeriod"] = days
+                    if "waitingPeriods" not in base_plan_data:
+                        base_plan_data["waitingPeriods"] = {}
+                    base_plan_data["waitingPeriods"]["general"] = days
+                    print(f"  ⏱️  Extracted waiting period: {days} days", file=sys.stderr)
+                except:
+                    pass
+
+        # Extract Structured Inpatient & Outpatient Coverage
+        inpatient_benefits = []
+        outpatient_benefits = []
+        
+        # First try extracting from structured table data
+        if all_table_rows:
+            print(f"  🔍 Processing {len(all_table_rows)} table rows for benefit extraction", file=sys.stderr)
+            
+            # Look for table headers to identify benefit tables
+            in_inpatient_section = False
+            in_outpatient_section = False
+            
+            for row in all_table_rows:
+                if not row:
+                    continue
+                
+                # Convert row to string for pattern matching
+                row_text = ' '.join([str(cell) for cell in row]).lower()
+                
+                # Detect section headers
+                if 'in-patient' in row_text or 'inpatient' in row_text:
+                    in_inpatient_section = True
+                    in_outpatient_section = False
+                    continue
+                elif 'out-patient' in row_text or 'outpatient' in row_text:
+                    in_outpatient_section = True
+                    in_inpatient_section = False
+                    continue
+                elif 'exclusion' in row_text or 'emergency' in row_text or 'pharmacy' in row_text:
+                    in_inpatient_section = False
+                    in_outpatient_section = False
+                
+                # Extract benefits from rows
+                if (in_inpatient_section or in_outpatient_section) and len(row) >= 2:
+                    # Typical format: [Benefit Name, Coverage, Limit, ...]
+                    benefit_name = clean_text(str(row[0]))
+                    
+                    # Skip header rows and empty rows
+                    if not benefit_name or len(benefit_name) < 3:
+                        continue
+                    if any(header in benefit_name.lower() for header in ['benefit', 'coverage', 'service', 'limit', 'treatment']):
+                        continue
+                    
+                    # Check if covered
+                    coverage_text = ' '.join([clean_text(str(cell)) for cell in row[1:]])
+                    is_covered = any(keyword in coverage_text.lower() for keyword in ['covered', 'yes', 'aed', 'free', 'included'])
+                    
+                    # Extract limit if present
+                    limit_match = re.search(r'([\d,]+)\s*(?:aed|per)', coverage_text, re.IGNORECASE)
+                    limit_value = None
+                    if limit_match:
+                        try:
+                            limit_value = int(limit_match.group(1).replace(',', ''))
+                        except:
+                            pass
+                    
+                    benefit_entry = {
+                        "name": benefit_name,
+                        "covered": is_covered,
+                        "description": coverage_text[:150]
+                    }
+                    
+                    if limit_value:
+                        benefit_entry["limit"] = limit_value
+                        benefit_entry["limitMetric"] = "AED"
+                    
+                    if in_inpatient_section:
+                        inpatient_benefits.append(benefit_entry)
+                    elif in_outpatient_section:
+                        outpatient_benefits.append(benefit_entry)
+            
+            print(f"  ✅ Extracted from tables - Inpatient: {len(inpatient_benefits)}, Outpatient: {len(outpatient_benefits)}", file=sys.stderr)
+        
+        # Fallback: Extract from full text if table extraction didn't work
+        if not inpatient_benefits and not outpatient_benefits:
+            print(f"  🔄 Falling back to text-based extraction", file=sys.stderr)
+            
+            # Extract In-Patient Treatment section
+            inpatient_match = re.search(r'In-Patient Treatment.*?\n(.*?)(?=Out-Patient|Exclusions)', full_text, re.DOTALL | re.IGNORECASE)
+            if inpatient_match:
+                content = inpatient_match.group(1)
+                # Extract numbered items (1. , 2. , etc.)
+                items = re.findall(r'(\d+\.\s+[A-Za-z][^\n]*(?:\n(?!\d+\.)[^\n]*)*)', content)
+                for item in items[:20]:
+                    cleaned = clean_text(item)
+                    if len(cleaned) > 10:
+                        # Remove leading number
+                        cleaned_name = re.sub(r'^\d+\.\s*', '', cleaned)
+                        # Extract just the service name (before "Covered" or price)
+                        name_match = re.match(r'(.+?)(?:\s+Covered|\s+AED|\s+Free|$)', cleaned_name)
+                        benefit_name = name_match.group(1).strip() if name_match else cleaned_name
+                        
+                        if benefit_name and len(benefit_name) > 3:
+                            is_covered = 'Covered' in item or 'AED' in item
+                            inpatient_benefits.append({
+                                "name": benefit_name,
+                                "covered": is_covered,
+                                "description": cleaned[:150]
+                            })
+            
+            # Extract Out-Patient Treatment section  
+            outpatient_match = re.search(r'Out-Patient.*?Treatment.*?\n(.*?)(?=Exclusions|Emergency outside|Pharmacy)', full_text, re.DOTALL | re.IGNORECASE)
+            if outpatient_match:
+                content = outpatient_match.group(1)
+                # Extract numbered items (1. , 2. , etc.)
+                items = re.findall(r'(\d+\.\s+[A-Za-z][^\n]*(?:\n(?!\d+\.)[^\n]*)*)', content)
+                for item in items[:20]:
+                    cleaned = clean_text(item)
+                    if len(cleaned) > 10:
+                        # Remove leading number
+                        cleaned_name = re.sub(r'^\d+\.\s*', '', cleaned)
+                        # Extract just the service name (before "Covered" or price)
+                        name_match = re.match(r'(.+?)(?:\s+Covered|\s+AED|\s+Free|$)', cleaned_name)
+                        benefit_name = name_match.group(1).strip() if name_match else cleaned_name
+                        
+                        if benefit_name and len(benefit_name) > 3:
+                            is_covered = 'Covered' in item or 'AED' in item or 'Free' in item
+                            outpatient_benefits.append({
+                                "name": benefit_name,
+                                "covered": is_covered,
+                                "description": cleaned[:150]
+                            })
+        
+        # Add structured categories if we found them
+        if "benefits" not in base_plan_data:
+            base_plan_data["benefits"] = []
+            
+        if inpatient_benefits:
+            base_plan_data["benefits"].append({
+                "categoryId": "inpatient",
+                "categoryName": "In-Patient Treatment",
+                "benefits": inpatient_benefits
+            })
+            print(f"  ✅ Added {len(inpatient_benefits)} inpatient benefits", file=sys.stderr)
+        
+        if outpatient_benefits:
+            base_plan_data["benefits"].append({
+                "categoryId": "outpatient",
+                "categoryName": "Out-Patient Treatment",
+                "benefits": outpatient_benefits
+            })
+            print(f"  ✅ Added {len(outpatient_benefits)} outpatient benefits", file=sys.stderr)
+
+        # Extract special benefits from table data
+        if all_table_rows:
+            special_benefits = []
+            for row in all_table_rows:
+                row_text = ' '.join([str(cell) for cell in row])
+                cleaned_row = clean_text(row_text)
+                
+                # Look for pre-existing conditions coverage
+                if 'pre-existing' in cleaned_row.lower() or 'preexisting' in cleaned_row.lower():
+                    # Check if covered
+                    is_covered = any(keyword in cleaned_row.lower() for keyword in ['covered', 'yes', 'after'])
+                    
+                    # Extract waiting period if present
+                    waiting_match = re.search(r'(\d+)\s*months?', cleaned_row, re.IGNORECASE)
+                    waiting_months = waiting_match.group(1) if waiting_match else None
+                    
+                    coverage_desc = cleaned_row
+                    if waiting_months:
+                        coverage_desc = f"Covered after {waiting_months} months"
+                    elif is_covered:
+                        coverage_desc = "Covered"
+                    else:
+                        coverage_desc = "Not covered"
+                    
+                    special_benefits.append({
+                        "benefit": "Pre-existing conditions",
+                        "coverage": coverage_desc,
+                        "source": "pdf_table"
+                    })
+                    print(f"  💊 Found pre-existing conditions: {coverage_desc}", file=sys.stderr)
+            
+            # Store special benefits
+            if special_benefits:
+                base_plan_data["rawPlanData"]["special_benefits"] = special_benefits
+
+        # Store PDF text snippet in raw data
+        base_plan_data["rawPlanData"]["pdf_text_snippet"] = full_text[:500]
+        base_plan_data["rawPlanData"]["pdf_extracted"] = True
+        base_plan_data["rawPlanData"]["extraction_method"] = "coordinate_aware_v2"
+
+    except Exception as e:
+        print(f"❌ Error parsing PDF {pdf_path}: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        # Don't fail the whole plan if PDF parsing fails
+        if "rawPlanData" not in base_plan_data:
+            base_plan_data["rawPlanData"] = {}
+        base_plan_data["rawPlanData"]["pdf_error"] = str(e)
+    finally:
+        # CLEANUP: Delete PDF after parsing to save disk space
+        try:
+            if os.path.exists(pdf_path):
+                os.remove(pdf_path)
+                print(f"  🗑️  Cleaned up PDF: {os.path.basename(pdf_path)}", flush=True, file=sys.stderr)
+        except Exception as cleanup_error:
+            # Don't fail if cleanup fails, just log it
+            print(f"  ⚠️ Failed to cleanup PDF {pdf_path}: {cleanup_error}", file=sys.stderr)
+
+    return base_plan_data

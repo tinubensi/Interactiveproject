@@ -1,0 +1,465 @@
+{
+    "id": "plan-b17c1fbb-ceed-4405-9497-cd437e2a4aa4",
+    "type": "plan",
+    "leadId": "3fd29ea8-de28-48cc-9d7f-b096aef9db74",
+    "vendorId": "vendor-alsagr",
+    "fetchedAt": "2026-01-19T05:46:33.211687",
+    "vendorPlanId": "48",
+    "vendorName": "Alsagr Insurance",
+    "vendorCode": "ASG",
+    "planName": "DXB",
+    "planCode": "ASG-PLA-1525",
+    "planType": "gold",
+    "annualPremium": 650,
+    "monthlyPremium": 54.17,
+    "currency": "AED",
+    "annualLimit": 150000,
+    "inpatientLimit": 0,
+    "outpatientLimit": 0,
+    "maternityLimit": 10000,
+    "maternityNormalDelivery": 10000,
+    "maternityCSection": 10000,
+    "emergencyLimit": 0,
+    "pharmacyLimit": 1500,
+    "dentalLimit": 0,
+    "opticalLimit": 0,
+    "deductible": 20,
+    "deductibleMetric": "%",
+    "coInsurance": 20,
+    "coInsuranceMetric": "%",
+    "lobSpecificData": {
+        "geographicalScope": "UAE",
+        "preExistingConditions": "Covered"
+    },
+    "benefits": [
+        {
+            "categoryId": "aggregate-limit",
+            "categoryName": "Aggregate Limit",
+            "benefits": [
+                {
+                    "name": "Aggregate Limit",
+                    "description": "AED 150,000/-",
+                    "covered": true,
+                    "limit": "AED 150,000/-",
+                    "benefitId": "12"
+                }
+            ]
+        },
+        {
+            "categoryId": "pharmacy",
+            "categoryName": "Pharmacy",
+            "benefits": [
+                {
+                    "name": "Pharmacy",
+                    "description": "30% Coinsurance up to AED 1,500",
+                    "covered": true,
+                    "limit": "30% Coinsurance up to AED 1,500",
+                    "benefitId": "11"
+                }
+            ]
+        },
+        {
+            "categoryId": "optical",
+            "categoryName": "Optical",
+            "benefits": [
+                {
+                    "name": "Optical",
+                    "description": "Not Covered",
+                    "covered": true,
+                    "limit": "Not Covered",
+                    "benefitId": "58"
+                }
+            ]
+        },
+        {
+            "categoryId": "op-co-pay",
+            "categoryName": "OP Co-Pay",
+            "benefits": [
+                {
+                    "name": "OP Co-Pay",
+                    "description": "20% Co Ins on all OP Services",
+                    "covered": true,
+                    "limit": "20% Co Ins on all OP Services",
+                    "benefitId": "14"
+                }
+            ]
+        },
+        {
+            "categoryId": "maternity",
+            "categoryName": "Maternity",
+            "benefits": [
+                {
+                    "name": "Maternity",
+                    "description": "10% coinsurance , AED 10,000 normal & AED 10,000 C-Section delivery",
+                    "covered": true,
+                    "limit": "10% coinsurance , AED 10,000 normal & AED 10,000 C-Section delivery",
+                    "benefitId": "59"
+                }
+            ]
+        },
+        {
+            "categoryId": "dental",
+            "categoryName": "Dental",
+            "benefits": [
+                {
+                    "name": "Dental",
+                    "description": "Not Covered",
+                    "covered": true,
+                    "limit": "Not Covered",
+                    "benefitId": "57"
+                }
+            ]
+        },
+        {
+            "categoryId": "network",
+            "categoryName": "Network",
+            "benefits": [
+                {
+                    "name": "Network",
+                    "description": "Value Lite/Value Network– (OP@ Value lite Clinics & IP@ Value Hospitals)",
+                    "covered": true,
+                    "limit": "Value Lite/Value Network– (OP@ Value lite Clinics & IP@ Value Hospitals)",
+                    "benefitId": "9"
+                }
+            ]
+        },
+        {
+            "categoryId": "tpa",
+            "categoryName": "TPA",
+            "benefits": [
+                {
+                    "name": "TPA",
+                    "description": "NAS",
+                    "covered": true,
+                    "limit": "NAS",
+                    "benefitId": "85"
+                }
+            ]
+        },
+        {
+            "categoryId": "geographical-scope",
+            "categoryName": "Geographical Scope",
+            "benefits": [
+                {
+                    "name": "Geographical Scope",
+                    "description": "UAE",
+                    "covered": true,
+                    "limit": "UAE",
+                    "benefitId": "13"
+                }
+            ]
+        },
+        {
+            "categoryId": "coinsurance-on-any-specific-provider",
+            "categoryName": "Coinsurance on any specific provider",
+            "benefits": [
+                {
+                    "name": "Coinsurance on any specific provider",
+                    "description": "20% on all OP Services",
+                    "covered": true,
+                    "limit": "20% on all OP Services",
+                    "benefitId": "86"
+                }
+            ]
+        },
+        {
+            "categoryId": "preexisting-&-chronic-conditions",
+            "categoryName": "Preexisting & Chronic conditions",
+            "benefits": [
+                {
+                    "name": "Preexisting & Chronic conditions",
+                    "description": "Covered",
+                    "covered": true,
+                    "limit": "Covered",
+                    "benefitId": "87"
+                }
+            ]
+        },
+        {
+            "categoryId": "inpatient",
+            "categoryName": "In-Patient Treatment",
+            "benefits": [
+                {
+                    "name": "Accidents and emergencies, intensive",
+                    "covered": true,
+                    "description": "1. Accidents and emergencies, intensive Covered in Full .1 care and theatre costs. ."
+                },
+                {
+                    "name": "Hospital Accommodation (Room Semi-Private Room .( ) .2 Charges).",
+                    "covered": false,
+                    "description": "2. Hospital Accommodation (Room Semi-Private Room .( ) .2 Charges)."
+                },
+                {
+                    "name": "Nursing Fees, medical expenses",
+                    "covered": true,
+                    "description": "3. Nursing Fees, medical expenses Covered in Full .3 and ancillary charges. ."
+                },
+                {
+                    "name": "Surgeons’, consultants, anesthetist',",
+                    "covered": true,
+                    "description": "4. Surgeons’, consultants, anesthetist', Covered in Full .4 specialists', General Practitioners' fees. ."
+                },
+                {
+                    "name": "Prescribed Medicine and drugs.",
+                    "covered": true,
+                    "description": "5. Prescribed Medicine and drugs. Covered in Full . .5"
+                },
+                {
+                    "name": "Reconstructive surgery following an",
+                    "covered": true,
+                    "description": "6. Reconstructive surgery following an Covered in Full .6 accident or following surgery for an . eligible medical condition."
+                },
+                {
+                    "name": "Prostheses: artificial body parts",
+                    "covered": true,
+                    "description": "7. Prostheses: artificial body parts Covered in Full : .7 surgically implanted to form permanent parts of an insured member's body. ."
+                },
+                {
+                    "name": "MRI, PET, CT Scans.",
+                    "covered": true,
+                    "description": "8. MRI, PET, CT Scans. Covered in Full . 8"
+                },
+                {
+                    "name": "X-Rays, Pathology, diagnostic tests .9",
+                    "covered": true,
+                    "description": "9. X-Rays, Pathology, diagnostic tests .9 Covered in Full and procedures."
+                },
+                {
+                    "name": "Oncology tests, drugs and .10",
+                    "covered": true,
+                    "description": "10. Oncology tests, drugs and .10 Covered in Full consultants' fees including cover for chemotherapy and radiotherapy. ."
+                },
+                {
+                    "name": "In-Patient Parent/ Companion .11",
+                    "covered": true,
+                    "description": "11. In-Patient Parent/ Companion .11 Covered max up to accommodation for child up to age AED 100 per night 100 16 years. .16"
+                },
+                {
+                    "name": "The cost of accommodation of .12",
+                    "covered": true,
+                    "description": "12. The cost of accommodation of .12 Covered max up to a person accompanying an in-patient AED 100 per night 100 in the same room in cases of medical "
+                },
+                {
+                    "name": "Ground transportation services in .13",
+                    "covered": true,
+                    "description": "13. Ground transportation services in .13 Covered in Full the UAE provided by an authorized party for medical emergencies."
+                },
+                {
+                    "name": "Deductible for (In-Patient Services) ) .14 20% coinsurance %20 (Applicable if treatment is taken in a With a cap of 500",
+                    "covered": true,
+                    "description": "14. Deductible for (In-Patient Services) ) .14 20% coinsurance %20 (Applicable if treatment is taken in a With a cap of 500 AED 500 ( facility in-side"
+                },
+                {
+                    "name": "Hearing and vision aids, and vision",
+                    "covered": true,
+                    "description": "15. Hearing and vision aids, and vision Covered only in case of .15 correction by surgeries and laser. medical emergencies with %20 20% coinsurance."
+                },
+                {
+                    "name": "Diagnostic and treatment services .16",
+                    "covered": true,
+                    "description": "16. Diagnostic and treatment services .16 Covered only in case of for dental and gum treatments. medical emergencies with %20 20% coinsurance."
+                },
+                {
+                    "name": "Maternity - In patient services. .17 10% coinsurance payable %10 Where any condition develops by the insured Maximum which becomes an emergency, the benefit 10,000",
+                    "covered": true,
+                    "description": "17. Maternity - In patient services. .17 10% coinsurance payable %10 Where any condition develops by the insured Maximum which becomes an emergency, t"
+                }
+            ]
+        },
+        {
+            "categoryId": "outpatient",
+            "categoryName": "Out-Patient Treatment",
+            "benefits": [
+                {
+                    "name": "Consultations including initial .1 20% coinsurance on OP consultations and examinations Consultation.",
+                    "covered": true,
+                    "description": "1. Consultations including initial .1 20% coinsurance on OP consultations and examinations Consultation. Free follow %20 . in respect of a medical con"
+                },
+                {
+                    "name": "X-ray, pathology, diagnostic tests, .2",
+                    "covered": true,
+                    "description": "2. X-ray, pathology, diagnostic tests, .2 Covered Full with and procedures. Copayment of 20% %20 ."
+                },
+                {
+                    "name": "Prescribed Medicine and drugs. . .3",
+                    "covered": true,
+                    "description": "3. Prescribed Medicine and drugs. . .3 Covered with 30% %30 Copayment up to the 2,500 limit of AED 2,500/- .( ) (including Coins). Restricted to Formu"
+                },
+                {
+                    "name": "Physiotherapy recommended / / .4",
+                    "covered": true,
+                    "description": "4. Physiotherapy recommended / / .4 Covered but limited to 6 6 referred by a General sessions Only with %20 . Practitioner or a Specialist. Copayment "
+                },
+                {
+                    "name": "Oncology tests, drugs and",
+                    "covered": true,
+                    "description": "5. Oncology tests, drugs and Covered Full with .5 consultants' fees including cover for Copayment of 20% %20 chemotherapy and radiotherapy. ."
+                },
+                {
+                    "name": "MRI, PET, CT scans. .6",
+                    "covered": true,
+                    "description": "6. MRI, PET, CT scans. .6 Covered Full with Copayment of 20% %20 . Other Benefits"
+                },
+                {
+                    "name": "Pre-existing Conditions & Chronic Maximum limit",
+                    "covered": true,
+                    "description": "1. Pre-existing Conditions & Chronic Maximum limit AED .1 Medical Conditions (Where any 150,000 PPPY * 1 5 0 , 0 0 0 condition develops which becomes "
+                },
+                {
+                    "name": "Maternity - Outpatient services. .3 10% coinsurance %10 All care provided by obstetrician for payable by the insured low risk or specialist obstetrician for and covered up to 8 8 : high-risk referrals Initial Investigation visits. • to include: • FBC and platelets • • Blood group, Rhesus status and antibodies • VDRL • MSU and Urinalysis • Rubella serology • HIV • Hep C offered to high risk patients • GTT risk patients • • FBS, random sugar or HBA1c for all due to high prevalence Classification: Confidential of diabetes in UAE Visits to include reviews, checks and tests in accordance with DHA 3 Antenatal Care Protocols. 3 ante-natal ultrasound scans. .",
+                    "covered": false,
+                    "description": "2. Maternity - Outpatient services. .3 10% coinsurance %10 All care provided by obstetrician for payable by the insured low risk or specialist obstetr"
+                },
+                {
+                    "name": "Newborn cover .3 Cover for 30 days from It is mandated that newborn has to birth. BCG, Hepatitis B . 30 be enrolled into an independent and neo-natal screening 30 insurance plan from the 30th day tests. (Phenylketonuria (PKU), Congenital , from its date of birth either as a . Hypothyroidism, sickle dependent or individual policy. cell screening, . congenital adrenal hyperplasia).",
+                    "covered": false,
+                    "description": "3. Newborn cover .3 Cover for 30 days from It is mandated that newborn has to birth. BCG, Hepatitis B . 30 be enrolled into an independent and neo-nat"
+                },
+                {
+                    "name": "Preventive services, Vaccines, and . , .4",
+                    "covered": true,
+                    "description": "4. Preventive services, Vaccines, and . , .4 Covered up to a limit of 100 immunizations. AED 100/- • • Essential vaccinations and inoculations for new"
+                },
+                {
+                    "name": "Influenza Vaccine.",
+                    "covered": true,
+                    "description": "5. Influenza Vaccine. Covered once per Annum . .5"
+                },
+                {
+                    "name": "Mental Health",
+                    "covered": true,
+                    "description": "6. Mental Health Covered up to AED 800 800 .6 Outpatient Counselling. Outpatient: 30% %30 : . coinsurance payable by the insured per visit"
+                },
+                {
+                    "name": "Repatriation costs for the transport of .7 Coverage up to limit of 5,000 mortal remains to the country of",
+                    "covered": true,
+                    "description": "7. Repatriation costs for the transport of .7 Coverage up to limit of 5,000 mortal remains to the country of AED 5,000/- . origin."
+                },
+                {
+                    "name": "Organ transplantation. . .8 Coverage up to limit of 100,000",
+                    "covered": true,
+                    "description": "8. Organ transplantation. . .8 Coverage up to limit of 100,000 AED 100,000/- Coverage for Recipients only %20 : Outpatient: 20% coinsurance payable by"
+                },
+                {
+                    "name": "Dialysis. C overed to a limit of 60,000 . .9",
+                    "covered": true,
+                    "description": "9. Dialysis. C overed to a limit of 60,000 . .9 AED 60,000/- Outpatient: 20% %20 : coinsurance payable by the insured per visit"
+                },
+                {
+                    "name": "Dental treatment coverage. . .10",
+                    "covered": true,
+                    "description": "10. Dental treatment coverage. . .10 Covered up to AED 500 500 Coverage includes: : with 30% coinsurance %30 • Consultation (Limit is including ) • • "
+                }
+            ]
+        }
+    ],
+    "exclusions": [],
+    "rawPlanData": {
+        "source": "json_api",
+        "plan_number": "1525",
+        "premium": "650",
+        "coverage_details": {
+            "Aggregate Limit": "AED 150,000/-",
+            "Pharmacy": "30% Coinsurance up to AED 1,500",
+            "Optical": "Not Covered",
+            "Optical Coverage": "Included",
+            "OP Co-Pay": "20% Co Ins on all OP Services",
+            "Maternity": "10% coinsurance , AED 10,000 normal & AED 10,000 C-Section delivery",
+            "Dental": "Not Covered",
+            "Dental Coverage": "Included",
+            "Network": "Value Lite/Value Network– (OP@ Value lite Clinics & IP@ Value Hospitals)",
+            "TPA": "NAS",
+            "Geographical Scope": "UAE",
+            "Coinsurance on any specific provider": "20% on all OP Services",
+            "Preexisting & Chronic conditions": "Covered"
+        },
+        "metadata": {
+            "productPlanId": "73",
+            "productId": "24",
+            "tobType": "494"
+        },
+        "plan_name_full": "2 1525 - Asasi Employee - DXB - NAS Value Lite ( OP ) /VN ( IP ) (Ded:20% / Pharmacy:1,500 30% copay / OP Services Copay: 20%) ASASI 650",
+        "benefit_count": 11,
+        "original_benefits": [
+            {
+                "category": "Aggregate Limit",
+                "description": "AED 150,000/-",
+                "limit": "AED 150,000/-",
+                "benefitId": "12"
+            },
+            {
+                "category": "Pharmacy",
+                "description": "30% Coinsurance up to AED 1,500",
+                "limit": "30% Coinsurance up to AED 1,500",
+                "benefitId": "11"
+            },
+            {
+                "category": "Optical",
+                "description": "Not Covered",
+                "limit": "Not Covered",
+                "benefitId": "58"
+            },
+            {
+                "category": "OP Co-Pay",
+                "description": "20% Co Ins on all OP Services",
+                "limit": "20% Co Ins on all OP Services",
+                "benefitId": "14"
+            },
+            {
+                "category": "Maternity",
+                "description": "10% coinsurance , AED 10,000 normal & AED 10,000 C-Section delivery",
+                "limit": "10% coinsurance , AED 10,000 normal & AED 10,000 C-Section delivery",
+                "benefitId": "59"
+            },
+            {
+                "category": "Dental",
+                "description": "Not Covered",
+                "limit": "Not Covered",
+                "benefitId": "57"
+            },
+            {
+                "category": "Network",
+                "description": "Value Lite/Value Network– (OP@ Value lite Clinics & IP@ Value Hospitals)",
+                "limit": "Value Lite/Value Network– (OP@ Value lite Clinics & IP@ Value Hospitals)",
+                "benefitId": "9"
+            },
+            {
+                "category": "TPA",
+                "description": "NAS",
+                "limit": "NAS",
+                "benefitId": "85"
+            },
+            {
+                "category": "Geographical Scope",
+                "description": "UAE",
+                "limit": "UAE",
+                "benefitId": "13"
+            },
+            {
+                "category": "Coinsurance on any specific provider",
+                "description": "20% on all OP Services",
+                "limit": "20% on all OP Services",
+                "benefitId": "86"
+            },
+            {
+                "category": "Preexisting & Chronic conditions",
+                "description": "Covered",
+                "limit": "Covered",
+                "benefitId": "87"
+            }
+        ],
+        "pdf_text_snippet": "Health Insurance\nIndividual and Families\nASASI Employees\nTable of Benefits\nASASI Employees\n1. Aggregate Limit. . .1\nAED 150,000/- 150,000/-\nUnder the terms and conditions\nof the plan, we will pay necessary,\ncustomary, and reasonable\nexpenses up to an overall\nmaximum per insured member .\nper year.\n2. Area of Cover. . .2\nUnited Arab Emirates\n3. Eligibility . .3\nDubai Visa Holder Low\nSalary band Employees\n(AED 4,000 or below) 4,000 )\n4. Network for the product. .4\nNAS Value Lite / Value Nas Value L",
+        "pdf_extracted": true
+    },
+    "network": {
+        "tpa": "NAS",
+        "networkName": "Value Lite/Value Network– (OP@ Value lite Clinics & IP@ Value Hospitals)",
+        "networkType": "local"
+    },
+    "pdf_path": "/tmp/alsagr_downloads/plan_17_1768801593.pdf",
+    "_rid": "hZxrAJ82F19rdQAAAAAAAA==",
+    "_self": "dbs/hZxrAA==/colls/hZxrAJ82F18=/docs/hZxrAJ82F19rdQAAAAAAAA==/",
+    "_etag": "\"c9009118-0000-3200-0000-696dc5aa0000\"",
+    "_attachments": "attachments/",
+    "_ts": 1768801706
+}

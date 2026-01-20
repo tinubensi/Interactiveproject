@@ -175,7 +175,8 @@ class AlsagrScraper:
                     self.logger.warning(f"  Error extracting row data: {e}")
                     continue
                 
-                # Capture JSON API response
+                # Initialize data containers
+                html_data = {}  # For storing modal text and other HTML-extracted data
                 json_data = None
                 json_captured = False
                 
@@ -206,10 +207,21 @@ class AlsagrScraper:
                     self.logger.info(f"  Clicking eye button...")
                     await asyncio.wait_for(eye_button.click(force=True), timeout=10.0)
                     
-                    # Wait for modal to appear
+                    # Wait for modal to appear and extract its content
                     try:
                         await self.page.wait_for_selector(".modal.show", state="visible", timeout=5000)
                         self.logger.info(f"  ✓ Modal opened")
+                        
+                        # Extract modal text content for reference
+                        try:
+                            modal_element = await self.page.locator(".modal.show").first
+                            modal_text = await modal_element.inner_text()
+                            if modal_text and len(modal_text) > 50:
+                                self.logger.info(f"  📄 Modal text: {len(modal_text)} chars")
+                                # Store modal text in html_data for later use
+                                html_data['modal_text'] = modal_text[:5000]  # Limit to 5000 chars
+                        except Exception as e:
+                            self.logger.debug(f"  Could not extract modal text: {e}")
                     except:
                         self.logger.warning(f"  Modal may not have opened")
                     
@@ -255,13 +267,18 @@ class AlsagrScraper:
                 if json_captured and json_data:
                     self.logger.info(f"  [PARSING] Processing JSON data...")
                     try:
+                        # Build html_data with modal_text if available
+                        html_data_dict = {
+                            'plan_number': plan_number,
+                            'html_premium': html_premium,
+                            'html_plan_name': html_plan_name
+                        }
+                        if 'modal_text' in html_data:
+                            html_data_dict['modal_text'] = html_data['modal_text']
+                        
                         plan = self.parser.parse_json_benefits(
                             json_data=json_data,
-                            html_data={
-                                'plan_number': plan_number,
-                                'html_premium': html_premium,
-                                'html_plan_name': html_plan_name
-                            },
+                            html_data=html_data_dict,
                             form_data=self.form_data
                         )
                         
@@ -270,6 +287,10 @@ class AlsagrScraper:
                         if pdf_path:
                             plan['pdf_path'] = pdf_path
                             self.logger.info(f"  ✓ PDF downloaded: {pdf_path}")
+                        else:
+                            # If PDF download failed, note that we have modal text as fallback
+                            if 'modal_text' in html_data:
+                                self.logger.info(f"  💡 Modal text available as fallback")
                         
                         structured_plans.append(plan)
                         self.logger.info(f"  ✓ Plan parsed successfully from JSON")
@@ -289,162 +310,183 @@ class AlsagrScraper:
     
     async def _download_plan_pdf(self, download_button, index: int) -> Optional[str]:
         """
-        Downloads the plan PDF by clicking the download button.
-        Works in both headless and non-headless modes.
-        Returns the path to the downloaded PDF file, or None if download fails.
+        Download real PDF from TOB button popup.
+        The popup shows a PDF viewer with embedded PDF - we need to find and download the actual PDF.
         """
         try:
-            # Construct filename
             import time
             filename = f"plan_{index}_{int(time.time())}.pdf"
             filepath = os.path.join(self.download_dir, filename)
             
-            # Strategy 1: Use download event handler (works in headless mode)
+            # Set up download listener BEFORE clicking
             pdf_downloaded = False
             downloaded_path = None
             
             async def handle_download(download):
                 nonlocal pdf_downloaded, downloaded_path
                 try:
-                    self.logger.info(f"  📥 Download event triggered")
-                    # Try to get suggested filename (might be property or method)
-                    try:
-                        if hasattr(download, 'suggested_filename'):
-                            if callable(download.suggested_filename):
-                                suggested_filename = download.suggested_filename()
-                            else:
-                                suggested_filename = download.suggested_filename
-                            self.logger.info(f"  📄 Suggested filename: {suggested_filename}")
-                    except:
-                        pass
-                    
-                    # Save the download
+                    # Save the download to our target path
                     await download.save_as(filepath)
                     pdf_downloaded = True
                     downloaded_path = filepath
-                    file_size = os.path.getsize(filepath) if os.path.exists(filepath) else 0
-                    self.logger.info(f"  ✅ PDF downloaded via download event: {file_size} bytes")
+                    file_size = os.path.getsize(filepath)
+                    self.logger.info(f"  ✅ PDF downloaded via browser: {file_size} bytes ({file_size/1024:.1f} KB)")
                 except Exception as e:
-                    self.logger.warning(f"  Download handler error: {e}")
-                    import traceback
-                    self.logger.warning(f"  Download handler traceback:\n{traceback.format_exc()}")
+                    self.logger.error(f"  ❌ Failed to save download: {e}")
             
-            # Register download handler BEFORE clicking
+            # Register download handler
             self.page.on("download", handle_download)
             
             try:
-                self.logger.info(f"  🔘 Clicking download button (Strategy 1: Download Event)...")
-                # Click the download button
-                await download_button.click()
+                # Click download/TOB button and handle popup
+                self.logger.info(f"  🔗 Clicking TOB button...")
+                async with self.page.expect_popup(timeout=15000) as page1_info:
+                    await download_button.click()
                 
-                # Wait for download to complete (max 15 seconds)
-                self.logger.debug(f"  Waiting for download event (max 15s)...")
-                for i in range(30):  # 30 × 0.5s = 15s max
-                    if pdf_downloaded:
-                        self.logger.info(f"  ✅ Download detected after {i * 0.5:.1f}s")
-                        break
-                    await asyncio.sleep(0.5)
+                page1 = await page1_info.value
                 
-                # Remove download handler
-                self.page.remove_listener("download", handle_download)
+                # Wait for popup to fully load
+                self.logger.info(f"  ⏳ Waiting for popup to load...")
+                await page1.wait_for_load_state("networkidle", timeout=30000)
+                await asyncio.sleep(2)
                 
-                if pdf_downloaded and downloaded_path:
+                self.logger.info(f"  📍 Popup URL: {page1.url}")
+                
+                # Method 1: Check if we got a direct download (rare but possible)
+                if pdf_downloaded:
+                    self.logger.info(f"  ✓ PDF downloaded automatically")
+                    await page1.close()
                     return downloaded_path
-                else:
-                    self.logger.debug(f"  ⚠️ Download event did not fire after clicking")
                 
-            except Exception as e:
-                self.logger.warning(f"  Download event approach failed: {e}")
-                # Remove handler on error
+                # Method 2: Check if URL is direct PDF
+                if page1.url.endswith(".pdf") or "/pdf/" in page1.url.lower() or "content-type" in page1.url.lower():
+                    self.logger.info(f"  📥 Direct PDF URL detected")
+                    try:
+                        response = await page1.request.get(page1.url)
+                        body = await response.body()
+                        
+                        with open(filepath, "wb") as f:
+                            f.write(body)
+                        
+                        file_size = os.path.getsize(filepath)
+                        self.logger.info(f"  ✅ Downloaded PDF from URL: {file_size} bytes ({file_size/1024:.1f} KB)")
+                        
+                        await page1.close()
+                        return filepath
+                    except Exception as e:
+                        self.logger.warning(f"  ⚠️ Direct download failed: {e}")
+                
+                # Method 3: Look for embedded PDF (iframe, embed, object tags)
+                self.logger.info(f"  🔍 Looking for embedded PDF...")
+                pdf_url = None
+                
+                # Check for iframe with PDF
+                try:
+                    iframes = await page1.locator("iframe").all()
+                    for iframe in iframes:
+                        src = await iframe.get_attribute("src")
+                        if src and (".pdf" in src.lower() or "pdf" in src.lower()):
+                            pdf_url = src
+                            self.logger.info(f"  ✓ Found PDF in iframe: {pdf_url[:100]}")
+                            break
+                except:
+                    pass
+                
+                # Check for embed tag
+                if not pdf_url:
+                    try:
+                        embeds = await page1.locator("embed[type*='pdf'], embed[src*='.pdf']").all()
+                        if embeds:
+                            pdf_url = await embeds[0].get_attribute("src")
+                            self.logger.info(f"  ✓ Found PDF in embed: {pdf_url[:100]}")
+                    except:
+                        pass
+                
+                # Check for object tag
+                if not pdf_url:
+                    try:
+                        objects = await page1.locator("object[type*='pdf'], object[data*='.pdf']").all()
+                        if objects:
+                            pdf_url = await objects[0].get_attribute("data")
+                            self.logger.info(f"  ✓ Found PDF in object: {pdf_url[:100]}")
+                    except:
+                        pass
+                
+                # Method 4: Check page content for PDF link
+                if not pdf_url:
+                    try:
+                        # Look for any link/button containing "pdf" or "download"
+                        pdf_links = await page1.locator("a[href*='.pdf'], a[href*='pdf'], button:has-text('Download')").all()
+                        if pdf_links:
+                            href = await pdf_links[0].get_attribute("href")
+                            if href:
+                                pdf_url = href
+                                self.logger.info(f"  ✓ Found PDF link: {pdf_url[:100]}")
+                    except:
+                        pass
+                
+                # If we found a PDF URL, download it
+                if pdf_url:
+                    self.logger.info(f"  📥 Downloading PDF from: {pdf_url[:150]}")
+                    try:
+                        # Handle relative URLs
+                        if pdf_url.startswith("/"):
+                            base_url = page1.url.split("://")[0] + "://" + page1.url.split("://")[1].split("/")[0]
+                            pdf_url = base_url + pdf_url
+                        elif not pdf_url.startswith("http"):
+                            base_url = "/".join(page1.url.split("/")[:-1])
+                            pdf_url = base_url + "/" + pdf_url
+                        
+                        # Download the PDF
+                        response = await page1.request.get(pdf_url)
+                        body = await response.body()
+                        
+                        with open(filepath, "wb") as f:
+                            f.write(body)
+                        
+                        file_size = os.path.getsize(filepath)
+                        self.logger.info(f"  ✅ Downloaded embedded PDF: {file_size} bytes ({file_size/1024:.1f} KB)")
+                        
+                        await page1.close()
+                        return filepath
+                    except Exception as e:
+                        self.logger.error(f"  ❌ Failed to download embedded PDF: {e}")
+                
+                # Method 5: Last resort - use print to PDF with proper settings
+                self.logger.info(f"  📄 Using print-to-PDF as fallback...")
+                try:
+                    await asyncio.sleep(2)  # Let content render
+                    
+                    await page1.pdf(
+                        path=filepath,
+                        format="A4",
+                        print_background=True,
+                        margin={"top": "10mm", "right": "10mm", "bottom": "10mm", "left": "10mm"}
+                    )
+                    
+                    file_size = os.path.getsize(filepath)
+                    self.logger.info(f"  ✅ Generated PDF: {file_size} bytes ({file_size/1024:.1f} KB)")
+                    
+                    # Check if PDF is too small (likely failed)
+                    if file_size < 5000:  # Less than 5KB is suspiciously small
+                        self.logger.warning(f"  ⚠️ PDF is very small ({file_size} bytes), might be incomplete")
+                    
+                    await page1.close()
+                    return filepath
+                except Exception as e:
+                    self.logger.error(f"  ❌ Print-to-PDF failed: {e}")
+                    await page1.close()
+                    return None
+                    
+            finally:
+                # Always remove download listener
                 try:
                     self.page.remove_listener("download", handle_download)
                 except:
                     pass
             
-            # Strategy 2: Try popup approach (fallback for non-headless or if download event doesn't fire)
-            try:
-                self.logger.debug("  Trying popup approach...")
-                async with self.page.expect_popup(timeout=5000) as popup_info:
-                    await download_button.click()
-                
-                popup_page = await popup_info.value
-                await popup_page.wait_for_load_state("networkidle", timeout=10000)
-                
-                # Check if popup URL is a PDF
-                popup_url = popup_page.url
-                content_type = await popup_page.evaluate("() => document.contentType || ''")
-                
-                if popup_url.endswith(".pdf") or "application/pdf" in content_type:
-                    # Download PDF from popup URL
-                    try:
-                        response = await popup_page.request.fetch(popup_url)
-                        body = await response.body()
-                        if body.startswith(b'%PDF'):
-                            with open(filepath, "wb") as f:
-                                f.write(body)
-                            await popup_page.close()
-                            self.logger.info(f"  ✅ PDF downloaded from popup URL: {len(body)} bytes")
-                            return filepath
-                    except Exception as e:
-                        self.logger.debug(f"  Failed to fetch from popup URL: {e}")
-                
-                # Strategy 3: If popup is HTML, try to generate PDF from it
-                try:
-                    await popup_page.pdf(path=filepath, format='A4')
-                    await popup_page.close()
-                    if os.path.exists(filepath) and os.path.getsize(filepath) > 1000:
-                        self.logger.info(f"  ✅ PDF generated from popup content")
-                        return filepath
-                except Exception as e:
-                    self.logger.debug(f"  Failed to generate PDF from popup: {e}")
-                    try:
-                        await popup_page.close()
-                    except:
-                        pass
-                        
-            except Exception as e:
-                self.logger.debug(f"  Popup approach failed: {e}")
-            
-            # Strategy 4: Intercept network requests for PDF
-            try:
-                self.logger.debug("  Trying network interception...")
-                pdf_url = None
-                pdf_body = None
-                
-                async def handle_response(response):
-                    nonlocal pdf_url, pdf_body
-                    try:
-                        content_type = response.headers.get('content-type', '').lower()
-                        url = response.url
-                        if 'application/pdf' in content_type or url.endswith('.pdf'):
-                            pdf_url = url
-                            pdf_body = await response.body()
-                            if pdf_body.startswith(b'%PDF'):
-                                self.logger.info(f"  📥 Captured PDF from network: {len(pdf_body)} bytes")
-                    except:
-                        pass
-                
-                self.page.on("response", handle_response)
-                
-                # Click again to trigger network request
-                await download_button.click()
-                await asyncio.sleep(3)  # Wait for network request
-                
-                # Remove handler
-                self.page.remove_listener("response", handle_response)
-                
-                if pdf_body and pdf_body.startswith(b'%PDF'):
-                    with open(filepath, "wb") as f:
-                        f.write(pdf_body)
-                    self.logger.info(f"  ✅ PDF downloaded via network interception: {len(pdf_body)} bytes")
-                    return filepath
-                    
-            except Exception as e:
-                self.logger.debug(f"  Network interception failed: {e}")
-            
-            self.logger.warning(f"  ⚠️ All PDF download strategies failed")
-            return None
-            
         except Exception as e:
-            self.logger.warning(f"  ⚠️ Failed to download PDF: {e}")
+            self.logger.error(f"  ❌ Failed to download plan PDF: {e}")
+            import traceback
+            self.logger.debug(f"  Traceback: {traceback.format_exc()}")
             return None
