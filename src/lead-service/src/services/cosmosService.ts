@@ -364,6 +364,19 @@ class CosmosService {
   /**
    * List leads with pagination, filtering, and sorting
    * Reference: Petli getLeads function
+   * 
+   * Filtering Behavior:
+   * - currentStage: Filters leads by stage name(s). Common use case is to show only
+   *   active leads (e.g., "Lead Created", "Plans Fetching", "Plans Available", "Revision Requested")
+   *   and exclude leads that have moved to quotations.
+   * - excludeWithQuotation: When true (default), excludes leads that have a quotationId defined.
+   *   This prevents leads that have progressed to quotations from appearing in leads listings.
+   *   Set to false to include all leads regardless of quotation status.
+   * 
+   * Default Behavior for Lead Listings:
+   * - Frontend should pass currentStage filter with active stages
+   * - Backend automatically excludes leads with quotationId (unless explicitly included)
+   * - This ensures proper separation between Leads listing and Quotations listing
    */
   async listLeads(request: LeadListRequest): Promise<LeadListResponse> {
     const {
@@ -402,6 +415,19 @@ class CosmosService {
       const paramName = `@stageId${paramIndex++}`;
       conditions.push(`ARRAY_CONTAINS(${paramName}, c.stageId)`);
       parameters.push({ name: paramName, value: filters.stageId });
+    }
+
+    // Current Stage filter (string-based)
+    if (filters.currentStage && filters.currentStage.length > 0) {
+      const paramName = `@currentStage${paramIndex++}`;
+      conditions.push(`ARRAY_CONTAINS(${paramName}, c.currentStage)`);
+      parameters.push({ name: paramName, value: filters.currentStage });
+    }
+
+    // Exclude leads with quotationId (they belong in Quotations listing)
+    // Default behavior is to exclude, can be overridden by setting excludeWithQuotation to false
+    if (filters.excludeWithQuotation !== false) { // Default: exclude
+      conditions.push('NOT IS_DEFINED(c.quotationId)');
     }
 
     // Assigned To filter

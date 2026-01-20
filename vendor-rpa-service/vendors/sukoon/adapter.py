@@ -242,6 +242,11 @@ class SukoonAdapter(VendorAdapter):
         if not network_name:
             network_name = extract_network_type(details)
         
+        # If no TPA but we have network name, use network name as TPA for Sukoon
+        # This ensures Sukoon plans appear in the TPA filter options
+        if not tpa and network_name:
+            tpa = network_name  # e.g., "Premium", "Edge", "Signature+Medicare"
+        
         # Determine network type based on coverage territory
         territory = details.get('Basic Coverage Territory') or details.get('BASIC COVERAGE TERRITORY', '')
         territory_lower = str(territory).lower()

@@ -17,16 +17,23 @@ export const COOKIE_NAMES = {
 /**
  * Create access token cookie
  * 
- * For cross-site requests (localhost -> azurewebsites.net), we need SameSite=None with Secure=true
+ * For cross-site requests (any external domain -> azurewebsites.net), we need SameSite=None with Secure=true
+ * This includes both localhost and production frontends (Vercel, etc.)
  */
 export function createAccessTokenCookie(token: string): Cookie {
   const config = getConfig();
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-  const isLocalhost = frontendUrl.includes('localhost') || frontendUrl.includes('127.0.0.1');
   
-  // For cross-site requests, use SameSite=None with Secure=true
+  // Check if frontend is on a different domain than the backend
+  // Backend is always: func-nectaria-authentication-dev.azurewebsites.net
+  // If frontend is localhost, vercel.app, or any other domain, it's cross-site
+  const isLocalhost = frontendUrl.includes('localhost') || frontendUrl.includes('127.0.0.1');
+  const isVercel = frontendUrl.includes('vercel.app');
+  const isCrossSite = isLocalhost || isVercel || !frontendUrl.includes('azurewebsites.net');
+  
+  // For cross-site requests, ALWAYS use SameSite=None with Secure=true
   // For same-site requests, use SameSite=Lax
-  const sameSite = isLocalhost ? 'None' : (config.cookies.sameSite === 'strict' ? 'Strict' : 'Lax');
+  const sameSite = isCrossSite ? 'None' : (config.cookies.sameSite === 'strict' ? 'Strict' : 'Lax');
   const secure = true; // Always true since backend is HTTPS
   
   return {
@@ -44,15 +51,19 @@ export function createAccessTokenCookie(token: string): Cookie {
 /**
  * Create refresh token cookie
  * 
- * For cross-site requests (localhost -> azurewebsites.net), we need SameSite=None with Secure=true
+ * For cross-site requests (any external domain -> azurewebsites.net), we need SameSite=None with Secure=true
  */
 export function createRefreshTokenCookie(token: string): Cookie {
   const config = getConfig();
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-  const isLocalhost = frontendUrl.includes('localhost') || frontendUrl.includes('127.0.0.1');
   
-  // For cross-site requests, use SameSite=None with Secure=true
-  const sameSite = isLocalhost ? 'None' : (config.cookies.sameSite === 'strict' ? 'Strict' : 'Lax');
+  // Check if frontend is on a different domain than the backend
+  const isLocalhost = frontendUrl.includes('localhost') || frontendUrl.includes('127.0.0.1');
+  const isVercel = frontendUrl.includes('vercel.app');
+  const isCrossSite = isLocalhost || isVercel || !frontendUrl.includes('azurewebsites.net');
+  
+  // For cross-site requests, ALWAYS use SameSite=None with Secure=true
+  const sameSite = isCrossSite ? 'None' : (config.cookies.sameSite === 'strict' ? 'Strict' : 'Lax');
   const secure = true; // Always true since backend is HTTPS
   
   return {

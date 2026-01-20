@@ -10,6 +10,8 @@ export interface AuthenticationConfig {
     clientSecret: string;
     redirectUri: string;
     scopes: string[];
+    allowedTenantIds: string[];
+    authority: 'common' | 'organizations' | string;
   };
 
   // Token Settings
@@ -58,13 +60,18 @@ export interface AuthenticationConfig {
  * Load configuration from environment variables
  */
 export function loadConfig(): AuthenticationConfig {
+  // Determine default authority: empty string for single-tenant mode (when tenantId is set),
+  // 'common' for multi-tenant mode (when tenantId is not set)
+  const defaultAuthority = process.env.AZURE_AD_TENANT_ID ? '' : 'common';
   return {
     azureAd: {
       tenantId: process.env.AZURE_AD_TENANT_ID || '',
       clientId: process.env.AZURE_AD_CLIENT_ID || '',
       clientSecret: process.env.AZURE_AD_CLIENT_SECRET || '',
-      redirectUri: process.env.AUTH_REDIRECT_URI || 'http://localhost:7071/api/auth/callback/b2b',
+      redirectUri: process.env.AUTH_REDIRECT_URI || 'https://func-nectaria-authentication-dev.azurewebsites.net/api/auth/callback/b2b',
       scopes: ['openid', 'profile', 'email', 'offline_access'],
+      allowedTenantIds: process.env.AZURE_AD_ALLOWED_TENANT_IDS?.split(',').map(t => t.trim()).filter(t => t.length > 0) || [],
+      authority: process.env.AZURE_AD_AUTHORITY || (process.env.AZURE_AD_TENANT_ID ? '' : 'common'),
     },
     tokens: {
       accessTokenLifetime: 15 * 60, // 15 minutes
@@ -108,3 +115,9 @@ export function getConfig(): AuthenticationConfig {
   return _config;
 }
 
+/**
+ * Reset config singleton (for testing purposes)
+ */
+export function resetConfig(): void {
+  _config = null;
+}

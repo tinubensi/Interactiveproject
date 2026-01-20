@@ -367,6 +367,9 @@ export interface LeadListRequest {
     
     // LOB-specific filters (dynamic)
     lobFilters?: any;
+    
+    // Quotation filter - excludes leads that have moved to quotations
+    excludeWithQuotation?: boolean; // Default true, set false to include leads with quotations
   };
   
   // Advanced
