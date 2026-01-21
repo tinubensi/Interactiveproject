@@ -9,6 +9,7 @@ import { emailService } from '../../services/emailService';
 import { pdfService } from '../../services/pdfService';
 import { tokenService } from '../../services/tokenService';
 import { publishServiceCompletion } from '../../utils/publishCompletion';
+import { getFrontendUrl } from '../../utils/urlHelper';
 
 /**
  * Pipeline Action Event Data Interface
@@ -89,8 +90,8 @@ async function handleSendQuotationAction(
     const selectionToken = tokenService.generateSelectionToken();
     context.log(`[PIPELINE ACTION] Generated selection token`);
 
-    // Construct the review link
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    // Construct the review link using validated frontend URL
+    const frontendUrl = getFrontendUrl();
     const reviewLink = `${frontendUrl}/quotations/review/${selectionToken}`;
     context.log(`[PIPELINE ACTION] Review link: ${reviewLink}`);
 
