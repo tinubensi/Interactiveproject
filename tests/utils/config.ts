@@ -16,7 +16,6 @@ const SERVICE_PORTS = {
   audit: 7073,
   staffManagement: 7074,
   notification: 7075,
-  workflow: 7076,
   customer: 7077,
   lead: 7078,
   form: 7079,
@@ -55,12 +54,6 @@ export const SERVICES: Record<string, ServiceConfig> = {
     name: 'notification-service',
     url: process.env.NOTIFICATION_SERVICE_URL || `http://localhost:${SERVICE_PORTS.notification}`,
     port: SERVICE_PORTS.notification,
-    healthEndpoint: '/api/health',
-  },
-  workflow: {
-    name: 'workflow-service',
-    url: process.env.WORKFLOW_SERVICE_URL || `http://localhost:${SERVICE_PORTS.workflow}`,
-    port: SERVICE_PORTS.workflow,
     healthEndpoint: '/api/health',
   },
   customer: {

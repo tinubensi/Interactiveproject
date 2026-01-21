@@ -59,6 +59,47 @@ npm start
 ### Revisions
 - `GET /api/quotations/{id}/revisions` - Get revision history
 
+## Filtering
+
+### List Quotations Filters
+
+The `/api/quotations/list` endpoint supports comprehensive filtering:
+
+```json
+{
+  "page": 1,
+  "limit": 20,
+  "sortBy": "createdAt",
+  "sortOrder": "desc",
+  "filters": {
+    "status": ["draft", "pending", "sent", "rejected"],
+    "lineOfBusiness": ["medical", "motor"],
+    "isCurrentVersion": true
+  }
+}
+```
+
+**Filter Parameters:**
+- `status`: Array of quotation statuses
+  - Available: draft, pending, sent, viewed, revision_requested, approved, rejected, expired, superseded, pending_approval, policy_issued
+  - **Default Listing**: draft, pending, sent, viewed, revision_requested, rejected, superseded
+  - **Excluded from default**: pending_approval (has dedicated page), policy_issued (has dedicated page), approved, expired
+- `lineOfBusiness`: Array of LOB values (medical, motor, general, marine)
+- `isCurrentVersion`: Boolean to filter current/superseded versions
+
+**Status Lifecycle:**
+1. `draft` → Initial creation
+2. `pending` → Awaiting review
+3. `sent` → Sent to customer
+4. `viewed` → Customer viewed quotation
+5. `pending_approval` → Customer selected plan (dedicated page)
+6. `revision_requested` → Customer requested changes
+7. `approved` → Internally approved
+8. `policy_issued` → Policy issued (dedicated page)
+9. `rejected` → Rejected by customer/internal
+10. `expired` → Validity period expired
+11. `superseded` → Replaced by newer revision
+
 ## Events
 
 ### Published

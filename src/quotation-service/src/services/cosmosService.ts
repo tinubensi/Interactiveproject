@@ -127,6 +127,22 @@ class CosmosService {
     });
   }
 
+  /**
+   * List quotations with pagination, filtering, and sorting
+   * 
+   * Filtering Behavior:
+   * - status: Filters quotations by status. Frontend typically passes only "active" statuses
+   *   (draft, pending, sent, viewed, revision_requested, rejected, superseded) to exclude
+   *   quotations with dedicated pages (pending_approval, policy_issued).
+   * - lineOfBusiness: Filters quotations by line of business (medical, motor, general, marine).
+   *   This allows filtering quotations by insurance type.
+   * - isCurrentVersion: Filters for current versions (true) or superseded versions (false).
+   * 
+   * Default Behavior for Quotation Listings:
+   * - Frontend should pass status filter to exclude statuses with dedicated pages
+   * - Backend applies the filters to ensure correct pagination counts
+   * - This ensures proper separation between different quotation views
+   */
   async listQuotations(request: QuotationListRequest): Promise<QuotationListResponse> {
     const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc', filters = {}, leadId, customerId } = request;
 
@@ -156,6 +172,14 @@ class CosmosService {
     if (filters.isCurrentVersion !== undefined) {
       conditions.push(`c.isCurrentVersion = @isCurrentVersion${paramIndex}`);
       parameters.push({ name: `@isCurrentVersion${paramIndex}`, value: filters.isCurrentVersion });
+      paramIndex++;
+    }
+
+    // Line of Business filter - allows filtering by insurance type (medical, motor, general, marine)
+    // This enables users to view quotations specific to a line of business
+    if (filters.lineOfBusiness && filters.lineOfBusiness.length > 0) {
+      conditions.push(`ARRAY_CONTAINS(@lobs${paramIndex}, c.lineOfBusiness)`);
+      parameters.push({ name: `@lobs${paramIndex}`, value: filters.lineOfBusiness });
       paramIndex++;
     }
 

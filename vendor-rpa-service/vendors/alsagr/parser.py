@@ -228,6 +228,17 @@ class AlsagrParser:
                 # Store modal text for reference
                 if "modal_text" in modal_data:
                     plan_data["rawPlanData"]["modal_text"] = self.clean_text(modal_data["modal_text"])
+                
+                # Create structured network object from modal data (Unified Structure V2)
+                tpa_from_modal = plan_data["lobSpecificData"].get("tpa")
+                network_from_modal = plan_data["lobSpecificData"].get("network")
+                
+                if tpa_from_modal or network_from_modal:
+                    plan_data["network"] = {
+                        "tpa": tpa_from_modal,
+                        "networkName": network_from_modal,
+                        "networkType": "local"  # default, can be overridden
+                    }
             
             # Premium from HTML (second priority)
             if "html_premium" in html_data and html_data["html_premium"]:
@@ -239,8 +250,37 @@ class AlsagrParser:
             
             # Plan name from HTML
             if "html_plan_name" in html_data and html_data["html_plan_name"]:
-                plan_data["planName"] = self.clean_text(html_data["html_plan_name"])
-                plan_data["rawPlanData"]["plan_name"] = plan_data["planName"]
+                # Extract clean plan name - get only the tier/type (e.g., "Platinum 1", "Gold 2")
+                raw_plan_name = self.clean_text(html_data["html_plan_name"])
+                
+                # Extract deductible from plan name before cleaning (e.g., "Ded:20%(Max AED 50/-)")
+                ded_match = re.search(r'Ded:(\d+)%(?:\(Max\s+AED\s+([\d,]+))?', raw_plan_name, re.IGNORECASE)
+                if ded_match:
+                    try:
+                        plan_data["deductible"] = float(ded_match.group(1))
+                        plan_data["deductibleMetric"] = "%"
+                        if ded_match.group(2):
+                            max_amount = ded_match.group(2).replace(",", "")
+                            plan_data["lobSpecificData"]["deductibleMax"] = f"AED {max_amount}"
+                    except:
+                        pass
+                
+                # Pattern: "1 17183 - Platinum 1 - DXB - GN (...) Platinum 8807.97"
+                # We want: "Platinum 1"
+                # Extract plan name between first " - " and second " - " OR before "("
+                plan_name_match = re.search(r'-\s*([A-Za-z]+\s*\d*)\s*(?:-|\(|AED|\d)', raw_plan_name)
+                if plan_name_match:
+                    plan_data["planName"] = plan_name_match.group(1).strip()
+                else:
+                    # Fallback: Try to extract any plan tier name
+                    tier_match = re.search(r'(Platinum|Diamond|Gold|Silver|Bronze|Asasi|ASASI|Executive|Essential|Limited|Standard|Flexi)(\s+\d+)?', raw_plan_name, re.IGNORECASE)
+                    if tier_match:
+                        plan_data["planName"] = tier_match.group(0).strip()
+                    else:
+                        # Last fallback: use cleaned raw name (truncated)
+                        plan_data["planName"] = raw_plan_name[:50]
+                
+                plan_data["rawPlanData"]["plan_name"] = raw_plan_name  # Store full name in raw data
                 plan_data["planCode"] = f"ASG-PLA-{re.sub(r'[^a-zA-Z0-9]', '', plan_data['planName'])[:50]}"
                 
             if "html_raw_text" in html_data:
@@ -528,11 +568,7 @@ class AlsagrParser:
             "deductibleMetric": "AED",
             "coInsurance": 0,
             "coInsuranceMetric": "%",
-            "networkType": "local",
-            "networkProvider": None,
-            "tpaProvider": None,
-            "geographicalScope": None,
-            "preExistingConditions": None,
+            "lobSpecificData": {},
             "benefits": [],
             "exclusions": [],
             "rawPlanData": {
@@ -562,7 +598,37 @@ class AlsagrParser:
                 except: pass
             
             if "html_plan_name" in html_data and html_data["html_plan_name"]:
-                plan_data["planName"] = self.clean_text(html_data["html_plan_name"])
+                # Extract clean plan name - get only the tier/type (e.g., "Platinum 1", "Gold 2")
+                raw_plan_name = self.clean_text(html_data["html_plan_name"])
+                
+                # Extract deductible from plan name before cleaning (e.g., "Ded:20%(Max AED 50/-)")
+                ded_match = re.search(r'Ded:(\d+)%(?:\(Max\s+AED\s+([\d,]+))?', raw_plan_name, re.IGNORECASE)
+                if ded_match:
+                    try:
+                        plan_data["deductible"] = float(ded_match.group(1))
+                        plan_data["deductibleMetric"] = "%"
+                        if ded_match.group(2):
+                            max_amount = ded_match.group(2).replace(",", "")
+                            plan_data["lobSpecificData"]["deductibleMax"] = f"AED {max_amount}"
+                    except:
+                        pass
+                
+                # Pattern: "1 17183 - Platinum 1 - DXB - GN (...) Platinum 8807.97"
+                # We want: "Platinum 1"
+                # Extract plan name between first " - " and second " - " OR before "("
+                plan_name_match = re.search(r'-\s*([A-Za-z]+\s*\d*)\s*(?:-|\(|AED|\d)', raw_plan_name)
+                if plan_name_match:
+                    plan_data["planName"] = plan_name_match.group(1).strip()
+                else:
+                    # Fallback: Try to extract any plan tier name
+                    tier_match = re.search(r'(Platinum|Diamond|Gold|Silver|Bronze|Asasi|ASASI|Executive|Essential|Limited|Standard|Flexi)(\s+\d+)?', raw_plan_name, re.IGNORECASE)
+                    if tier_match:
+                        plan_data["planName"] = tier_match.group(0).strip()
+                    else:
+                        # Last fallback: use cleaned raw name (truncated)
+                        plan_data["planName"] = raw_plan_name[:50]
+                
+                plan_data["rawPlanData"]["plan_name_full"] = raw_plan_name  # Store full name in raw data
         
         # --- PARSE JSON DATA ---
         try:
@@ -668,7 +734,20 @@ class AlsagrParser:
                                 coverage_details["Optical Coverage"] = "Included"
                         
                         elif "deductible" in benefit_lower:
-                            plan_data["deductible"] = numeric_value
+                            # Extract deductible value - prefer percentage over AED amount
+                            percent_match = re.search(r'(\d+)%', value_str)
+                            if percent_match:
+                                # Deductible as percentage (e.g., "20% Max AED 50")
+                                plan_data["deductible"] = float(percent_match.group(1))
+                                plan_data["deductibleMetric"] = "%"
+                                # Check for max AED amount
+                                max_match = re.search(r'Max\s+AED\s+([\d,]+)', value_str, re.IGNORECASE)
+                                if max_match:
+                                    plan_data["lobSpecificData"]["deductibleMax"] = f"AED {max_match.group(1)}"
+                            elif numeric_value > 0:
+                                # Deductible as fixed amount
+                                plan_data["deductible"] = numeric_value
+                                plan_data["deductibleMetric"] = "AED"
                         
                         elif "co-insurance" in benefit_lower or "coinsurance" in benefit_lower or "co-pay" in benefit_lower:
                             # Extract percentage
@@ -676,26 +755,26 @@ class AlsagrParser:
                             if percent_match:
                                 plan_data["coInsurance"] = float(percent_match.group(1))
                         
-                        # Extract additional metadata fields
+                        # Extract additional metadata fields (store in lobSpecificData temporarily)
                         elif "network" in benefit_lower:
-                            plan_data["networkProvider"] = value_str
+                            plan_data["lobSpecificData"]["_networkProvider"] = value_str
                             # Determine network type
                             if "gn" in value_str.lower() or "worldwide" in value_str.lower():
-                                plan_data["networkType"] = "global"
+                                plan_data["lobSpecificData"]["_networkType"] = "global"
                             else:
-                                plan_data["networkType"] = "local"
+                                plan_data["lobSpecificData"]["_networkType"] = "local"
                         
                         elif "tpa" in benefit_lower:
-                            plan_data["tpaProvider"] = value_str
+                            plan_data["lobSpecificData"]["_tpaProvider"] = value_str
                         
                         elif "geographical" in benefit_lower or "scope" in benefit_lower:
-                            plan_data["geographicalScope"] = value_str
+                            plan_data["lobSpecificData"]["geographicalScope"] = value_str
                             # Also update network type based on geographical scope
                             if "worldwide" in value_str.lower() or "international" in value_str.lower():
-                                plan_data["networkType"] = "international"
+                                plan_data["lobSpecificData"]["_networkType"] = "international"
                         
                         elif "preexisting" in benefit_lower or "pre-existing" in benefit_lower or "chronic" in benefit_lower:
-                            plan_data["preExistingConditions"] = value_str
+                            plan_data["lobSpecificData"]["preExistingConditions"] = value_str
                     
                     except Exception as e:
                         # Log individual benefit errors but continue processing
@@ -753,6 +832,18 @@ class AlsagrParser:
         except Exception as e:
             # Store error in raw data
             plan_data["rawPlanData"]["parse_error"] = str(e)
+        
+        # Create structured network object (Unified Structure V2)
+        network_provider = plan_data["lobSpecificData"].pop("_networkProvider", None)
+        tpa_provider = plan_data["lobSpecificData"].pop("_tpaProvider", None)
+        network_type = plan_data["lobSpecificData"].pop("_networkType", "local")
+        
+        if network_provider or tpa_provider:
+            plan_data["network"] = {
+                "tpa": tpa_provider,
+                "networkName": network_provider,
+                "networkType": network_type
+            }
         
         return plan_data
 

@@ -733,8 +733,52 @@ async function handleEventForStep(
 
   log(`[EVENT MATCHING] Event ${eventType} WILL advance current step ${currentStep.id} - PROCEEDING`);
 
+  // CRITICAL FIX #2: Check for responseType routing (customer.responded events)
+  // This handles configuration-driven pipelines without explicit decision steps
+  let nextStep = getNextStepForOutcome(pipeline, currentStep, outcome);
+  
+  if (eventType === 'customer.responded' && eventData?.responseType) {
+    const responseType = eventData.responseType as string;
+    log(`[EVENT MATCHING] customer.responded event with responseType: ${responseType}`);
+    
+    // Route based on customer response type
+    if (responseType === 'request_revision') {
+      log(`[EVENT MATCHING] Customer requested revision - routing to Revision Requested stage`);
+      const revisionStep = pipeline.steps.find(s => 
+        s.type === 'stage' && (s as any).stageId === 'revision-requested'
+      );
+      if (revisionStep) {
+        nextStep = revisionStep;
+        log(`[EVENT MATCHING] ✓ Found Revision Requested stage: ${revisionStep.id}`);
+      } else {
+        log(`[EVENT MATCHING] ⚠ Warning: Revision Requested stage not found, using default next step`);
+      }
+    } else if (responseType === 'reject_plans') {
+      log(`[EVENT MATCHING] Customer rejected plans - routing to Lost stage`);
+      const lostStep = pipeline.steps.find(s => 
+        s.type === 'stage' && (s as any).stageId === 'lost'
+      );
+      if (lostStep) {
+        nextStep = lostStep;
+        log(`[EVENT MATCHING] ✓ Found Lost stage: ${lostStep.id}`);
+      } else {
+        log(`[EVENT MATCHING] ⚠ Warning: Lost stage not found, using default next step`);
+      }
+    } else if (responseType === 'plan_selected') {
+      log(`[EVENT MATCHING] Customer selected plan - routing to Pending Review stage`);
+      const pendingReviewStep = pipeline.steps.find(s => 
+        s.type === 'stage' && (s as any).stageId === 'pending-review'
+      );
+      if (pendingReviewStep) {
+        nextStep = pendingReviewStep;
+        log(`[EVENT MATCHING] ✓ Found Pending Review stage: ${pendingReviewStep.id}`);
+      } else {
+        log(`[EVENT MATCHING] ⚠ Warning: Pending Review stage not found, using default next step`);
+      }
+    }
+  }
+
   // Advance to the next step
-  const nextStep = getNextStepForOutcome(pipeline, currentStep, outcome);
   if (nextStep) {
     log(`[EVENT MATCHING] Next step determined: ${nextStep.id} (${nextStep.type})`);
     if (nextStep.type === 'stage') {
@@ -1024,7 +1068,7 @@ async function executeStepInternal(
   switch (step.type) {
     case 'stage':
       try {
-        await executeStageStep(instance, step as StageStep, log);
+        await executeStageStep(instance, step as StageStep, log, eventData);
         log(`Stage step ${step.id} executed successfully`);
       } catch (error) {
         log(`Error executing stage step ${step.id}: ${error}`);
@@ -1078,52 +1122,89 @@ async function executeStepInternal(
       await advanceToStep(instance, pipeline, step, nextStep, triggeredBy, 'completed', log, eventData);
     }
   } else if (nextStep && nextStep.type === 'stage') {
-    // CRITICAL: Next step is a stage - set instance to wait for that stage's trigger event
+    // CRITICAL FIX: Check if CURRENT stage has exitConditions (configuration-driven pipeline)
+    const currentStageMetadata = (step as any).metadata;
     const nextStageStep = nextStep as StageStep;
-    const stageDefinition = getStageById(nextStageStep.stageId);
-    log(`[STAGE EXECUTION] Next step is stage: ${nextStageStep.stageName} (${nextStageStep.stageId})`);
-    log(`[STAGE EXECUTION] Trigger event for next stage: ${stageDefinition?.triggerEvent || 'NONE'}`);
-
-    if (stageDefinition?.triggerEvent) {
-      log(`[STAGE EXECUTION] Setting instance ${instance.instanceId} to wait for event: ${stageDefinition.triggerEvent}`);
+    
+    if (currentStageMetadata?.exitConditions && currentStageMetadata.exitConditions.length > 0) {
+      // Configuration-driven pipeline: Use exitConditions from current stage
+      const primaryExitEvent = currentStageMetadata.exitConditions[0];
+      log(`[STAGE EXECUTION] Current stage has exitConditions: ${currentStageMetadata.exitConditions.join(', ')}`);
+      log(`[STAGE EXECUTION] Setting instance to wait for primary exit event: ${primaryExitEvent}`);
+      
       try {
-        // Use the instance object directly - use updateInstanceStatusDirect to avoid re-querying
         const updatedInstance = await updateInstanceStatusDirect(instance, 'active', {
-          waitingForEvent: stageDefinition.triggerEvent,
+          waitingForEvent: primaryExitEvent,
           nextStepId: nextStep.id,
           nextStepType: nextStep.type,
           nextStageName: nextStageStep.stageName,
         });
-        log(`[STAGE EXECUTION] ✓ Instance ${updatedInstance.instanceId} is now WAITING FOR EVENT: ${stageDefinition.triggerEvent}`);
-        log(`[STAGE EXECUTION] ✓ Instance state: ${updatedInstance.status}, waitingForEvent: ${updatedInstance.waitingForEvent}`);
+        log(`[STAGE EXECUTION] ✓ Instance ${updatedInstance.instanceId} is now WAITING FOR EVENT: ${primaryExitEvent}`);
+        log(`[STAGE EXECUTION] ✓ Using exitConditions from current stage metadata`);
       } catch (error) {
-        log(`[STAGE EXECUTION] ✗ Error setting waiting state for instance ${instance.instanceId}: ${error}`);
-        // Retry once with a delay to allow Cosmos DB to be consistent
+        log(`[STAGE EXECUTION] ✗ Error setting waiting state: ${error}`);
         try {
           await new Promise(resolve => setTimeout(resolve, 1000));
           const retryInstance = await getInstance(instance.instanceId);
-          const updatedInstance = await updateInstanceStatus(retryInstance.instanceId, 'active', {
-            waitingForEvent: stageDefinition.triggerEvent,
+          await updateInstanceStatus(retryInstance.instanceId, 'active', {
+            waitingForEvent: primaryExitEvent,
             nextStepId: nextStep.id,
             nextStepType: nextStep.type,
             nextStageName: nextStageStep.stageName,
             leadId: retryInstance.leadId,
           });
-          log(`[STAGE EXECUTION] ✓ Successfully set waiting state on RETRY for instance ${updatedInstance.instanceId}`);
+          log(`[STAGE EXECUTION] ✓ Successfully set waiting state on RETRY`);
         } catch (retryError) {
-          log(`[STAGE EXECUTION] ✗ Error on retry setting waiting state: ${retryError}`);
-          // Try to update next step info anyway (without waiting state)
-          try {
-            await updateNextStepInfo(instance.instanceId, nextStep);
-            log(`[STAGE EXECUTION] Updated next step info without waiting state (fallback)`);
-          } catch (updateError) {
-            log(`[STAGE EXECUTION] ✗ Error updating next step info: ${updateError}`);
-          }
+          log(`[STAGE EXECUTION] ✗ Error on retry: ${retryError}`);
         }
       }
     } else {
-      log(`[STAGE EXECUTION] ⚠ Warning: Stage ${nextStageStep.stageId} has NO trigger event defined`);
-      await updateNextStepInfo(instance.instanceId, nextStep);
+      // Traditional pipeline: Use next stage's trigger event
+      const stageDefinition = getStageById(nextStageStep.stageId);
+      log(`[STAGE EXECUTION] Next step is stage: ${nextStageStep.stageName} (${nextStageStep.stageId})`);
+      log(`[STAGE EXECUTION] Trigger event for next stage: ${stageDefinition?.triggerEvent || 'NONE'}`);
+
+      if (stageDefinition?.triggerEvent) {
+        log(`[STAGE EXECUTION] Setting instance ${instance.instanceId} to wait for event: ${stageDefinition.triggerEvent}`);
+        try {
+          // Use the instance object directly - use updateInstanceStatusDirect to avoid re-querying
+          const updatedInstance = await updateInstanceStatusDirect(instance, 'active', {
+            waitingForEvent: stageDefinition.triggerEvent,
+            nextStepId: nextStep.id,
+            nextStepType: nextStep.type,
+            nextStageName: nextStageStep.stageName,
+          });
+          log(`[STAGE EXECUTION] ✓ Instance ${updatedInstance.instanceId} is now WAITING FOR EVENT: ${stageDefinition.triggerEvent}`);
+          log(`[STAGE EXECUTION] ✓ Instance state: ${updatedInstance.status}, waitingForEvent: ${updatedInstance.waitingForEvent}`);
+        } catch (error) {
+          log(`[STAGE EXECUTION] ✗ Error setting waiting state for instance ${instance.instanceId}: ${error}`);
+          // Retry once with a delay to allow Cosmos DB to be consistent
+          try {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const retryInstance = await getInstance(instance.instanceId);
+            const updatedInstance = await updateInstanceStatus(retryInstance.instanceId, 'active', {
+              waitingForEvent: stageDefinition.triggerEvent,
+              nextStepId: nextStep.id,
+              nextStepType: nextStep.type,
+              nextStageName: nextStageStep.stageName,
+              leadId: retryInstance.leadId,
+            });
+            log(`[STAGE EXECUTION] ✓ Successfully set waiting state on RETRY for instance ${updatedInstance.instanceId}`);
+          } catch (retryError) {
+            log(`[STAGE EXECUTION] ✗ Error on retry setting waiting state: ${retryError}`);
+            // Try to update next step info anyway (without waiting state)
+            try {
+              await updateNextStepInfo(instance.instanceId, nextStep);
+              log(`[STAGE EXECUTION] Updated next step info without waiting state (fallback)`);
+            } catch (updateError) {
+              log(`[STAGE EXECUTION] ✗ Error updating next step info: ${updateError}`);
+            }
+          }
+        }
+      } else {
+        log(`[STAGE EXECUTION] ⚠ Warning: Stage ${nextStageStep.stageId} has NO trigger event defined`);
+        await updateNextStepInfo(instance.instanceId, nextStep);
+      }
     }
   } else {
     // No next step or next step is a wait/approval step
@@ -1138,13 +1219,14 @@ async function executeStepInternal(
 async function executeStageStep(
   instance: PipelineInstance,
   step: StageStep | EnhancedStageStep,
-  log: (...args: unknown[]) => void
+  log: (...args: unknown[]) => void,
+  eventData?: EventData
 ): Promise<void> {
   log(`[EXECUTE STAGE] Starting execution of stage step: ${step.stageName} (${step.stageId})`);
   log(`[EXECUTE STAGE] Lead ID: ${instance.leadId}, Instance ID: ${instance.instanceId}`);
 
   // 1. Always update lead stage synchronously (critical path)
-  await updateLeadStageSync(instance, step, log);
+  await updateLeadStageSync(instance, step, log, eventData);
 
   // 2. Check if this is an enhanced stage step with action config
   const enhancedStep = step as EnhancedStageStep;
@@ -1208,7 +1290,8 @@ async function executeStageStep(
 async function updateLeadStageSync(
   instance: PipelineInstance,
   step: StageStep,
-  log: (...args: unknown[]) => void
+  log: (...args: unknown[]) => void,
+  eventData?: EventData
 ): Promise<void> {
   // Map pipeline stage name to Lead Service stage ID
   const leadServiceStageId = STAGE_NAME_TO_LEAD_SERVICE_ID[step.stageName];
@@ -1223,6 +1306,16 @@ async function updateLeadStageSync(
   log(`[EXECUTE STAGE] Lead Service URL: ${process.env.LEAD_SERVICE_URL || 'not set'}`);
   log(`[EXECUTE STAGE] Service Key configured: ${process.env.INTERNAL_SERVICE_KEY ? 'YES' : 'NO'}`);
 
+  // Extract metadata from eventData if present
+  const metadata = eventData?.metadata as Record<string, any> | undefined;
+  if (metadata) {
+    log(`[EXECUTE STAGE] ✓ Event metadata present, will include in timeline entry`);
+    log(`[EXECUTE STAGE] Metadata content:`, JSON.stringify(metadata, null, 2));
+  } else {
+    log(`[EXECUTE STAGE] ⚠ No metadata found in eventData`);
+    log(`[EXECUTE STAGE] eventData keys: ${Object.keys(eventData || {}).join(', ')}`);
+  }
+
   // CRITICAL: Retry lead stage update with smart timeout handling
   let stageUpdateSuccess = false;
   let lastResult: UpdateLeadStageResult | null = null;
@@ -1231,13 +1324,18 @@ async function updateLeadStageSync(
     try {
       log(`[EXECUTE STAGE] Attempting to update lead stage (attempt ${attempt}/3)...`);
       // Wrap Lead Service call with circuit breaker to prevent cascade failures
+      const stageRequest = {
+        stageId: leadServiceStageId,
+        stageName: step.stageName,
+        remark: `Pipeline: ${instance.pipelineName}`,
+        changedBy: 'pipeline-service',
+        metadata: metadata
+      };
+      
+      log(`[EXECUTE STAGE] Sending stage update request with metadata:`, JSON.stringify(stageRequest.metadata || 'undefined', null, 2));
+      
       lastResult = await leadServiceBreaker.execute(
-        () => updateLeadStage(instance.leadId, instance.lineOfBusiness, {
-          stageId: leadServiceStageId,
-          stageName: step.stageName,
-          remark: `Pipeline: ${instance.pipelineName}`,
-          changedBy: 'pipeline-service',
-        }),
+        () => updateLeadStage(instance.leadId, instance.lineOfBusiness, stageRequest),
         'LeadService'
       );
 

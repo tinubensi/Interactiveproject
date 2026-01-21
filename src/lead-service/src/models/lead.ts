@@ -62,6 +62,7 @@ export interface Lead {
   plansCount?: number; // Number of plans fetched
   currentQuotationId?: string; // Reference to QuotationDB.quotations
   policyId?: string; // Reference to PolicyDB.policies
+  revisionRequestedQuotationIds?: string[]; // Track quotations that were revision-requested
   
   // Metadata
   createdAt: Date;
@@ -265,6 +266,7 @@ export interface Timeline {
   quotationId?: string; // If stage change related to quotation
   policyId?: string; // If stage change related to policy
   timestamp: Date;
+  metadata?: Record<string, any>; // Optional metadata for additional context (e.g., vendor timings)
 }
 
 /**
@@ -366,6 +368,9 @@ export interface LeadListRequest {
     
     // LOB-specific filters (dynamic)
     lobFilters?: any;
+    
+    // Quotation filter - excludes leads that have moved to quotations
+    excludeWithQuotation?: boolean; // Default true, set false to include leads with quotations
   };
   
   // Advanced

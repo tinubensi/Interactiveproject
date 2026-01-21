@@ -19,9 +19,10 @@ app.post('/scrape', async (req, res) => {
   const startTime = Date.now();
   
   try {
-    // Spawn Python bot
+    // Spawn Python bot using venv
     const botPath = path.join(__dirname, '../../vendors/alsagr/cli.py');
-    const python = spawn('python3', [
+    const venvPython = path.join(__dirname, '../../venv/bin/python3');
+    const python = spawn(venvPython, [
       botPath,
       '--lead-data', JSON.stringify(leadData)
     ], {
@@ -33,6 +34,7 @@ app.post('/scrape', async (req, res) => {
     
     let output = '';
     let errorOutput = '';
+    let responseCompleted = false;
     
     python.stdout.on('data', (data) => {
       output += data.toString();
@@ -45,6 +47,9 @@ app.post('/scrape', async (req, res) => {
     });
     
     python.on('close', (code) => {
+      if (responseCompleted) return; // Already sent response
+      responseCompleted = true;
+      
       const duration = ((Date.now() - startTime) / 1000).toFixed(1);
       
       if (code === 0) {
@@ -77,6 +82,8 @@ app.post('/scrape', async (req, res) => {
     
     // Timeout after 5 minutes
     setTimeout(() => {
+      if (responseCompleted) return; // Already sent response
+      responseCompleted = true;
       python.kill();
       res.status(408).json({ 
         success: false, 

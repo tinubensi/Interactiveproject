@@ -1,0 +1,492 @@
+"""
+Alsagr Plan Scraper Module
+Handles extraction of insurance plan details from Alsagr portal
+Uses eye button to open modal and capture JSON API response
+"""
+import asyncio
+import os
+import re
+import time
+from typing import List, Dict, Any, Optional
+from playwright.async_api import Page
+from vendors.base.utils import setup_logging
+from vendors.alsagr.parser import AlsagrParser
+
+class AlsagrScraper:
+    """
+    Scraper class for extracting Alsagr insurance plan details
+    Clicks eye button to open modal and captures JSON API response
+    """
+    
+    def __init__(self, page: Page, config: Optional[Dict[str, Any]] = None, form_data: Optional[Dict[str, Any]] = None):
+        self.page = page
+        self.config = config or {}
+        self.form_data = form_data
+        self.logger = setup_logging(self.config.get('log_level', 'INFO'))
+        self.parser = AlsagrParser()
+        self.download_dir = "/tmp/alsagr_downloads"
+        os.makedirs(self.download_dir, exist_ok=True)
+        try: os.chmod(self.download_dir, 0o777)
+        except: pass
+
+    async def extract_all_plans(self, bot) -> List[Dict[str, Any]]:
+        self.logger.info("🚀 Starting Alsagr plan extraction...")
+        await self.page.wait_for_load_state("networkidle")
+        await asyncio.sleep(1)  # Optimized: reduced from 3s to 1s
+        
+        # Select "All Plan Types" to show all plans
+        self.logger.info("Selecting 'All Plan Types'...")
+        try:
+            await self.page.locator("#planType").select_option("")
+            await asyncio.sleep(3)  # Increased wait for plans to load
+            await self.page.wait_for_load_state("networkidle")
+            self.logger.info("✓ Selected 'All Plan Types'")
+        except Exception as e:
+            self.logger.warning(f"Could not change plan type: {e}")
+        
+        # Scroll to bottom to ensure all plan sections/categories are loaded
+        # (Portal shows Executive, Standard, Essential, Limited sections)
+        self.logger.info("Scrolling to load all plan sections...")
+        await self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        await asyncio.sleep(2)  # Wait for any lazy-loaded content
+        await self.page.wait_for_load_state("networkidle")
+        self.logger.info("✓ Page scrolled to bottom")
+        
+        # Expand all collapsible plan sections if they exist
+        # (Sections may be collapsed: Executive, Standard, Essential, Limited)
+        self.logger.info("Checking for collapsible sections...")
+        try:
+            # Look for common collapse/expand elements
+            expand_buttons = await self.page.locator("button:has-text('Expand'), a:has-text('Show'), .collapsed, [data-toggle='collapse']").all()
+            if expand_buttons:
+                self.logger.info(f"Found {len(expand_buttons)} collapsible sections, expanding...")
+                for btn in expand_buttons:
+                    try:
+                        await btn.click()
+                        await asyncio.sleep(0.5)
+                    except:
+                        pass
+                await self.page.wait_for_load_state("networkidle")
+                self.logger.info("✓ All sections expanded")
+            else:
+                self.logger.info("✓ No collapsible sections found (all visible)")
+        except Exception as e:
+            self.logger.warning(f"Could not expand sections: {e}")
+        
+        # Find all plan rows - look for Download TOB buttons to count plans
+        tob_buttons = await self.page.get_by_title("Download TOB").all()
+        num_plans = len(tob_buttons)
+        self.logger.info(f"Found {num_plans} TOB buttons (plans) on current view")
+        
+        # Check if there's pagination or "Load More" functionality
+        try:
+            # Look for pagination elements
+            pagination = await self.page.locator(".pagination, [class*='paging'], [class*='page-'], button:has-text('Load More'), button:has-text('Show More')").count()
+            if pagination > 0:
+                self.logger.warning(f"⚠️  Pagination elements detected ({pagination} found) - may need pagination support!")
+        except:
+            pass
+        
+        structured_plans = []
+        
+        if num_plans == 0:
+            self.logger.error("❌ NO PLANS FOUND!")
+            return []
+
+        # Process each plan row
+        for index in range(num_plans):
+            self.logger.info(f"\nProcessing plan {index + 1}/{num_plans}...")
+            
+            try:
+                # Re-query to get fresh buttons
+                tob_buttons = await self.page.get_by_title("Download TOB").all()
+                if index >= len(tob_buttons):
+                    break
+                    
+                download_button = tob_buttons[index]
+                await download_button.scroll_into_view_if_needed()
+                
+                # Extract HTML data from row
+                plan_number = f"Plan-{index+1}"
+                html_premium = "0.00"
+                html_plan_name = "Unknown Plan"
+                
+                try:
+                    parent_row = download_button.locator("xpath=./ancestor::tr")
+                    row_text = await parent_row.inner_text()
+                    lines = [l.strip() for l in row_text.split('\n') if l.strip()]
+                    if lines:
+                        html_plan_name = lines[0]
+                        # Extract plan number
+                        plan_num_match = re.match(r'\d+\s+(\d+)\s*-', html_plan_name)
+                        if plan_num_match:
+                            plan_number = plan_num_match.group(1)
+                        else:
+                            plan_num_match = re.match(r'(\d+)\s*-', html_plan_name)
+                            if plan_num_match:
+                                plan_number = plan_num_match.group(1)
+                        
+                        # Extract premium
+                        premium_match = re.search(r'(Platinum|Diamond|Gold|Silver|Bronze|Asasi|ASASI|Executive|Essential|Limited|Standard)\s+([\d,]+\.?\d*)\s*$', html_plan_name, re.IGNORECASE)
+                        if premium_match:
+                            html_premium = premium_match.group(2).replace(",", "")
+                    
+                    self.logger.info(f"  Plan: {html_plan_name[:60]}...")
+                    
+                    # Find the EYE button in the same row
+                    # Based on browser_actions.py lines 224-275
+                    eye_button = None
+                    try:
+                        # Add timeout to prevent hanging - Increased to 10s for reliability
+                        all_icons = await asyncio.wait_for(
+                            parent_row.locator("i").all(),
+                            timeout=10.0
+                        )
+                        self.logger.info(f"  Found {len(all_icons)} icons in row")
+                        
+                        for icon in all_icons:
+                            try:
+                                parent_elem = icon.locator("..")
+                                parent_title = await asyncio.wait_for(
+                                    parent_elem.get_attribute("title"),
+                                    timeout=5.0  # Increased to 5s for reliability
+                                ) or ""
+                                
+                                # Skip if it's the download button
+                                if "download" not in parent_title.lower():
+                                    eye_button = parent_elem
+                                    self.logger.info(f"  ✓ Found eye button")
+                                    break
+                            except asyncio.TimeoutError:
+                                self.logger.debug(f"  Timeout getting icon attribute, skipping")
+                                continue
+                            except:
+                                continue
+                    except asyncio.TimeoutError:
+                        self.logger.warning(f"  Timeout finding icons in row (5s)")  # Updated message
+                    except Exception as e:
+                        self.logger.warning(f"  Could not find eye button: {e}")
+                    
+                    if not eye_button:
+                        self.logger.warning(f"  ⚠️ No eye button found, skipping plan")
+                        continue
+                    
+                except Exception as e:
+                    self.logger.warning(f"  Error extracting row data: {e}")
+                    continue
+                
+                # Initialize data containers
+                html_data = {}  # For storing modal text and other HTML-extracted data
+                json_data = None
+                json_captured = False
+                
+                async def handle_response(response):
+                    nonlocal json_data, json_captured
+                    try:
+                        url = response.url
+                        # Capture any plan-related API response (broader pattern)
+                        # Looking for: planId, plan, tob, product, quotation endpoints
+                        if any(keyword in url.lower() for keyword in ['planid', 'plan', 'tob', 'product', 'quotation']):
+                            content_type = response.headers.get('content-type', '').lower()
+                            if 'application/json' in content_type:
+                                # Log the URL to see what endpoints are being used
+                                self.logger.debug(f"  📡 Capturing API: {url[:100]}...")
+                                json_data = await response.json()
+                                json_captured = True
+                                self.logger.info(f"  📥 JSON captured: {len(json_data) if isinstance(json_data, list) else 'object'} items")
+                    except:
+                        pass
+                
+                # Use try/finally to ensure listener is ALWAYS removed
+                handler_added = False
+                try:
+                    self.page.on("response", handle_response)
+                    handler_added = True
+                    
+                    # Click eye button to open modal and trigger API
+                    self.logger.info(f"  Clicking eye button...")
+                    await asyncio.wait_for(eye_button.click(force=True), timeout=10.0)
+                    
+                    # Wait for modal to appear and extract its content
+                    try:
+                        await self.page.wait_for_selector(".modal.show", state="visible", timeout=5000)
+                        self.logger.info(f"  ✓ Modal opened")
+                        
+                        # Extract modal text content for reference
+                        try:
+                            modal_element = await self.page.locator(".modal.show").first
+                            modal_text = await modal_element.inner_text()
+                            if modal_text and len(modal_text) > 50:
+                                self.logger.info(f"  📄 Modal text: {len(modal_text)} chars")
+                                # Store modal text in html_data for later use
+                                html_data['modal_text'] = modal_text[:5000]  # Limit to 5000 chars
+                        except Exception as e:
+                            self.logger.debug(f"  Could not extract modal text: {e}")
+                    except:
+                        self.logger.warning(f"  Modal may not have opened")
+                    
+                    # Wait for JSON response - Increased to 20s timeout for all plans
+                    for _ in range(100):  # 100 × 0.2s = 20s max
+                        if json_captured:
+                            break
+                        await asyncio.sleep(0.2)
+                    
+                    # Close modal - Use close button since backdrop is static
+                    try:
+                        # Try clicking the close button (X)
+                        close_button = self.page.locator("button.btn-close, button[data-bs-dismiss='modal']").first
+                        await close_button.click(timeout=2000)
+                        await asyncio.sleep(0.3)
+                        # Wait for modal to fully disappear
+                        await self.page.wait_for_selector(".modal.show", state="hidden", timeout=3000)
+                        await asyncio.sleep(0.2)  # Extra safety
+                    except Exception as e:
+                        # Fallback: try Escape key
+                        try:
+                            await self.page.keyboard.press("Escape")
+                            await asyncio.sleep(0.5)
+                        except:
+                            pass
+                        # Force wait for modal to disappear
+                        self.logger.warning(f"  Modal close slow, waiting...")
+                        await asyncio.sleep(1.5)
+                    
+                except asyncio.TimeoutError:
+                    self.logger.error(f"  ❌ Timeout clicking eye button (10s)")
+                except Exception as e:
+                    self.logger.error(f"  ❌ Error clicking eye button: {e}")
+                finally:
+                    # ALWAYS remove listener to prevent memory leaks
+                    if handler_added:
+                        try:
+                            self.page.remove_listener("response", handle_response)
+                        except:
+                            pass
+                
+                # Parse JSON data if captured
+                if json_captured and json_data:
+                    self.logger.info(f"  [PARSING] Processing JSON data...")
+                    try:
+                        # Build html_data with modal_text if available
+                        html_data_dict = {
+                            'plan_number': plan_number,
+                            'html_premium': html_premium,
+                            'html_plan_name': html_plan_name
+                        }
+                        if 'modal_text' in html_data:
+                            html_data_dict['modal_text'] = html_data['modal_text']
+                        
+                        plan = self.parser.parse_json_benefits(
+                            json_data=json_data,
+                            html_data=html_data_dict,
+                            form_data=self.form_data
+                        )
+                        
+                        # Download PDF for additional data extraction
+                        pdf_path = await self._download_plan_pdf(download_button, index)
+                        if pdf_path:
+                            plan['pdf_path'] = pdf_path
+                            self.logger.info(f"  ✓ PDF downloaded: {pdf_path}")
+                        else:
+                            # If PDF download failed, note that we have modal text as fallback
+                            if 'modal_text' in html_data:
+                                self.logger.info(f"  💡 Modal text available as fallback")
+                        
+                        structured_plans.append(plan)
+                        self.logger.info(f"  ✓ Plan parsed successfully from JSON")
+                    except Exception as e:
+                        self.logger.error(f"  ❌ JSON parse error: {e}")
+                else:
+                    self.logger.warning(f"  ⚠️ No JSON data captured for this plan")
+                
+                await asyncio.sleep(0.5)  # Wait between plans to ensure UI stability
+                
+            except Exception as e:
+                self.logger.error(f"Error processing plan {index}: {e}")
+                continue
+
+        self.logger.info(f"\n✅ Successfully extracted {len(structured_plans)} plans")
+        return structured_plans
+    
+    async def _download_plan_pdf(self, download_button, index: int) -> Optional[str]:
+        """
+        Download real PDF from TOB button popup.
+        The popup shows a PDF viewer with embedded PDF - we need to find and download the actual PDF.
+        """
+        try:
+            import time
+            filename = f"plan_{index}_{int(time.time())}.pdf"
+            filepath = os.path.join(self.download_dir, filename)
+            
+            # Set up download listener BEFORE clicking
+            pdf_downloaded = False
+            downloaded_path = None
+            
+            async def handle_download(download):
+                nonlocal pdf_downloaded, downloaded_path
+                try:
+                    # Save the download to our target path
+                    await download.save_as(filepath)
+                    pdf_downloaded = True
+                    downloaded_path = filepath
+                    file_size = os.path.getsize(filepath)
+                    self.logger.info(f"  ✅ PDF downloaded via browser: {file_size} bytes ({file_size/1024:.1f} KB)")
+                except Exception as e:
+                    self.logger.error(f"  ❌ Failed to save download: {e}")
+            
+            # Register download handler
+            self.page.on("download", handle_download)
+            
+            try:
+                # Click download/TOB button and handle popup
+                self.logger.info(f"  🔗 Clicking TOB button...")
+                async with self.page.expect_popup(timeout=15000) as page1_info:
+                    await download_button.click()
+                
+                page1 = await page1_info.value
+                
+                # Wait for popup to fully load
+                self.logger.info(f"  ⏳ Waiting for popup to load...")
+                await page1.wait_for_load_state("networkidle", timeout=30000)
+                await asyncio.sleep(2)
+                
+                self.logger.info(f"  📍 Popup URL: {page1.url}")
+                
+                # Method 1: Check if we got a direct download (rare but possible)
+                if pdf_downloaded:
+                    self.logger.info(f"  ✓ PDF downloaded automatically")
+                    await page1.close()
+                    return downloaded_path
+                
+                # Method 2: Check if URL is direct PDF
+                if page1.url.endswith(".pdf") or "/pdf/" in page1.url.lower() or "content-type" in page1.url.lower():
+                    self.logger.info(f"  📥 Direct PDF URL detected")
+                    try:
+                        response = await page1.request.get(page1.url)
+                        body = await response.body()
+                        
+                        with open(filepath, "wb") as f:
+                            f.write(body)
+                        
+                        file_size = os.path.getsize(filepath)
+                        self.logger.info(f"  ✅ Downloaded PDF from URL: {file_size} bytes ({file_size/1024:.1f} KB)")
+                        
+                        await page1.close()
+                        return filepath
+                    except Exception as e:
+                        self.logger.warning(f"  ⚠️ Direct download failed: {e}")
+                
+                # Method 3: Look for embedded PDF (iframe, embed, object tags)
+                self.logger.info(f"  🔍 Looking for embedded PDF...")
+                pdf_url = None
+                
+                # Check for iframe with PDF
+                try:
+                    iframes = await page1.locator("iframe").all()
+                    for iframe in iframes:
+                        src = await iframe.get_attribute("src")
+                        if src and (".pdf" in src.lower() or "pdf" in src.lower()):
+                            pdf_url = src
+                            self.logger.info(f"  ✓ Found PDF in iframe: {pdf_url[:100]}")
+                            break
+                except:
+                    pass
+                
+                # Check for embed tag
+                if not pdf_url:
+                    try:
+                        embeds = await page1.locator("embed[type*='pdf'], embed[src*='.pdf']").all()
+                        if embeds:
+                            pdf_url = await embeds[0].get_attribute("src")
+                            self.logger.info(f"  ✓ Found PDF in embed: {pdf_url[:100]}")
+                    except:
+                        pass
+                
+                # Check for object tag
+                if not pdf_url:
+                    try:
+                        objects = await page1.locator("object[type*='pdf'], object[data*='.pdf']").all()
+                        if objects:
+                            pdf_url = await objects[0].get_attribute("data")
+                            self.logger.info(f"  ✓ Found PDF in object: {pdf_url[:100]}")
+                    except:
+                        pass
+                
+                # Method 4: Check page content for PDF link
+                if not pdf_url:
+                    try:
+                        # Look for any link/button containing "pdf" or "download"
+                        pdf_links = await page1.locator("a[href*='.pdf'], a[href*='pdf'], button:has-text('Download')").all()
+                        if pdf_links:
+                            href = await pdf_links[0].get_attribute("href")
+                            if href:
+                                pdf_url = href
+                                self.logger.info(f"  ✓ Found PDF link: {pdf_url[:100]}")
+                    except:
+                        pass
+                
+                # If we found a PDF URL, download it
+                if pdf_url:
+                    self.logger.info(f"  📥 Downloading PDF from: {pdf_url[:150]}")
+                    try:
+                        # Handle relative URLs
+                        if pdf_url.startswith("/"):
+                            base_url = page1.url.split("://")[0] + "://" + page1.url.split("://")[1].split("/")[0]
+                            pdf_url = base_url + pdf_url
+                        elif not pdf_url.startswith("http"):
+                            base_url = "/".join(page1.url.split("/")[:-1])
+                            pdf_url = base_url + "/" + pdf_url
+                        
+                        # Download the PDF
+                        response = await page1.request.get(pdf_url)
+                        body = await response.body()
+                        
+                        with open(filepath, "wb") as f:
+                            f.write(body)
+                        
+                        file_size = os.path.getsize(filepath)
+                        self.logger.info(f"  ✅ Downloaded embedded PDF: {file_size} bytes ({file_size/1024:.1f} KB)")
+                        
+                        await page1.close()
+                        return filepath
+                    except Exception as e:
+                        self.logger.error(f"  ❌ Failed to download embedded PDF: {e}")
+                
+                # Method 5: Last resort - use print to PDF with proper settings
+                self.logger.info(f"  📄 Using print-to-PDF as fallback...")
+                try:
+                    await asyncio.sleep(2)  # Let content render
+                    
+                    await page1.pdf(
+                        path=filepath,
+                        format="A4",
+                        print_background=True,
+                        margin={"top": "10mm", "right": "10mm", "bottom": "10mm", "left": "10mm"}
+                    )
+                    
+                    file_size = os.path.getsize(filepath)
+                    self.logger.info(f"  ✅ Generated PDF: {file_size} bytes ({file_size/1024:.1f} KB)")
+                    
+                    # Check if PDF is too small (likely failed)
+                    if file_size < 5000:  # Less than 5KB is suspiciously small
+                        self.logger.warning(f"  ⚠️ PDF is very small ({file_size} bytes), might be incomplete")
+                    
+                    await page1.close()
+                    return filepath
+                except Exception as e:
+                    self.logger.error(f"  ❌ Print-to-PDF failed: {e}")
+                    await page1.close()
+                    return None
+                    
+            finally:
+                # Always remove download listener
+                try:
+                    self.page.remove_listener("download", handle_download)
+                except:
+                    pass
+            
+        except Exception as e:
+            self.logger.error(f"  ❌ Failed to download plan PDF: {e}")
+            import traceback
+            self.logger.debug(f"  Traceback: {traceback.format_exc()}")
+            return None

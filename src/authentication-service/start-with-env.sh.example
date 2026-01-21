@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Template file for start-with-env.sh
+# Copy this file to start-with-env.sh and fill in your actual values
+# OR set these as environment variables before running
+
+# Load environment variables from local.settings.json or use environment variables
+# If local.settings.json exists, parse it; otherwise use environment variables
+
+if [ -f "local.settings.json" ]; then
+    # Parse local.settings.json and export values
+    export AZURE_AD_TENANT_ID=$(node -e "console.log(require('./local.settings.json').Values.AZURE_AD_TENANT_ID || process.env.AZURE_AD_TENANT_ID || '')")
+    export AZURE_AD_CLIENT_ID=$(node -e "console.log(require('./local.settings.json').Values.AZURE_AD_CLIENT_ID || process.env.AZURE_AD_CLIENT_ID || '')")
+    export AZURE_AD_CLIENT_SECRET=$(node -e "console.log(require('./local.settings.json').Values.AZURE_AD_CLIENT_SECRET || process.env.AZURE_AD_CLIENT_SECRET || '')")
+    export AUTH_REDIRECT_URI=$(node -e "console.log(require('./local.settings.json').Values.AUTH_REDIRECT_URI || process.env.AUTH_REDIRECT_URI || 'http://localhost:7071/api/auth/callback/b2b')")
+    export JWT_SECRET=$(node -e "console.log(require('./local.settings.json').Values.JWT_SECRET || process.env.JWT_SECRET || '')")
+    export INTERNAL_SERVICE_KEY=$(node -e "console.log(require('./local.settings.json').Values.INTERNAL_SERVICE_KEY || process.env.INTERNAL_SERVICE_KEY || '')")
+    export COSMOS_ENDPOINT=$(node -e "console.log(require('./local.settings.json').Values.COSMOS_ENDPOINT || process.env.COSMOS_ENDPOINT || '')")
+    export COSMOS_KEY=$(node -e "console.log(require('./local.settings.json').Values.COSMOS_KEY || process.env.COSMOS_KEY || '')")
+    export COOKIE_DOMAIN=$(node -e "console.log(require('./local.settings.json').Values.COOKIE_DOMAIN || process.env.COOKIE_DOMAIN || 'localhost')")
+    export COOKIE_SECURE=$(node -e "console.log(require('./local.settings.json').Values.COOKIE_SECURE || process.env.COOKIE_SECURE || 'false')")
+    export NODE_TLS_REJECT_UNAUTHORIZED=$(node -e "console.log(require('./local.settings.json').Values.NODE_TLS_REJECT_UNAUTHORIZED || process.env.NODE_TLS_REJECT_UNAUTHORIZED || '0')")
+else
+    # Use environment variables directly (for production/CI)
+    export AZURE_AD_TENANT_ID="${AZURE_AD_TENANT_ID}"
+    export AZURE_AD_CLIENT_ID="${AZURE_AD_CLIENT_ID}"
+    export AZURE_AD_CLIENT_SECRET="${AZURE_AD_CLIENT_SECRET}"
+    export AUTH_REDIRECT_URI="${AUTH_REDIRECT_URI:-http://localhost:7071/api/auth/callback/b2b}"
+    export JWT_SECRET="${JWT_SECRET}"
+    export INTERNAL_SERVICE_KEY="${INTERNAL_SERVICE_KEY}"
+    export COSMOS_ENDPOINT="${COSMOS_ENDPOINT}"
+    export COSMOS_KEY="${COSMOS_KEY}"
+    export COOKIE_DOMAIN="${COOKIE_DOMAIN:-localhost}"
+    export COOKIE_SECURE="${COOKIE_SECURE:-false}"
+    export NODE_TLS_REJECT_UNAUTHORIZED="${NODE_TLS_REJECT_UNAUTHORIZED:-0}"
+fi
+
+echo "Environment variables loaded"
+echo "AZURE_AD_TENANT_ID: $AZURE_AD_TENANT_ID"
+echo "AZURE_AD_CLIENT_ID: $AZURE_AD_CLIENT_ID"
+echo "Starting authentication service..."
+
+npm start

@@ -127,8 +127,50 @@ async def main():
             raw_plans = await asyncio.wait_for(scraper.extract_all_plans(bot), timeout=900.0)
             print(f"Extracted {len(raw_plans)} raw plans", file=sys.stderr)
             
+            # Step 6.5: Enrich plans with PDF data
+            print("Enriching plans with PDF data...", file=sys.stderr)
+            from vendors.alsagr.pdf_parser import parse_plan_pdf
+            enriched_plans = []
+            pdf_paths_to_cleanup = []  # Track PDFs in case parsing fails
+            
+            for plan in raw_plans:
+                if plan.get('pdf_path'):
+                    pdf_paths_to_cleanup.append(plan['pdf_path'])
+                    try:
+                        # Parse PDF and enrich plan data (PDF will be deleted inside parse_plan_pdf)
+                        enriched_plan = await parse_plan_pdf(plan['pdf_path'], plan)
+                        enriched_plans.append(enriched_plan)
+                        print(f"  ✓ Enriched plan with PDF data", file=sys.stderr)
+                    except Exception as e:
+                        print(f"  ⚠️ PDF parsing failed, using base plan: {e}", file=sys.stderr)
+                        enriched_plans.append(plan)
+                        # Cleanup failed PDF
+                        try:
+                            if os.path.exists(plan['pdf_path']):
+                                os.remove(plan['pdf_path'])
+                        except:
+                            pass
+                else:
+                    enriched_plans.append(plan)
+            print(f"PDF enrichment complete: {len(enriched_plans)} plans", file=sys.stderr)
+            
+            # Cleanup any remaining PDFs in download directory
+            try:
+                download_dir = os.environ.get('DOWNLOAD_DIR', '/tmp/alsagr_downloads')
+                if os.path.exists(download_dir):
+                    remaining_files = os.listdir(download_dir)
+                    if remaining_files:
+                        print(f"  🗑️  Cleaning up {len(remaining_files)} remaining files in {download_dir}", file=sys.stderr)
+                        for filename in remaining_files:
+                            try:
+                                os.remove(os.path.join(download_dir, filename))
+                            except:
+                                pass
+            except Exception as cleanup_error:
+                print(f"  ⚠️ Directory cleanup warning: {cleanup_error}", file=sys.stderr)
+            
             # Step 7: Normalize plans using adapter
-            standard_plans = adapter.normalize_response(raw_plans, lead_id)
+            standard_plans = adapter.normalize_response(enriched_plans, lead_id)
             print(f"Normalized to {len(standard_plans)} standard plans", file=sys.stderr)
             
             # Step 8: Save to Cosmos DB
