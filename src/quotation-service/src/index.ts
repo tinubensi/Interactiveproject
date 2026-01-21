@@ -18,6 +18,7 @@ import './functions/quotations/changeStatus';
 import './functions/quotations/reviseQuotation';
 import './functions/quotations/sendQuotation';
 import './functions/quotations/approveReject';
+import './functions/quotations/updateQuotationPlan';
 
 // Import customer-facing public endpoints
 import './functions/customer/getQuotationByToken';

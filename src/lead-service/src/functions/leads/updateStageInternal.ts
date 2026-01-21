@@ -13,6 +13,7 @@ interface InternalStageUpdateRequest {
   stageName: string;
   remark?: string;
   changedBy?: string;
+  metadata?: Record<string, any>;
 }
 
 export async function updateStageInternal(
@@ -221,7 +222,7 @@ export async function updateStageInternal(
     }
 
     // Create timeline entry
-    await cosmosService.createTimelineEntry({
+    const timelineEntry = {
       id: uuidv4(),
       leadId: existingLead.id,
       stage: body.stageName,
@@ -230,8 +231,17 @@ export async function updateStageInternal(
       remark: body.remark || 'Updated by Pipeline Service',
       changedBy: body.changedBy || 'pipeline-service',
       changedByName: 'Pipeline Service',
-      timestamp: new Date()
-    });
+      timestamp: new Date(),
+      metadata: body.metadata
+    };
+    
+    if (body.metadata) {
+      context.log(`[TIMELINE] Creating timeline entry with metadata:`, JSON.stringify(body.metadata, null, 2));
+    } else {
+      context.log(`[TIMELINE] ⚠ Creating timeline entry WITHOUT metadata`);
+    }
+    
+    await cosmosService.createTimelineEntry(timelineEntry);
 
     // Publish lead.stage_changed event for audit/notification
     await eventGridService.publishLeadStageChanged({

@@ -27,6 +27,15 @@ interface PlansFetchedEvent {
     failedVendors?: string[];
     plans?: Plan[]; // Optional - plans are already saved to DB
     timestamp: Date;
+    metadata?: {
+      vendorTimings?: Array<{
+        vendorId: string;
+        vendorName: string;
+        success: boolean;
+        executionTime: string;
+        plansCount: number;
+      }>;
+    };
   };
   dataVersion: string;
 }

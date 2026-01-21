@@ -6,6 +6,7 @@ import re
 from datetime import datetime
 from typing import List, Dict, Any
 from playwright.async_api import Page
+from vendors.sukoon.benefits_enricher import enrich_multiple_plans
 
 
 class SukoonScraper:
@@ -133,7 +134,10 @@ class SukoonScraper:
                 if plan_info['details']:
                     plan_data['plans'].append(plan_info)
             
-            return plan_data['plans']
+            # Enrich plans with static DXB benefits data before returning
+            enriched_plans = enrich_multiple_plans(plan_data['plans'])
+            
+            return enriched_plans
         
         except Exception as e:
             raise Exception(f"Error extracting plans: {e}")

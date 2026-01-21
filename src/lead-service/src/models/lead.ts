@@ -266,6 +266,7 @@ export interface Timeline {
   quotationId?: string; // If stage change related to quotation
   policyId?: string; // If stage change related to policy
   timestamp: Date;
+  metadata?: Record<string, any>; // Optional metadata for additional context (e.g., vendor timings)
 }
 
 /**

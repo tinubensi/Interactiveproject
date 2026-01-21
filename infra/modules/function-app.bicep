@@ -156,6 +156,14 @@ resource functionApp 'Microsoft.Web/sites@2023-01-01' = {
           value: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/azure-ad-client-secret/)'
         }
         {
+          name: 'AZURE_AD_ALLOWED_TENANT_IDS'
+          value: '8e233b2c-7c85-4780-a36d-8c5744284951,08a4fcb1-3ebc-40b4-9079-c3ad9101ba84'
+        }
+        {
+          name: 'AZURE_AD_AUTHORITY'
+          value: 'common'
+        }
+        {
           name: 'AUTH_REDIRECT_URI'
           value: authRedirectUri
         }

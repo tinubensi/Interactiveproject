@@ -1068,7 +1068,7 @@ async function executeStepInternal(
   switch (step.type) {
     case 'stage':
       try {
-        await executeStageStep(instance, step as StageStep, log);
+        await executeStageStep(instance, step as StageStep, log, eventData);
         log(`Stage step ${step.id} executed successfully`);
       } catch (error) {
         log(`Error executing stage step ${step.id}: ${error}`);
@@ -1219,13 +1219,14 @@ async function executeStepInternal(
 async function executeStageStep(
   instance: PipelineInstance,
   step: StageStep | EnhancedStageStep,
-  log: (...args: unknown[]) => void
+  log: (...args: unknown[]) => void,
+  eventData?: EventData
 ): Promise<void> {
   log(`[EXECUTE STAGE] Starting execution of stage step: ${step.stageName} (${step.stageId})`);
   log(`[EXECUTE STAGE] Lead ID: ${instance.leadId}, Instance ID: ${instance.instanceId}`);
 
   // 1. Always update lead stage synchronously (critical path)
-  await updateLeadStageSync(instance, step, log);
+  await updateLeadStageSync(instance, step, log, eventData);
 
   // 2. Check if this is an enhanced stage step with action config
   const enhancedStep = step as EnhancedStageStep;
@@ -1289,7 +1290,8 @@ async function executeStageStep(
 async function updateLeadStageSync(
   instance: PipelineInstance,
   step: StageStep,
-  log: (...args: unknown[]) => void
+  log: (...args: unknown[]) => void,
+  eventData?: EventData
 ): Promise<void> {
   // Map pipeline stage name to Lead Service stage ID
   const leadServiceStageId = STAGE_NAME_TO_LEAD_SERVICE_ID[step.stageName];
@@ -1304,6 +1306,16 @@ async function updateLeadStageSync(
   log(`[EXECUTE STAGE] Lead Service URL: ${process.env.LEAD_SERVICE_URL || 'not set'}`);
   log(`[EXECUTE STAGE] Service Key configured: ${process.env.INTERNAL_SERVICE_KEY ? 'YES' : 'NO'}`);
 
+  // Extract metadata from eventData if present
+  const metadata = eventData?.metadata as Record<string, any> | undefined;
+  if (metadata) {
+    log(`[EXECUTE STAGE] ✓ Event metadata present, will include in timeline entry`);
+    log(`[EXECUTE STAGE] Metadata content:`, JSON.stringify(metadata, null, 2));
+  } else {
+    log(`[EXECUTE STAGE] ⚠ No metadata found in eventData`);
+    log(`[EXECUTE STAGE] eventData keys: ${Object.keys(eventData || {}).join(', ')}`);
+  }
+
   // CRITICAL: Retry lead stage update with smart timeout handling
   let stageUpdateSuccess = false;
   let lastResult: UpdateLeadStageResult | null = null;
@@ -1312,13 +1324,18 @@ async function updateLeadStageSync(
     try {
       log(`[EXECUTE STAGE] Attempting to update lead stage (attempt ${attempt}/3)...`);
       // Wrap Lead Service call with circuit breaker to prevent cascade failures
+      const stageRequest = {
+        stageId: leadServiceStageId,
+        stageName: step.stageName,
+        remark: `Pipeline: ${instance.pipelineName}`,
+        changedBy: 'pipeline-service',
+        metadata: metadata
+      };
+      
+      log(`[EXECUTE STAGE] Sending stage update request with metadata:`, JSON.stringify(stageRequest.metadata || 'undefined', null, 2));
+      
       lastResult = await leadServiceBreaker.execute(
-        () => updateLeadStage(instance.leadId, instance.lineOfBusiness, {
-          stageId: leadServiceStageId,
-          stageName: step.stageName,
-          remark: `Pipeline: ${instance.pipelineName}`,
-          changedBy: 'pipeline-service',
-        }),
+        () => updateLeadStage(instance.leadId, instance.lineOfBusiness, stageRequest),
         'LeadService'
       );
 

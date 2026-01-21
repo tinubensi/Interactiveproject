@@ -127,6 +127,9 @@ export interface QuotationPlan {
   // Selection
   isSelected: boolean; // Which plan customer chose for policy
   
+  // Comment field for plan notes
+  comment?: string;
+  
   // Metadata
   createdAt: Date;
   generatedBy?: string;
