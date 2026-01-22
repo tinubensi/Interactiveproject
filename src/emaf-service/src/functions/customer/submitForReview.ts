@@ -59,9 +59,17 @@ export async function submitForReview(
     );
     
     // Check if all required documents are uploaded
-    const requiredDocs = template?.requiredDocuments.filter(d => d.required) || [];
+    // Exclude signed_pdf type since it's handled separately via signedPdfBlobPath
+    const requiredDocs = template?.requiredDocuments.filter(d => d.required && d.documentType !== 'signed_pdf') || [];
     const uploadedTypes = submission.uploadedDocuments.map(d => d.documentRequirementId);
     const missingDocs = requiredDocs.filter(d => !uploadedTypes.includes(d.id));
+    
+    context.log('EMAF Validation:', {
+      requiredDocs: requiredDocs.map(d => ({ id: d.id, label: d.label, type: d.documentType })),
+      uploadedDocReqIds: uploadedTypes,
+      missingDocs: missingDocs.map(d => d.label),
+      hasSignedPdf: !!submission.signedPdfBlobPath
+    });
     
     if (missingDocs.length > 0) {
       return withCors(request, {
