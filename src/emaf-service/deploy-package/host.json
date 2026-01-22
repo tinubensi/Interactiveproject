@@ -1,0 +1,30 @@
+{
+  "version": "2.0",
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true,
+        "maxTelemetryItemsPerSecond": 20
+      }
+    }
+  },
+  "extensionBundle": {
+    "id": "Microsoft.Azure.Functions.ExtensionBundle",
+    "version": "[4.*, 5.0.0)"
+  },
+  "extensions": {
+    "http": {
+      "routePrefix": "api"
+    },
+    "queues": {
+      "maxPollingInterval": "00:00:02",
+      "visibilityTimeout": "00:05:00",
+      "batchSize": 16,
+      "maxDequeueCount": 3
+    }
+  },
+  "cors": {
+    "allowedOrigins": ["http://localhost:3000", "https://frontend-livid-xi-43.vercel.app"],
+    "supportCredentials": true
+  }
+}
