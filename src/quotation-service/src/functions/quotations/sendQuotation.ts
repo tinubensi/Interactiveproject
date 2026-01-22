@@ -84,8 +84,8 @@ export async function sendQuotation(
     const selectionToken = tokenService.generateSelectionToken();
     context.log(`Generated selection token for quotation ${quotationId}`);
 
-    // Construct the review link - always use localhost:3000 for now
-    const frontendUrl = 'http://localhost:3000';
+    // Construct the review link using environment variable
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const reviewLink = `${frontendUrl}/quotations/review/${selectionToken}`;
     context.log(`Review link: ${reviewLink}`);
 

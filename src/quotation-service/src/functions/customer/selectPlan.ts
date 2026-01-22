@@ -2,6 +2,8 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
 import { tokenService } from '../../services/tokenService';
+import { emafService } from '../../services/emafService';
+import { emailService } from '../../services/emailService';
 import { CustomerSelectPlanRequest } from '../../models/quotation';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
 
@@ -164,6 +166,90 @@ export async function selectPlan(
       // Don't fail the request if event publishing fails
     }
 
+    // Create EMAF submission and send email with link
+    let emafToken: string | undefined;
+    let emafUrl: string | undefined;
+    let emafError: any = null;
+    try {
+      // Map mock vendor IDs to real vendor IDs for existing quotations
+      // TODO: Remove this mapping once all quotations use real vendor IDs
+      const vendorIdMapping: Record<string, string> = {
+        'vendor-1': 'vendor-alsagr',
+        'vendor-2': 'vendor-alsagr',
+        'vendor-3': 'vendor-alsagr',
+        // Add more mappings as needed
+      };
+      
+      let vendorId = selectedPlan.vendorId;
+      
+      // Apply mapping if vendor ID is a mock ID
+      if (vendorIdMapping[vendorId]) {
+        context.log(`⚠️  Mapping mock vendor ID ${vendorId} to ${vendorIdMapping[vendorId]}`);
+        vendorId = vendorIdMapping[vendorId];
+      }
+      
+      context.log('🔍 Attempting to create EMAF submission:', {
+        originalVendorId: selectedPlan.vendorId,
+        mappedVendorId: vendorId,
+        quotationId: quotation.id,
+        leadId: quotation.leadId,
+        selectedPlanId: selectedPlan.id,
+      });
+      
+      // Get customer email from quotation.sentTo field
+      const customerEmail = quotation.sentTo || '';
+      if (!customerEmail) {
+        throw new Error('Customer email not found in quotation');
+      }
+
+      // Use "Customer" as placeholder name since Quotation doesn't store it
+      // TODO: Fetch actual customer name from lead service if needed
+      const customerName = 'Customer';
+      
+      const emafResult = await emafService.createEmafSubmission({
+        leadId: quotation.leadId,
+        quotationId: quotation.id,
+        customerName,
+        customerEmail,
+        selectedPlanId: selectedPlan.id,
+        vendorId,
+        vendorName: selectedPlan.vendorName,
+      }, context);
+
+      emafToken = emafResult.token;
+      emafUrl = emafResult.emafUrl;
+      context.log('✅ EMAF submission created successfully:', {
+        token: emafToken,
+        emafUrl: emafUrl,
+      });
+
+      // Send email with EMAF link
+      try {
+        await emailService.sendEmafEmail({
+          to: customerEmail,
+          customerName,
+          quotationReference: quotation.referenceId,
+          selectedPlanName: selectedPlan.planName,
+          vendorName: selectedPlan.vendorName,
+          emafLink: emafUrl,
+        });
+        context.log('✅ EMAF email sent to customer');
+      } catch (emailError) {
+        context.warn('⚠️ Failed to send EMAF email (non-critical):', emailError);
+        // Don't fail if email fails
+      }
+    } catch (error: any) {
+      emafError = error;
+      context.error('❌ Failed to create EMAF submission:', {
+        error: error.message,
+        stack: error.stack,
+        vendorId: selectedPlan.vendorId,
+        quotationId: quotation.id,
+      });
+      // Don't fail the main request, but log the error
+      // The customer has successfully selected a plan
+    }
+
     return withCors(request, {
       status: 200,
       jsonBody: {
@@ -178,7 +264,15 @@ export async function selectPlan(
             currency: selectedPlan.currency,
           },
           status: 'pending_approval',
-          nextSteps: 'Our team will review your selection and contact you shortly.',
+          nextSteps: emafToken 
+            ? 'You will now be directed to complete your medical application form. A backup link has been sent to your email.'
+            : 'Our team will contact you with next steps shortly.',
+          emafUrl: emafUrl || undefined, // Include EMAF URL in response for frontend redirect
+          emafError: emafError ? {
+            message: emafError.message,
+            // Only include error details in development
+            ...(process.env.NODE_ENV === 'development' && { details: emafError.stack })
+          } : undefined
         },
       },
     });

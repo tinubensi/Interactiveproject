@@ -81,6 +81,23 @@ class CosmosService {
     }
   }
 
+  /**
+   * Get quotation by ID without requiring leadId (uses query instead of point read)
+   * This is useful for staff operations where only quotation ID is known
+   */
+  async getQuotationByIdOnly(id: string): Promise<Quotation | null> {
+    try {
+      const query: SqlQuerySpec = {
+        query: 'SELECT * FROM c WHERE c.id = @id',
+        parameters: [{ name: '@id', value: id }]
+      };
+      const { resources } = await this.quotationsContainer.items.query<Quotation>(query).fetchAll();
+      return resources[0] || null;
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
   async getQuotationsByLeadId(leadId: string): Promise<Quotation[]> {
     const query: SqlQuerySpec = {
       query: 'SELECT * FROM c WHERE c.leadId = @leadId ORDER BY c.version DESC',

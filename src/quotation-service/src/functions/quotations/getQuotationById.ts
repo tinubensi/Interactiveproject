@@ -25,16 +25,14 @@ export async function getQuotationById(
       };
     }
 
-    if (!leadId) {
-      return {
-        status: 400,
-        jsonBody: {
-          error: 'leadId query parameter is required'
-        }
-      };
+    // Get quotation - use efficient point read if leadId provided, otherwise query
+    let quotation;
+    if (leadId) {
+      quotation = await cosmosService.getQuotationById(id, leadId);
+    } else {
+      // Staff endpoint - query by ID only (less efficient but works without partition key)
+      quotation = await cosmosService.getQuotationByIdOnly(id);
     }
-
-    const quotation = await cosmosService.getQuotationById(id, leadId);
 
     if (!quotation) {
       return {
@@ -48,16 +46,13 @@ export async function getQuotationById(
     // Fetch quotation plans
     const plans = await cosmosService.getQuotationPlans(id);
 
-    context.log(`Retrieved quotation: ${quotation.referenceId}`);
+    context.log(`Retrieved quotation: ${quotation.referenceId} (leadId provided: ${!!leadId})`);
 
     return {
       status: 200,
       jsonBody: {
         success: true,
-        data: {
-          quotation,
-          plans
-        }
+        data: quotation // Return just the quotation object, not wrapped
       }
     };
   } catch (error: any) {

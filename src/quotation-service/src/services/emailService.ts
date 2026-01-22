@@ -16,6 +16,15 @@ export interface SendQuotationEmailParams {
   reviewLink: string; // Link for customer to review and select a plan
 }
 
+export interface SendEmafEmailParams {
+  to: string;
+  customerName: string;
+  quotationReference: string;
+  selectedPlanName: string;
+  vendorName: string;
+  emafLink: string; // Link to fill out EMAF
+}
+
 class EmailService {
   private getConfig(): EmailConfig {
     const config = {
@@ -358,6 +367,289 @@ Insurance Portal Team
           content: pdfBuffer,
         },
       ],
+    };
+
+    await transporter.sendMail(mailOptions);
+  }
+
+  async sendEmafEmail({
+    to,
+    customerName,
+    quotationReference,
+    selectedPlanName,
+    vendorName,
+    emafLink
+  }: SendEmafEmailParams): Promise<void> {
+    const transporter = this.createTransporter();
+
+    const mailOptions = {
+      from: '"Insurance Portal" <applications@insuranceportal.com>',
+      to,
+      subject: `Complete Your Medical Application - ${quotationReference}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              line-height: 1.6;
+              color: #1f2937;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+              background-color: #f3f4f6;
+            }
+            .container {
+              background-color: #ffffff;
+              border-radius: 12px;
+              overflow: hidden;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+            .header {
+              background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+              color: #ffffff;
+              padding: 40px 30px;
+              text-align: center;
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 28px;
+              font-weight: 700;
+            }
+            .header .reference {
+              display: inline-block;
+              background: rgba(255, 255, 255, 0.2);
+              padding: 8px 20px;
+              border-radius: 20px;
+              margin-top: 15px;
+              font-size: 14px;
+              font-weight: 600;
+            }
+            .content {
+              padding: 40px 30px;
+            }
+            .greeting {
+              font-size: 18px;
+              color: #1e293b;
+              margin-bottom: 20px;
+            }
+            .message {
+              color: #4b5563;
+              margin: 20px 0;
+              line-height: 1.8;
+            }
+            .plan-info {
+              background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+              border: 1px solid #7dd3fc;
+              border-radius: 12px;
+              padding: 25px;
+              margin: 25px 0;
+            }
+            .plan-info h3 {
+              color: #0369a1;
+              font-size: 14px;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              margin: 0 0 15px 0;
+            }
+            .plan-info .plan-name {
+              color: #075985;
+              font-size: 18px;
+              font-weight: 700;
+              margin-bottom: 5px;
+            }
+            .plan-info .vendor-name {
+              color: #0c4a6e;
+              font-size: 14px;
+            }
+            .cta-box {
+              background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+              border-radius: 12px;
+              padding: 30px;
+              margin: 30px 0;
+              text-align: center;
+            }
+            .cta-box h3 {
+              color: #ffffff;
+              font-size: 18px;
+              margin: 0 0 10px 0;
+            }
+            .cta-box p {
+              color: rgba(255, 255, 255, 0.9);
+              font-size: 14px;
+              margin: 0 0 20px 0;
+            }
+            .cta-button {
+              display: inline-block;
+              background: #ffffff;
+              color: #7c3aed;
+              padding: 14px 32px;
+              border-radius: 8px;
+              text-decoration: none;
+              font-weight: 700;
+              font-size: 16px;
+              box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+            }
+            .cta-button:hover {
+              background: #faf5ff;
+            }
+            .steps {
+              margin: 30px 0;
+            }
+            .steps h3 {
+              color: #1e293b;
+              font-size: 16px;
+              margin-bottom: 15px;
+            }
+            .step {
+              display: flex;
+              align-items: flex-start;
+              margin-bottom: 15px;
+            }
+            .step-number {
+              background: #7c3aed;
+              color: white;
+              width: 28px;
+              height: 28px;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 14px;
+              font-weight: 600;
+              margin-right: 15px;
+              flex-shrink: 0;
+            }
+            .step-text {
+              color: #4b5563;
+              font-size: 14px;
+              padding-top: 4px;
+            }
+            .info-box {
+              background-color: #fef3c7;
+              border: 1px solid #fcd34d;
+              border-radius: 8px;
+              padding: 15px 20px;
+              margin: 20px 0;
+            }
+            .info-box p {
+              color: #92400e;
+              font-size: 13px;
+              margin: 0;
+            }
+            .footer {
+              background-color: #f8fafc;
+              padding: 25px 30px;
+              text-align: center;
+              border-top: 1px solid #e2e8f0;
+            }
+            .footer p {
+              color: #64748b;
+              font-size: 13px;
+              margin: 5px 0;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Complete Your Application</h1>
+              <span class="reference">${quotationReference}</span>
+            </div>
+            
+            <div class="content">
+              <p class="greeting">Dear ${customerName},</p>
+              
+              <p class="message">
+                Thank you for selecting your insurance plan! The next step is to complete your Electronic Medical Application Form (EMAF) to proceed with your application.
+              </p>
+
+              <div class="plan-info">
+                <h3>Your Selected Plan</h3>
+                <div class="plan-name">${selectedPlanName}</div>
+                <div class="vendor-name">Provided by ${vendorName}</div>
+              </div>
+
+              <div class="cta-box">
+                <h3>Complete Your Medical Application</h3>
+                <p>Click the button below to fill out your medical application form.</p>
+                <a href="${emafLink}" class="cta-button">Fill Out Application Form</a>
+              </div>
+
+              <div class="steps">
+                <h3>What to Expect:</h3>
+                <div class="step">
+                  <span class="step-number">1</span>
+                  <span class="step-text">Fill out the medical application form with your details</span>
+                </div>
+                <div class="step">
+                  <span class="step-number">2</span>
+                  <span class="step-text">Upload any required documents</span>
+                </div>
+                <div class="step">
+                  <span class="step-number">3</span>
+                  <span class="step-text">Download the prefilled PDF, add your signature</span>
+                </div>
+                <div class="step">
+                  <span class="step-number">4</span>
+                  <span class="step-text">Re-upload the signed PDF and submit</span>
+                </div>
+                <div class="step">
+                  <span class="step-number">5</span>
+                  <span class="step-text">Our team will review and process your application</span>
+                </div>
+              </div>
+
+              <div class="info-box">
+                <p><strong>Note:</strong> Please have any required documents ready before starting the application process. The application form will specify which documents are needed.</p>
+              </div>
+
+              <p class="message">
+                If you have any questions or need assistance with the application process, please don't hesitate to contact us. We're here to help!
+              </p>
+            </div>
+            
+            <div class="footer">
+              <p>This is an automated message from Insurance Portal.</p>
+              <p>Please do not reply directly to this email.</p>
+              <p>&copy; ${new Date().getFullYear()} Insurance Portal. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `
+Dear ${customerName},
+
+Thank you for selecting your insurance plan! The next step is to complete your Electronic Medical Application Form (EMAF) to proceed with your application.
+
+YOUR SELECTED PLAN
+------------------
+${selectedPlanName}
+Provided by ${vendorName}
+
+Reference: ${quotationReference}
+
+COMPLETE YOUR MEDICAL APPLICATION
+----------------------------------
+To fill out your application form, please visit:
+${emafLink}
+
+WHAT TO EXPECT:
+1. Fill out the medical application form with your details
+2. Upload any required documents
+3. Download the prefilled PDF, add your signature
+4. Re-upload the signed PDF and submit
+5. Our team will review and process your application
+
+NOTE: Please have any required documents ready before starting the application process.
+
+If you have any questions or need assistance, please don't hesitate to contact us.
+
+Best regards,
+Insurance Portal Team
+      `,
     };
 
     await transporter.sendMail(mailOptions);
