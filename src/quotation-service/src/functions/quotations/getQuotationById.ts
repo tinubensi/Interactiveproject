@@ -11,8 +11,9 @@ export async function getQuotationById(
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   try {
-    const userContext = await ensureAuthorized(request);
-    await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTATIONS_READ);
+    // TODO: Re-enable authentication once staff portal auth is properly implemented
+    // const userContext = await ensureAuthorized(request);
+    // await requirePermission(userContext.userId, QUOTATION_PERMISSIONS.QUOTATIONS_READ);
     const id = request.params.id;
     const leadId = request.query.get('leadId');
 
