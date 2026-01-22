@@ -46,13 +46,35 @@ export async function getQuotationById(
     // Fetch quotation plans
     const plans = await cosmosService.getQuotationPlans(id);
 
+    // Find the selected plan if customer has selected one
+    let selectedPlan = null;
+    if (quotation.customerSelectedPlanId && plans.length > 0) {
+      selectedPlan = plans.find(p => p.id === quotation.customerSelectedPlanId || p.planId === quotation.customerSelectedPlanId);
+    }
+
+    // If no snapshot exists but we have a selected plan, create it from the plan details
+    if (!quotation.selectedPlanSnapshot && selectedPlan) {
+      quotation.selectedPlanSnapshot = {
+        planName: selectedPlan.planName,
+        vendorName: selectedPlan.vendorName,
+        annualPremium: selectedPlan.annualPremium,
+        monthlyPremium: selectedPlan.monthlyPremium,
+        currency: selectedPlan.currency,
+      };
+      quotation.selectedPlanPremium = selectedPlan.annualPremium;
+    }
+
     context.log(`Retrieved quotation: ${quotation.referenceId} (leadId provided: ${!!leadId})`);
 
     return {
       status: 200,
       jsonBody: {
         success: true,
-        data: quotation // Return just the quotation object, not wrapped
+        data: {
+          ...quotation,
+          plans, // Include plans in response
+          selectedPlan, // Include selected plan details
+        }
       }
     };
   } catch (error: any) {
