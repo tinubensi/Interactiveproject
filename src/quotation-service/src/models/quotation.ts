@@ -60,6 +60,14 @@ export interface Quotation {
   selectionToken?: string; // Unique token for customer review link
   tokenUsedAt?: Date; // When customer used the token to select a plan
   customerSelectedPlanId?: string; // Plan ID selected by customer
+  selectedPlanPremium?: number; // Premium of selected plan
+  selectedPlanSnapshot?: {
+    planName: string;
+    vendorName: string;
+    annualPremium: number;
+    monthlyPremium: number;
+    currency: string;
+  };
   
   // PDF Document
   pdfUrl?: string; // Blob storage URL

@@ -124,6 +124,14 @@ export async function selectPlan(
       status: 'pending_approval',
       tokenUsedAt: now,
       customerSelectedPlanId: selectedPlan.id,
+      selectedPlanPremium: selectedPlan.annualPremium,
+      selectedPlanSnapshot: {
+        planName: selectedPlan.planName,
+        vendorName: selectedPlan.vendorName,
+        annualPremium: selectedPlan.annualPremium,
+        monthlyPremium: selectedPlan.monthlyPremium,
+        currency: selectedPlan.currency,
+      },
     });
 
     context.log('Quotation updated to pending_approval status');
