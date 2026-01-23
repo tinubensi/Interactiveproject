@@ -206,9 +206,6 @@ export interface QuotationListRequest {
     minPremium?: number;
     maxPremium?: number;
   };
-  
-  // Search
-  search?: string; // Search in referenceId, customerName, etc.
 }
 
 /**
