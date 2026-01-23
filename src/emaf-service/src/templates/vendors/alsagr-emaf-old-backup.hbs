@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medical Application Form - Al Sagr Insurance</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 15mm;
+    }
+    
+    @media print {
+      body { margin: 0; }
+      .page-break { page-break-after: always; }
+      header { position: running(header); }
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: Arial, 'Noto Sans Arabic', sans-serif;
+      font-size: 9pt;
+      line-height: 1.3;
+      color: #000;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 210mm;
+      margin: 0 auto;
+    }
+    
+    /* Header Styles */
+    .header {
+      text-align: center;
+      border-bottom: 3px solid #000;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .header h1 {
+      font-size: 16pt;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .header h2 {
+      font-size: 14pt;
+      font-weight: bold;
+      margin-bottom: 3px;
+    }
+    
+    .header .subtitle {
+      font-size: 10pt;
+      margin-top: 5px;
+    }
+    
+    .arabic {
+      direction: rtl;
+      font-family: 'Noto Sans Arabic', serif;
+      text-align: right;
+    }
+    
+    .bilingual {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .bilingual .english {
+      text-align: left;
+      flex: 1;
+    }
+    
+    .bilingual .arabic {
+      text-align: right;
+      flex: 1;
+    }
+    
+    /* Section Titles */
+    h3 {
+      font-size: 11pt;
+      font-weight: bold;
+      background-color: #f0f0f0;
+      padding: 5px 8px;
+      margin: 12px 0 8px 0;
+      border: 1px solid #000;
+    }
+    
+    /* Table Styles */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+      font-size: 8.5pt;
+    }
+    
+    table, th, td {
+      border: 1px solid #000;
+    }
+    
+    th {
+      background-color: #e0e0e0;
+      font-weight: bold;
+      padding: 4px;
+      text-align: center;
+    }
+    
+    td {
+      padding: 4px 6px;
+      vertical-align: middle;
+    }
+    
+    td.label {
+      font-weight: bold;
+      width: 25%;
+      background-color: #f8f8f8;
+    }
+    
+    td.value {
+      width: 25%;
+    }
+    
+    /* Checkbox Styles */
+    .checkbox-group {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 15px;
+    }
+    
+    .checkbox {
+      width: 14px;
+      height: 14px;
+      border: 2px solid #000;
+      display: inline-block;
+      position: relative;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+    
+    .checkbox.checked::after {
+      content: '✓';
+      position: absolute;
+      left: 1px;
+      top: -3px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    
+    /* Notes Section */
+    .notes {
+      font-size: 8pt;
+      background-color: #fffacd;
+      padding: 8px;
+      border: 1px solid #000;
+      margin-bottom: 10px;
+    }
+    
+    .notes ul {
+      margin-left: 20px;
+      margin-top: 5px;
+    }
+    
+    .notes li {
+      margin-bottom: 3px;
+    }
+    
+    /* Declaration Section */
+    .declaration {
+      font-size: 8.5pt;
+      line-height: 1.4;
+      margin-top: 15px;
+    }
+    
+    .declaration p {
+      margin-bottom: 8px;
+      text-align: justify;
+    }
+    
+    /* Signature Section */
+    .signature-section {
+      margin-top: 20px;
+      border: 1px solid #000;
+      padding: 10px;
+    }
+    
+    .signature-row {
+      display: flex;
+      margin-bottom: 15px;
+    }
+    
+    .signature-row .label {
+      width: 30%;
+      font-weight: bold;
+    }
+    
+    .signature-row .value {
+      width: 70%;
+      border-bottom: 1px solid #000;
+      min-height: 25px;
+    }
+    
+    /* Medical Questions */
+    .question-block {
+      margin-bottom: 12px;
+      padding: 8px;
+      border: 1px solid #ddd;
+      background-color: #fafafa;
+    }
+    
+    .question-text {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .answer-section {
+      margin-left: 15px;
+    }
+    
+    .details-box {
+      margin-top: 5px;
+      padding: 5px;
+      border: 1px solid #ccc;
+      background-color: #fff;
+      min-height: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Page 1: Header and Policy Holder Information -->
+    <div class="header">
+      <h1>AL SAGR INSURANCE</h1>
+      <h1 class="arabic">الصقر للتأمين</h1>
+      <h2>MEDICAL APPLICATION FORM</h2>
+      <h2 class="arabic">نموذج طلب تأمين طبي</h2>
+      <p class="subtitle">Health Insurance Individual and Families</p>
+      <p class="subtitle arabic">التأمين الصحي للأفراد والعائلات</p>
+    </div>
+
+    <!-- Important Notes -->
+    <div class="notes">
+      <div class="bilingual">
+        <strong class="english">Please note that:</strong>
+        <strong class="arabic">يرجى ملاحظة ما يلي:</strong>
+      </div>
+      <ul>
+        <li>The application should accompany the following documents: Copy of passport with valid visa page, Copy of Emirates Identification card</li>
+        <li>Any alteration/overwriting in the application must be signed by the applicant</li>
+        <li>False declaration shall render the insurance coverage invalid from the effective date, with no refund of premium</li>
+        <li>Insurance company reserves the right to request medical evidence of insurability or reject any application as per the company's underwriting guidelines</li>
+      </ul>
+    </div>
+
+    <!-- Policy Holder Information -->
+    <h3 class="bilingual">
+      <span class="english">Policy Holder Information (Company/Individual)</span>
+      <span class="arabic">معلومات صاحب الوثيقة (شركة/فرد)</span>
+    </h3>
+    
+    <table>
+      <tr>
+        <td class="label">Full Name / الأسم بالكامل</td>
+        <td class="value" colspan="3">{{policyHolder.fullName}}</td>
+      </tr>
+      <tr>
+        <td class="label">Employer / جهة العمل</td>
+        <td class="value">{{policyHolder.employer}}</td>
+        <td class="label">Nationality / الجنسية</td>
+        <td class="value">{{policyHolder.nationality}}</td>
+      </tr>
+      <tr>
+        <td class="label">Emirates ID / رقم الهوية</td>
+        <td class="value">{{policyHolder.emiratesId}}</td>
+        <td class="label">Emirate / الإمارة</td>
+        <td class="value">{{policyHolder.emirate}}</td>
+      </tr>
+      <tr>
+        <td class="label">Marital Status / الحالة الإجتماعية</td>
+        <td class="value">{{policyHolder.maritalStatus}}</td>
+        <td class="label">Gender / الجنس</td>
+        <td class="value">{{policyHolder.gender}}</td>
+      </tr>
+      <tr>
+        <td class="label">Date of Birth / تاريخ الميلاد</td>
+        <td class="value">{{policyHolder.dateOfBirth}}</td>
+        <td class="label">Weight (kg) / الوزن</td>
+        <td class="value">{{policyHolder.weight}}</td>
+      </tr>
+      <tr>
+        <td class="label">Height (cm) / الطول</td>
+        <td class="value">{{policyHolder.height}}</td>
+        <td class="label">Occupation / الوظيفة</td>
+        <td class="value">{{policyHolder.occupation}}</td>
+      </tr>
+      <tr>
+        <td class="label">Mobile Number / رقم الجوال</td>
+        <td class="value">{{policyHolder.mobileNumber}}</td>
+        <td class="label">Contact Number / رقم الإتصال</td>
+        <td class="value">{{policyHolder.contactNumber}}</td>
+      </tr>
+      <tr>
+        <td class="label">Email Address / البريد الإلكتروني</td>
+        <td class="value" colspan="3">{{policyHolder.email}}</td>
+      </tr>
+      <tr>
+        <td class="label">Location / العنوان</td>
+        <td class="value" colspan="3">{{policyHolder.location}}</td>
+      </tr>
+    </table>
+
+    <!-- Insured Members Information -->
+    <h3 class="bilingual">
+      <span class="english">Insured Member's Information (Main Applicant as Principal)</span>
+      <span class="arabic">معلومات المؤمن عليهم (على أن يتم تعبئة تفاصيل مقدم الرئيسي أولاً)</span>
+    </h3>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Personal Information<br/>المعلومات الشخصية</th>
+          <th>Name<br/>الأسم</th>
+          <th>Gender<br/>الجنس</th>
+          <th>Marital Status<br/>الحالة الإجتماعية</th>
+          <th>Relation<br/>العلاقة</th>
+          <th>DOB<br/>تاريخ الميلاد</th>
+          <th>Height (cm)<br/>الطول</th>
+          <th>Weight (kg)<br/>الوزن</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each insuredMembers}}
+        <tr>
+          <td><strong>{{this.type}}</strong></td>
+          <td>{{this.name}}</td>
+          <td>{{this.gender}}</td>
+          <td>{{this.maritalStatus}}</td>
+          <td>{{this.relation}}</td>
+          <td>{{this.dateOfBirth}}</td>
+          <td>{{this.height}}</td>
+          <td>{{this.weight}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    <!-- Previous Insurance Information -->
+    <div class="page-break"></div>
+    
+    <h3 class="bilingual">
+      <span class="english">Previous Insurance Information</span>
+      <span class="arabic">معلومات التأمين السابق</span>
+    </h3>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Member</th>
+          <th>Previous Insurance Company</th>
+          <th>Policy Expiry Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each previousInsurance}}
+        <tr>
+          <td>{{this.memberName}}</td>
+          <td>{{this.insuranceCompany}}</td>
+          <td>{{this.expiryDate}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    <!-- Medical History Questions -->
+    <h3 class="bilingual">
+      <span class="english">Medical History Declaration</span>
+      <span class="arabic">إقرار التاريخ الطبي</span>
+    </h3>
+
+    {{#each medicalQuestions}}
+    <div class="question-block">
+      <div class="question-text">
+        <div class="bilingual">
+          <span class="english">Q{{this.number}}: {{this.questionEnglish}}</span>
+          <span class="arabic">{{this.questionArabic}}</span>
+        </div>
+      </div>
+      <div class="answer-section">
+        <div class="checkbox-group">
+          <span class="checkbox {{#if this.answerYes}}checked{{/if}}"></span>
+          <span>Yes / نعم</span>
+        </div>
+        <div class="checkbox-group">
+          <span class="checkbox {{#unless this.answerYes}}checked{{/unless}}"></span>
+          <span>No / لا</span>
+        </div>
+        {{#if this.details}}
+        <div class="details-box">
+          <strong>Details / التفاصيل:</strong> {{this.details}}
+        </div>
+        {{/if}}
+      </div>
+    </div>
+    {{/each}}
+
+    <!-- Pregnancy Declaration -->
+    <div class="page-break"></div>
+    
+    <h3 class="bilingual">
+      <span class="english">Pregnancy Declaration (For Female Members)</span>
+      <span class="arabic">إقرار الحمل (للأعضاء الإناث)</span>
+    </h3>
+    
+    <div class="question-block">
+      <div class="question-text">Are any female members currently pregnant?</div>
+      <div class="answer-section">
+        <div class="checkbox-group">
+          <span class="checkbox {{#if pregnancyDeclaration.isPregnant}}checked{{/if}}"></span>
+          <span>Yes / نعم</span>
+        </div>
+        <div class="checkbox-group">
+          <span class="checkbox {{#unless pregnancyDeclaration.isPregnant}}checked{{/unless}}"></span>
+          <span>No / لا</span>
+        </div>
+        {{#if pregnancyDeclaration.details}}
+        <div class="details-box">{{pregnancyDeclaration.details}}</div>
+        {{/if}}
+      </div>
+    </div>
+
+    <!-- Declaration Section -->
+    <h3 class="bilingual">
+      <span class="english">Declaration</span>
+      <span class="arabic">إقرار</span>
+    </h3>
+    
+    <div class="declaration">
+      <p>
+        <strong>English:</strong> I/We hereby declare with respect to both, myself and my dependents that to the best of my knowledge and belief, 
+        the statement on application are full, true and correct and have declared all material facts related to this application.
+      </p>
+      <p class="arabic">
+        <strong>عربي:</strong> أقر أنا/ نحن بموجب هذا فيما يتعلق بكل من نفسي ومن أعولهم أنه على حد علمي واعتقادي، كل البيانات الواردة في الطلب كاملة وصحيحة ودقيقة، وقد أوضحنا كل الحقائق المادية المتعلقة بهذا الطلب.
+      </p>
+      
+      <p>
+        I/We understand that non-disclosure or misrepresentation of any material fact may invalidate the quoted terms. 
+        I/We agree that all the documents issued in connection with the policy shall be read together.
+      </p>
+      
+      <p>
+        I/We hereby authorize any doctor, Hospital, Clinic or Medical Provider, any Insurance Company or any other Company, 
+        institution or any other person who has any record or information about me and/or any of my family members to provide 
+        Al Sagr National Insurance Company, with the complete information.
+      </p>
+      
+      <p>
+        By signing this form, I/We acknowledge that I/We read, understood, and agree to the terms and conditions as stated in the policy wording.
+      </p>
+    </div>
+
+    <!-- Signature Section -->
+    <div class="signature-section">
+      <div class="signature-row">
+        <div class="label">Name of Applicant / اسم مقدم الطلب:</div>
+        <div class="value">{{signature.applicantName}}</div>
+      </div>
+      
+      <div class="signature-row">
+        <div class="label">Signature / التوقيع:</div>
+        <div class="value" style="min-height: 50px;"></div>
+      </div>
+      
+      <div class="signature-row">
+        <div class="label">Date / التاريخ:</div>
+        <div class="value">{{signature.date}}</div>
+      </div>
+    </div>
+
+    <p style="text-align: center; font-size: 8pt; margin-top: 15px; font-style: italic;">
+      *Medical Application form is valid 30 days from the date of signature.<br/>
+      *نموذج الطلب الطبي صالح لمدة 30 يومًا من تاريخ التوقيع.
+    </p>
+  </div>
+</body>
+</html>

@@ -127,6 +127,26 @@ async def main():
             raw_plans = await asyncio.wait_for(scraper.extract_all_plans(bot), timeout=180.0)
             print(f"Extracted {len(raw_plans)} raw plans", file=sys.stderr)
             
+            # Step 6.5: Enrich plans with PDF data
+            print("Enriching plans with PDF data...", file=sys.stderr)
+            from vendors.takaful.pdf_parser import parse_plan_pdf
+            
+            enriched_plans = []
+            for plan in raw_plans:
+                if plan.get('pdf_path'):
+                    try:
+                        enriched_plan = await parse_plan_pdf(plan['pdf_path'], plan)
+                        enriched_plans.append(enriched_plan)
+                        print(f"  ✓ Enriched plan '{plan.get('plan_name', 'Unknown')}' with PDF data", file=sys.stderr)
+                    except Exception as e:
+                        print(f"  ⚠️ PDF parsing failed, using base plan: {e}", file=sys.stderr)
+                        enriched_plans.append(plan)
+                else:
+                    enriched_plans.append(plan)
+            
+            print(f"PDF enrichment complete: {len(enriched_plans)} plans", file=sys.stderr)
+            raw_plans = enriched_plans
+            
             # Step 7: Normalize plans using adapter
             standard_plans = adapter.normalize_response(raw_plans, lead_id)
             print(f"Normalized to {len(standard_plans)} standard plans", file=sys.stderr)

@@ -241,7 +241,11 @@ async function fetchPlansFromPlanService(planIds: string[], leadId: string): Pro
     const allPlans = result.data;
     const requestedPlans = allPlans.filter((plan: any) => planIds.includes(plan.id));
     
-    console.log(`Found ${requestedPlans.length} of ${planIds.length} requested plans. Requested IDs: ${planIds.join(', ')}`);
+    console.log(`[fetchPlansFromPlanService] Total plans from lead-service: ${allPlans.length}`);
+    console.log(`[fetchPlansFromPlanService] Requested plan IDs: ${JSON.stringify(planIds)}`);
+    console.log(`[fetchPlansFromPlanService] All plan IDs from service: ${JSON.stringify(allPlans.map((p: any) => p.id))}`);
+    console.log(`[fetchPlansFromPlanService] Found ${requestedPlans.length} of ${planIds.length} requested plans`);
+    console.log(`[fetchPlansFromPlanService] Matched plan IDs: ${JSON.stringify(requestedPlans.map((p: any) => p.id))}`);
     
     return requestedPlans;
   } catch (error) {
