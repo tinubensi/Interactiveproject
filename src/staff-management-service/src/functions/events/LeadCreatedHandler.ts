@@ -34,11 +34,12 @@ export async function LeadCreatedHandler(
     }
 
     // Handle based on event type
+    const defaultWorkload = { activeLeads: 0, activeCustomers: 0, activePolicies: 0, pendingApprovals: 0 };
     switch (event.eventType) {
       case 'lead.created':
       case 'lead.assigned':
         // Increment lead count for new assignee
-        const newWorkload = incrementWorkload(staff.workload, 'activeLeads');
+        const newWorkload = incrementWorkload(staff.workload || defaultWorkload, 'activeLeads');
         await updateStaffWorkload(staff.staffId, newWorkload);
         context.log(`Incremented activeLeads for ${staff.staffId}`);
 
@@ -46,7 +47,7 @@ export async function LeadCreatedHandler(
         if (data.previousAssignee && data.previousAssignee !== data.assignedTo) {
           const prevStaff = await findStaffById(data.previousAssignee);
           if (prevStaff) {
-            const prevWorkload = decrementWorkload(prevStaff.workload, 'activeLeads');
+            const prevWorkload = decrementWorkload(prevStaff.workload || defaultWorkload, 'activeLeads');
             await updateStaffWorkload(prevStaff.staffId, prevWorkload);
             context.log(`Decremented activeLeads for ${prevStaff.staffId}`);
           }
@@ -55,7 +56,7 @@ export async function LeadCreatedHandler(
 
       case 'lead.converted':
         // Decrement leads, increment customers
-        let workload = decrementWorkload(staff.workload, 'activeLeads');
+        let workload = decrementWorkload(staff.workload || defaultWorkload, 'activeLeads');
         workload = incrementWorkload(workload, 'activeCustomers');
         await updateStaffWorkload(staff.staffId, workload);
         context.log(`Lead converted for ${staff.staffId}`);
@@ -63,7 +64,7 @@ export async function LeadCreatedHandler(
 
       case 'lead.closed':
         // Just decrement leads
-        const closedWorkload = decrementWorkload(staff.workload, 'activeLeads');
+        const closedWorkload = decrementWorkload(staff.workload || defaultWorkload, 'activeLeads');
         await updateStaffWorkload(staff.staffId, closedWorkload);
         context.log(`Decremented activeLeads for ${staff.staffId}`);
         break;

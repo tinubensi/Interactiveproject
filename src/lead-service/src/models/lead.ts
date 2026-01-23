@@ -260,6 +260,7 @@ export interface Timeline {
   stage: string;
   previousStage?: string;
   stageId: string;
+  eventType?: string; // Optional event type (e.g., 'refetch_plans_triggered', 'stage_change')
   remark?: string;
   changedBy: string; // User ID
   changedByName: string; // User display name

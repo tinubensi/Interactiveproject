@@ -130,7 +130,8 @@ export function getWorkloadStatus(utilization: number): WorkloadStatus {
  * Check if staff can accept new leads
  */
 export function canAcceptNewLead(staff: StaffMemberDocument): CapacityCheckResult {
-  const utilization = calculateLeadUtilization(staff.workload);
+  const defaultWorkload = { activeLeads: 0, activeCustomers: 0, activePolicies: 0, pendingApprovals: 0 };
+  const utilization = calculateLeadUtilization(staff.workload || defaultWorkload);
   const status = getWorkloadStatus(utilization);
   const thresholds = getWorkloadThresholds();
   
@@ -150,7 +151,8 @@ export function canAcceptNewLead(staff: StaffMemberDocument): CapacityCheckResul
  * Check if staff can accept new customers
  */
 export function canAcceptNewCustomer(staff: StaffMemberDocument): CapacityCheckResult {
-  const utilization = calculateCustomerUtilization(staff.workload);
+  const defaultWorkload = { activeLeads: 0, activeCustomers: 0, activePolicies: 0, pendingApprovals: 0 };
+  const utilization = calculateCustomerUtilization(staff.workload || defaultWorkload);
   const status = getWorkloadStatus(utilization);
   const thresholds = getWorkloadThresholds();
   
@@ -170,25 +172,27 @@ export function canAcceptNewCustomer(staff: StaffMemberDocument): CapacityCheckR
  * Get workload breakdown for staff
  */
 export function getWorkloadBreakdown(staff: StaffMemberDocument): WorkloadBreakdown {
+  const defaultWorkload = { activeLeads: 0, activeCustomers: 0, activePolicies: 0, pendingApprovals: 0 };
+  const workload = staff.workload || defaultWorkload;
   const defaults = getDefaultWorkloadLimits();
-  const maxLeads = staff.workload.maxLeads || defaults.maxLeads;
-  const maxCustomers = staff.workload.maxCustomers || defaults.maxCustomers;
+  const maxLeads = (workload as any).maxLeads || defaults.maxLeads;
+  const maxCustomers = (workload as any).maxCustomers || defaults.maxCustomers;
   
   return {
     leads: {
-      current: staff.workload.activeLeads,
+      current: workload.activeLeads,
       max: maxLeads,
-      available: Math.max(0, maxLeads - staff.workload.activeLeads),
+      available: Math.max(0, maxLeads - workload.activeLeads),
     },
     customers: {
-      current: staff.workload.activeCustomers,
+      current: workload.activeCustomers,
       max: maxCustomers,
-      available: Math.max(0, maxCustomers - staff.workload.activeCustomers),
+      available: Math.max(0, maxCustomers - workload.activeCustomers),
     },
     policies: {
-      current: staff.workload.activePolicies,
+      current: workload.activePolicies,
     },
-    pendingApprovals: staff.workload.pendingApprovals,
+    pendingApprovals: workload.pendingApprovals,
   };
 }
 
@@ -204,21 +208,26 @@ export function getWorkloadInfo(staff: StaffMemberDocument): {
     canAcceptNewCustomers: boolean;
   };
 } {
+  const defaultWorkload = { activeLeads: 0, activeCustomers: 0, activePolicies: 0, pendingApprovals: 0 };
+  const workload = staff.workload || defaultWorkload;
+  const defaultAvailability = { isAvailable: true };
+  const availability = staff.availability || defaultAvailability;
+  
   const breakdown = getWorkloadBreakdown(staff);
   const leadCapacity = canAcceptNewLead(staff);
   const customerCapacity = canAcceptNewCustomer(staff);
-  const utilizationRate = calculateOverallUtilization(staff.workload);
+  const utilizationRate = calculateOverallUtilization(workload);
   
   return {
     workload: {
-      ...staff.workload,
+      ...workload,
       utilizationRate,
     },
     breakdown,
     availability: {
-      isAvailable: staff.availability.isAvailable,
-      canAcceptNewLeads: leadCapacity.canAccept && staff.availability.isAvailable,
-      canAcceptNewCustomers: customerCapacity.canAccept && staff.availability.isAvailable,
+      isAvailable: availability.isAvailable,
+      canAcceptNewLeads: leadCapacity.canAccept && availability.isAvailable,
+      canAcceptNewCustomers: customerCapacity.canAccept && availability.isAvailable,
     },
   };
 }

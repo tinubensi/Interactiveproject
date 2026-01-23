@@ -144,7 +144,7 @@ class CosmosService {
    * - This ensures proper separation between different quotation views
    */
   async listQuotations(request: QuotationListRequest): Promise<QuotationListResponse> {
-    const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc', filters = {}, leadId, customerId } = request;
+    const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc', filters = {}, leadId, customerId, search } = request;
 
     // Build query
     const conditions: string[] = [];
@@ -180,6 +180,19 @@ class CosmosService {
     if (filters.lineOfBusiness && filters.lineOfBusiness.length > 0) {
       conditions.push(`ARRAY_CONTAINS(@lobs${paramIndex}, c.lineOfBusiness)`);
       parameters.push({ name: `@lobs${paramIndex}`, value: filters.lineOfBusiness });
+      paramIndex++;
+    }
+
+    // Global search - searches across reference ID, customer name, and email
+    if (search && search.trim()) {
+      const searchConditions = [
+        `CONTAINS(LOWER(c.referenceId), LOWER(@search${paramIndex}))`,
+        `CONTAINS(LOWER(c.leadSnapshot.firstName), LOWER(@search${paramIndex}))`,
+        `CONTAINS(LOWER(c.leadSnapshot.lastName), LOWER(@search${paramIndex}))`,
+        `CONTAINS(LOWER(c.leadSnapshot.email), LOWER(@search${paramIndex}))`
+      ];
+      conditions.push(`(${searchConditions.join(' OR ')})`);
+      parameters.push({ name: `@search${paramIndex}`, value: search.trim() });
       paramIndex++;
     }
 

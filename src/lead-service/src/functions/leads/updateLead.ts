@@ -221,6 +221,12 @@ export async function updateLead(
     // Update lead
     const updatedLead = await cosmosService.updateLead(id, lineOfBusiness, updates);
 
+    // Determine if plan-relevant fields changed
+    const planRelevantFields = ['lobData', 'formData', 'emirate', 'businessType', 'lineOfBusiness'];
+    const hasPlanRelevantChanges = changes.some(change => 
+      planRelevantFields.some(field => change.field.startsWith(field) || change.field === field)
+    );
+
     // Publish lead.updated event if there were changes (optional - don't fail if Event Grid is down)
     if (changes.length > 0) {
       try {
@@ -239,7 +245,7 @@ export async function updateLead(
       }
     }
 
-    context.log(`Lead updated successfully: ${updatedLead.referenceId}`);
+    context.log(`Lead updated successfully: ${updatedLead.referenceId}. Plan-relevant changes: ${hasPlanRelevantChanges}`);
 
     return withCors(request, {
       status: 200,
@@ -248,7 +254,8 @@ export async function updateLead(
         message: 'Lead updated successfully',
         data: {
           lead: updatedLead,
-          changes
+          changes,
+          shouldRefetchPlans: hasPlanRelevantChanges
         }
       }
     });

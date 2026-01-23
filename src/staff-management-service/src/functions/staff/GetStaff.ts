@@ -37,15 +37,21 @@ export async function GetStaffHandler(
       };
     }
 
-    // Get workload info
-    const workloadInfo = getWorkloadInfo(staff);
+    // Check if soft deleted
+    if (staff.deletedAt) {
+      return {
+        status: 410,
+        jsonBody: {
+          error: 'Gone',
+          message: 'Staff member has been deleted',
+          deletedAt: staff.deletedAt,
+        },
+      };
+    }
 
     return {
       status: 200,
-      jsonBody: {
-        ...staff,
-        workloadDetails: workloadInfo,
-      },
+      jsonBody: staff,
     };
   } catch (error) {
     context.error('GetStaff error:', error);

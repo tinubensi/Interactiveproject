@@ -117,11 +117,19 @@ export async function selectPlan(
 
     context.log(`Customer selected plan ${selectedPlan.planName} for quotation ${quotation.referenceId}`);
 
-    // Update quotation: mark token as used, store selected plan, change status
+    // Update quotation: mark token as used, store selected plan snapshot, change status
     await cosmosService.updateQuotation(quotation.id, quotation.leadId, {
       status: 'pending_approval',
       tokenUsedAt: now,
       customerSelectedPlanId: selectedPlan.id,
+      selectedPlanPremium: selectedPlan.annualPremium,
+      selectedPlanSnapshot: {
+        planName: selectedPlan.planName,
+        vendorName: selectedPlan.vendorName,
+        annualPremium: selectedPlan.annualPremium,
+        monthlyPremium: selectedPlan.monthlyPremium,
+        currency: selectedPlan.currency,
+      },
     });
 
     context.log('Quotation updated to pending_approval status');
