@@ -258,6 +258,75 @@ export async function selectPlan(
       // The customer has successfully selected a plan
     }
 
+    // Send confirmation email to customer
+    try {
+      const customerEmail = quotation.sentTo || '';
+      const customerName = quotation.leadSnapshot?.firstName 
+        ? `${quotation.leadSnapshot.firstName} ${quotation.leadSnapshot.lastName || ''}`
+        : 'Customer';
+      
+      await emailService.sendPlanSelectionConfirmation({
+        to: customerEmail,
+        customerName,
+        quotationReference: quotation.referenceId,
+        selectedPlanName: selectedPlan.planName,
+        vendorName: selectedPlan.vendorName,
+        annualPremium: selectedPlan.annualPremium,
+        currency: selectedPlan.currency,
+      });
+      context.log('✅ Confirmation email sent to customer');
+    } catch (emailError) {
+      context.warn('⚠️ Failed to send confirmation email to customer (non-critical):', emailError);
+    }
+
+    // Send notification email to assigned employee
+    try {
+      // Fetch lead data to get assigned employee info
+      const LEAD_SERVICE_URL = process.env.LEAD_SERVICE_URL || 'http://localhost:7078';
+      const baseUrl = LEAD_SERVICE_URL.includes('/api') ? LEAD_SERVICE_URL : `${LEAD_SERVICE_URL}/api`;
+      
+      const leadResponse = await fetch(`${baseUrl}/leads/${quotation.leadId}`, {
+        headers: {
+          'x-service-key': process.env.INTERNAL_SERVICE_KEY || '',
+        },
+      });
+      
+      if (leadResponse.ok) {
+        const leadResult: any = await leadResponse.json();
+        const leadData = leadResult.data;
+        
+        // Check if lead has assigned employee
+        if (leadData.assignedToDetails?.email) {
+          const employeeName = leadData.assignedToDetails.displayName || 'Team Member';
+          const customerName = quotation.leadSnapshot?.firstName 
+            ? `${quotation.leadSnapshot.firstName} ${quotation.leadSnapshot.lastName || ''}`
+            : 'Customer';
+          
+          const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+          const quotationUrl = `${frontendUrl}/quotations/${quotation.id}`;
+          
+          await emailService.sendEmployeeNotification({
+            to: leadData.assignedToDetails.email,
+            employeeName,
+            customerName,
+            quotationReference: quotation.referenceId,
+            selectedPlanName: selectedPlan.planName,
+            vendorName: selectedPlan.vendorName,
+            annualPremium: selectedPlan.annualPremium,
+            currency: selectedPlan.currency,
+            quotationUrl,
+          });
+          context.log('✅ Notification email sent to assigned employee');
+        } else {
+          context.log('ℹ️ No assigned employee found for this lead');
+        }
+      } else {
+        context.warn('⚠️ Failed to fetch lead data for employee notification');
+      }
+    } catch (emailError) {
+      context.warn('⚠️ Failed to send notification email to employee (non-critical):', emailError);
+    }
+
     return withCors(request, {
       status: 200,
       jsonBody: {

@@ -28,6 +28,6 @@
     "@types/uuid": "^9.0.0",
     "azure-functions-core-tools": "^4.5.0",
     "rimraf": "^5.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.9.3"
   }
 }

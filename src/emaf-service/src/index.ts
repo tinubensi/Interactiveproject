@@ -36,6 +36,7 @@ import './functions/approval/listPendingSubmissions'; // MUST BE FIRST - specifi
 import './functions/approval/approveSubmission';
 import './functions/approval/rejectSubmission';
 import './functions/approval/requestRevision';
+import './functions/approval/refreshSubmissionSas'; // Refresh SAS URLs for documents
 import './functions/approval/getSubmission'; // MUST BE LAST - parameterized route
 
 // Queue functions

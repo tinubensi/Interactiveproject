@@ -9,6 +9,7 @@ export interface EmailConfig {
 
 export interface SendQuotationEmailParams {
   to: string;
+  cc?: string[]; // CC recipients
   customerName: string;
   quotationReference: string;
   pdfBuffer: Buffer;
@@ -23,6 +24,28 @@ export interface SendEmafEmailParams {
   selectedPlanName: string;
   vendorName: string;
   emafLink: string; // Link to fill out EMAF
+}
+
+export interface SendPlanSelectionConfirmationParams {
+  to: string;
+  customerName: string;
+  quotationReference: string;
+  selectedPlanName: string;
+  vendorName: string;
+  annualPremium: number;
+  currency: string;
+}
+
+export interface SendEmployeeNotificationParams {
+  to: string;
+  employeeName: string;
+  customerName: string;
+  quotationReference: string;
+  selectedPlanName: string;
+  vendorName: string;
+  annualPremium: number;
+  currency: string;
+  quotationUrl: string;
 }
 
 class EmailService {
@@ -56,6 +79,7 @@ class EmailService {
 
   async sendQuotationEmail({ 
     to, 
+    cc,
     customerName, 
     quotationReference, 
     pdfBuffer,
@@ -72,9 +96,10 @@ class EmailService {
       `
       : '';
 
-    const mailOptions = {
+    const mailOptions: any = {
       from: '"Insurance Portal" <quotations@insuranceportal.com>',
       to,
+      ...(cc && cc.length > 0 ? { cc: cc.join(', ') } : {}),
       subject: `Your Insurance Quotation - ${quotationReference}`,
       html: `
         <!DOCTYPE html>
@@ -649,6 +674,443 @@ If you have any questions or need assistance, please don't hesitate to contact u
 
 Best regards,
 Insurance Portal Team
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+  }
+
+  async sendPlanSelectionConfirmation({
+    to,
+    customerName,
+    quotationReference,
+    selectedPlanName,
+    vendorName,
+    annualPremium,
+    currency
+  }: SendPlanSelectionConfirmationParams): Promise<void> {
+    const transporter = this.createTransporter();
+
+    const mailOptions = {
+      from: '"Insurance Portal" <confirmations@insuranceportal.com>',
+      to,
+      subject: `Plan Selection Confirmed - ${quotationReference}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              line-height: 1.6;
+              color: #1f2937;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+              background-color: #f3f4f6;
+            }
+            .container {
+              background-color: #ffffff;
+              border-radius: 12px;
+              overflow: hidden;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+            .header {
+              background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+              color: #ffffff;
+              padding: 40px 30px;
+              text-align: center;
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 28px;
+              font-weight: 700;
+            }
+            .header .reference {
+              display: inline-block;
+              background: rgba(255, 255, 255, 0.2);
+              padding: 8px 20px;
+              border-radius: 20px;
+              margin-top: 15px;
+              font-size: 14px;
+              font-weight: 600;
+            }
+            .content {
+              padding: 40px 30px;
+            }
+            .greeting {
+              font-size: 18px;
+              color: #1e293b;
+              margin-bottom: 20px;
+            }
+            .message {
+              color: #4b5563;
+              margin: 20px 0;
+              line-height: 1.8;
+            }
+            .plan-info {
+              background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+              border: 2px solid #86efac;
+              border-radius: 12px;
+              padding: 25px;
+              margin: 25px 0;
+            }
+            .plan-info h3 {
+              color: #166534;
+              font-size: 14px;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              margin: 0 0 15px 0;
+            }
+            .plan-info .plan-name {
+              color: #15803d;
+              font-size: 20px;
+              font-weight: 700;
+              margin-bottom: 5px;
+            }
+            .plan-info .vendor-name {
+              color: #16a34a;
+              font-size: 14px;
+              margin-bottom: 15px;
+            }
+            .plan-info .premium {
+              color: #166534;
+              font-size: 24px;
+              font-weight: 700;
+              margin-top: 15px;
+            }
+            .steps {
+              margin: 30px 0;
+            }
+            .steps h3 {
+              color: #1e293b;
+              font-size: 16px;
+              margin-bottom: 15px;
+            }
+            .step {
+              display: flex;
+              align-items: flex-start;
+              margin-bottom: 15px;
+            }
+            .step-number {
+              background: #10b981;
+              color: white;
+              width: 28px;
+              height: 28px;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 14px;
+              font-weight: 600;
+              margin-right: 15px;
+              flex-shrink: 0;
+            }
+            .step-text {
+              color: #4b5563;
+              font-size: 14px;
+              padding-top: 4px;
+            }
+            .footer {
+              background-color: #f8fafc;
+              padding: 25px 30px;
+              text-align: center;
+              border-top: 1px solid #e2e8f0;
+            }
+            .footer p {
+              color: #64748b;
+              font-size: 13px;
+              margin: 5px 0;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>✓ Selection Confirmed!</h1>
+              <span class="reference">${quotationReference}</span>
+            </div>
+            
+            <div class="content">
+              <p class="greeting">Dear ${customerName},</p>
+              
+              <p class="message">
+                Thank you for selecting your insurance plan! We have received your selection and our team is now reviewing your application.
+              </p>
+
+              <div class="plan-info">
+                <h3>Your Selected Plan</h3>
+                <div class="plan-name">${selectedPlanName}</div>
+                <div class="vendor-name">Provided by ${vendorName}</div>
+                <div class="premium">${currency} ${annualPremium.toLocaleString()} / year</div>
+              </div>
+
+              <div class="steps">
+                <h3>What Happens Next:</h3>
+                <div class="step">
+                  <span class="step-number">1</span>
+                  <span class="step-text">Our team will review your selection</span>
+                </div>
+                <div class="step">
+                  <span class="step-number">2</span>
+                  <span class="step-text">You'll receive an email with your medical application form link</span>
+                </div>
+                <div class="step">
+                  <span class="step-number">3</span>
+                  <span class="step-text">Complete the medical application form</span>
+                </div>
+                <div class="step">
+                  <span class="step-number">4</span>
+                  <span class="step-text">Our team will process your application and issue your policy</span>
+                </div>
+              </div>
+
+              <p class="message">
+                If you have any questions or need assistance, please don't hesitate to contact us. We're here to help!
+              </p>
+            </div>
+            
+            <div class="footer">
+              <p>This is an automated confirmation from Insurance Portal.</p>
+              <p>Please do not reply directly to this email.</p>
+              <p>&copy; ${new Date().getFullYear()} Insurance Portal. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `
+Dear ${customerName},
+
+Thank you for selecting your insurance plan! We have received your selection and our team is now reviewing your application.
+
+YOUR SELECTED PLAN
+------------------
+${selectedPlanName}
+Provided by ${vendorName}
+Premium: ${currency} ${annualPremium.toLocaleString()} / year
+
+Reference: ${quotationReference}
+
+WHAT HAPPENS NEXT:
+1. Our team will review your selection
+2. You'll receive an email with your medical application form link
+3. Complete the medical application form
+4. Our team will process your application and issue your policy
+
+If you have any questions or need assistance, please don't hesitate to contact us.
+
+Best regards,
+Insurance Portal Team
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+  }
+
+  async sendEmployeeNotification({
+    to,
+    employeeName,
+    customerName,
+    quotationReference,
+    selectedPlanName,
+    vendorName,
+    annualPremium,
+    currency,
+    quotationUrl
+  }: SendEmployeeNotificationParams): Promise<void> {
+    const transporter = this.createTransporter();
+
+    const mailOptions = {
+      from: '"Insurance Portal" <notifications@insuranceportal.com>',
+      to,
+      subject: `Customer Selected Plan - ${quotationReference}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              line-height: 1.6;
+              color: #1f2937;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+              background-color: #f3f4f6;
+            }
+            .container {
+              background-color: #ffffff;
+              border-radius: 12px;
+              overflow: hidden;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+            .header {
+              background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+              color: #ffffff;
+              padding: 40px 30px;
+              text-align: center;
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 28px;
+              font-weight: 700;
+            }
+            .header .reference {
+              display: inline-block;
+              background: rgba(255, 255, 255, 0.2);
+              padding: 8px 20px;
+              border-radius: 20px;
+              margin-top: 15px;
+              font-size: 14px;
+              font-weight: 600;
+            }
+            .content {
+              padding: 40px 30px;
+            }
+            .greeting {
+              font-size: 18px;
+              color: #1e293b;
+              margin-bottom: 20px;
+            }
+            .message {
+              color: #4b5563;
+              margin: 20px 0;
+              line-height: 1.8;
+            }
+            .info-box {
+              background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+              border: 1px solid #93c5fd;
+              border-radius: 12px;
+              padding: 25px;
+              margin: 25px 0;
+            }
+            .info-box h3 {
+              color: #1e40af;
+              font-size: 14px;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              margin: 0 0 15px 0;
+            }
+            .info-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 8px 0;
+              border-bottom: 1px solid #bfdbfe;
+            }
+            .info-row:last-child {
+              border-bottom: none;
+            }
+            .info-label {
+              color: #1e40af;
+              font-size: 13px;
+              font-weight: 600;
+            }
+            .info-value {
+              color: #1e3a8a;
+              font-size: 14px;
+              font-weight: 700;
+              text-align: right;
+            }
+            .cta-button {
+              display: inline-block;
+              background: #3b82f6;
+              color: #ffffff;
+              padding: 14px 32px;
+              border-radius: 8px;
+              text-decoration: none;
+              font-weight: 700;
+              font-size: 16px;
+              box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+              margin: 20px 0;
+            }
+            .cta-button:hover {
+              background: #2563eb;
+            }
+            .footer {
+              background-color: #f8fafc;
+              padding: 25px 30px;
+              text-align: center;
+              border-top: 1px solid #e2e8f0;
+            }
+            .footer p {
+              color: #64748b;
+              font-size: 13px;
+              margin: 5px 0;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🎉 Customer Plan Selection</h1>
+              <span class="reference">${quotationReference}</span>
+            </div>
+            
+            <div class="content">
+              <p class="greeting">Hi ${employeeName},</p>
+              
+              <p class="message">
+                Great news! A customer has selected their insurance plan and is ready to proceed with their application.
+              </p>
+
+              <div class="info-box">
+                <h3>Selection Details</h3>
+                <div class="info-row">
+                  <span class="info-label">Customer:</span>
+                  <span class="info-value">${customerName}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Selected Plan:</span>
+                  <span class="info-value">${selectedPlanName}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Insurer:</span>
+                  <span class="info-value">${vendorName}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Annual Premium:</span>
+                  <span class="info-value">${currency} ${annualPremium.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div style="text-align: center;">
+                <a href="${quotationUrl}" class="cta-button">View Quotation Details</a>
+              </div>
+
+              <p class="message">
+                Please review the quotation and proceed with the next steps in the approval process.
+              </p>
+            </div>
+            
+            <div class="footer">
+              <p>This is an automated notification from Insurance Portal.</p>
+              <p>&copy; ${new Date().getFullYear()} Insurance Portal. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `
+Hi ${employeeName},
+
+Great news! A customer has selected their insurance plan and is ready to proceed with their application.
+
+SELECTION DETAILS
+-----------------
+Customer: ${customerName}
+Selected Plan: ${selectedPlanName}
+Insurer: ${vendorName}
+Annual Premium: ${currency} ${annualPremium.toLocaleString()}
+
+Reference: ${quotationReference}
+
+View quotation details: ${quotationUrl}
+
+Please review the quotation and proceed with the next steps in the approval process.
+
+Best regards,
+Insurance Portal System
       `,
     };
 

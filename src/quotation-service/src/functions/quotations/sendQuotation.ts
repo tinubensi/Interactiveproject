@@ -33,7 +33,7 @@ export async function sendQuotation(
 
     // Parse request body
     const body = await request.json() as SendQuotationRequest;
-    const { recipientEmail, recipientName, message } = body;
+    const { recipientEmail, recipientName, message, ccEmails } = body;
 
     if (!recipientEmail || !recipientName) {
       return withCors(request, {
@@ -108,8 +108,12 @@ export async function sendQuotation(
 
     // Send email with PDF attachment and review link
     context.log(`Sending email to ${recipientEmail}...`);
+    if (ccEmails && ccEmails.length > 0) {
+      context.log(`CC recipients: ${ccEmails.join(', ')}`);
+    }
     await emailService.sendQuotationEmail({
       to: recipientEmail,
+      cc: ccEmails,
       customerName: recipientName,
       quotationReference: quotation.referenceId,
       pdfBuffer,
