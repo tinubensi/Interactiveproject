@@ -30,6 +30,7 @@ export interface StageChangeRequest {
   stageName?: string;
   remark?: string;
   changedBy?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface UpdateLeadStageResult {

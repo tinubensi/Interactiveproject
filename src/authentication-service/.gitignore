@@ -25,6 +25,9 @@ local.settings.json
 node_modules
 dist
 
+# Local scripts with secrets (use start-with-env.sh.example as template)
+start-with-env.sh
+
 # Local python packages
 .python_packages/
 

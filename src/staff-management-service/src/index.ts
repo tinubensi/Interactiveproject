@@ -20,6 +20,7 @@ import './functions/staff/GetStaff';
 import './functions/staff/ListStaff';
 import './functions/staff/GetStaffByEmail';
 import './functions/staff/UpdateStaffStatus';
+import './functions/staff/DeleteStaff';
 
 // Import team functions
 import './functions/teams/CreateTeam';

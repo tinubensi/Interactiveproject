@@ -133,13 +133,14 @@ class TakafulDataParser:
             "coInsuranceMetric": "%",
             "copays": structured_copays,
             
-            # Waiting Periods
-            "waitingPeriod": 30,
-            "waitingPeriodMetric": "days",
-            "waitingPeriods": {"general": 30},
+            # Waiting Periods (use PDF data if available, otherwise default)
+            "waitingPeriod": plan_data.get("waitingPeriod", 30),
+            "waitingPeriodMetric": plan_data.get("waitingPeriodMetric", "days"),
+            "waitingPeriods": plan_data.get("waitingPeriods", {"general": 30}),
             
-            # Benefits - structured format using semantic categorization
-            "benefits": self._categorize_benefits(coverage_details),
+            # Benefits - use PDF-extracted benefits if available, otherwise categorize from coverage_details
+            # PDF parser will have already added inpatient/outpatient benefits if PDF was parsed
+            "benefits": plan_data.get("benefits") if plan_data.get("benefits") else self._categorize_benefits(coverage_details),
             
             # Exclusions
             "exclusions": ["Subject to policy terms and conditions"],

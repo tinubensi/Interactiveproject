@@ -47,14 +47,31 @@ function getMsalClient(): ConfidentialClientApplication {
   if (!_msalClient) {
     const config = getConfig();
     
-    if (!config.azureAd.tenantId || !config.azureAd.clientId || !config.azureAd.clientSecret) {
+    if (!config.azureAd.clientId || !config.azureAd.clientSecret) {
       throw new Error('Azure AD configuration is incomplete');
+    }
+    
+    // Use authority from config, or fallback to tenant-specific or common
+    let authority: string;
+    if (config.azureAd.authority) {
+      if (config.azureAd.authority === 'common' || config.azureAd.authority === 'organizations') {
+        authority = `https://login.microsoftonline.com/${config.azureAd.authority}`;
+      } else {
+        // Custom tenant ID
+        authority = `https://login.microsoftonline.com/${config.azureAd.authority}`;
+      }
+    } else if (config.azureAd.tenantId) {
+      // Fallback to tenant-specific for backward compatibility (single tenant mode)
+      authority = `https://login.microsoftonline.com/${config.azureAd.tenantId}`;
+    } else {
+      // Default to 'common' for multi-tenant when no tenantId specified
+      authority = 'https://login.microsoftonline.com/common';
     }
     
     const msalConfig: Configuration = {
       auth: {
         clientId: config.azureAd.clientId,
-        authority: `https://login.microsoftonline.com/${config.azureAd.tenantId}`,
+        authority: authority,
         clientSecret: config.azureAd.clientSecret,
       },
       system: {
@@ -153,7 +170,19 @@ export async function exchangeCodeForTokens(
 export function buildLogoutUrl(postLogoutRedirectUri?: string): string {
   const config = getConfig();
   
-  const baseUrl = `https://login.microsoftonline.com/${config.azureAd.tenantId}/oauth2/v2.0/logout`;
+  // Use common endpoint for multi-tenant, or tenant-specific for single tenant
+  let baseUrl: string;
+  if (config.azureAd.authority === 'common' || config.azureAd.authority === 'organizations') {
+    baseUrl = `https://login.microsoftonline.com/${config.azureAd.authority}/oauth2/v2.0/logout`;
+  } else if (config.azureAd.authority && config.azureAd.authority !== '') {
+    // Custom authority (tenant ID specified as authority)
+    baseUrl = `https://login.microsoftonline.com/${config.azureAd.authority}/oauth2/v2.0/logout`;
+  } else if (config.azureAd.tenantId) {
+    // Fallback to tenant-specific when no authority but tenantId is set
+    baseUrl = `https://login.microsoftonline.com/${config.azureAd.tenantId}/oauth2/v2.0/logout`;
+  } else {
+    baseUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/logout';
+  }
   
   if (postLogoutRedirectUri) {
     return `${baseUrl}?post_logout_redirect_uri=${encodeURIComponent(postLogoutRedirectUri)}`;
@@ -194,12 +223,30 @@ export function mapGroupsToRoles(groups: string[]): string[] {
 }
 
 /**
- * Validate that user belongs to allowed tenant
+ * Validate that user belongs to allowed tenant(s)
  */
 export function validateTenant(tenantId: string): boolean {
   const config = getConfig();
   
-  // In B2B, users must be from the configured tenant
-  return tenantId === config.azureAd.tenantId;
+  // If no allowed tenants specified, check authority mode
+  if (!config.azureAd.allowedTenantIds || config.azureAd.allowedTenantIds.length === 0) {
+    // If authority is 'common' or 'organizations', allow any tenant
+    if (config.azureAd.authority === 'common' || config.azureAd.authority === 'organizations') {
+      return true;
+    }
+    // If authority is empty/not set but tenantId exists, use single tenant mode
+    if (!config.azureAd.authority && config.azureAd.tenantId) {
+      return tenantId === config.azureAd.tenantId;
+    }
+    // If authority is set to a specific tenant ID, validate against it
+    if (config.azureAd.authority && config.azureAd.authority !== 'common' && config.azureAd.authority !== 'organizations') {
+      return tenantId === config.azureAd.authority;
+    }
+    // Default: allow any tenant (multi-tenant mode)
+    return true;
+  }
+  
+  // Check if tenant is in allowed list
+  return config.azureAd.allowedTenantIds.includes(tenantId);
 }
 

@@ -242,6 +242,11 @@ class SukoonAdapter(VendorAdapter):
         if not network_name:
             network_name = extract_network_type(details)
         
+        # If no TPA but we have network name, use network name as TPA for Sukoon
+        # This ensures Sukoon plans appear in the TPA filter options
+        if not tpa and network_name:
+            tpa = network_name  # e.g., "Premium", "Edge", "Signature+Medicare"
+        
         # Determine network type based on coverage territory
         territory = details.get('Basic Coverage Territory') or details.get('BASIC COVERAGE TERRITORY', '')
         territory_lower = str(territory).lower()
@@ -259,6 +264,10 @@ class SukoonAdapter(VendorAdapter):
         """
         Categorize benefits semantically based on keywords.
         
+        Handles both:
+        1. Enriched format with benefit arrays (outPatient, inPatient, maternity, etc.)
+        2. Legacy format with flat key-value pairs
+        
         Args:
             coverage_details: Plan details dictionary
             
@@ -269,9 +278,75 @@ class SukoonAdapter(VendorAdapter):
         categorized = {cat_id: [] for cat_id in CATEGORY_KEYWORDS.keys()}
         categorized['other-coverage'] = []
         
-        # Process each coverage detail
+        # Check for enriched benefit arrays and process them first
+        enriched_sections = {
+            'outPatient': 'outpatient',
+            'inPatient': 'inpatient',
+            'maternity': 'maternity',
+            'preExistingMedicalCondition': 'other-coverage',
+            'otherBenefits': None,  # Will be distributed by content
+            'basisClaim': 'other-coverage'
+        }
+        
+        for section_key, default_category in enriched_sections.items():
+            if section_key in coverage_details:
+                section_data = coverage_details[section_key]
+                if isinstance(section_data, list):
+                    # Process array of benefit items
+                    for item in section_data:
+                        if not isinstance(item, dict):
+                            continue
+                        
+                        # Extract heading and benefit details
+                        heading = item.get('heading', '')
+                        
+                        # For otherBenefits, determine category by content
+                        if section_key == 'otherBenefits':
+                            # Try to match by heading
+                            heading_lower = heading.lower()
+                            if 'dental' in heading_lower:
+                                target_category = 'dental'
+                            elif 'optical' in heading_lower:
+                                target_category = 'optical'
+                            elif 'alternative' in heading_lower or 'medicine' in heading_lower:
+                                target_category = 'alternative'
+                            else:
+                                target_category = 'other-coverage'
+                        else:
+                            target_category = default_category
+                        
+                        # Extract benefit values (skip heading key)
+                        for key, value in item.items():
+                            if key == 'heading' or not value:
+                                continue
+                            
+                            value_str = str(value).strip()
+                            
+                            # Determine if covered
+                            is_covered = value_str not in ['X', '✘', 'x', 'Not Covered', 'Nil', 'No Benefit']
+                            
+                            # Create benefit entry
+                            benefit_entry = {
+                                'name': heading or key,
+                                'covered': is_covered,
+                                'description': value_str,
+                                'limit': value_str
+                            }
+                            
+                            categorized[target_category].append(benefit_entry)
+        
+        # Process remaining flat key-value pairs (legacy format or additional details)
         for key, value in coverage_details.items():
+            # Skip enriched sections (already processed)
+            if key in enriched_sections:
+                continue
+            
             key_lower = key.lower()
+            
+            # Skip if value is a dict or list (nested structures)
+            if isinstance(value, (dict, list)):
+                continue
+            
             value_str = str(value).strip()
             
             # Skip metadata fields
@@ -330,6 +405,52 @@ class SukoonAdapter(VendorAdapter):
             }]
         
         return result
+    
+    def _clean_coverage_details(self, details: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Remove enriched arrays and objects from coverage details.
+        
+        The enriched benefit data (arrays and objects) are already processed
+        into the structured benefits format. We only want simple key-value pairs
+        in coverage_details for display purposes.
+        
+        Args:
+            details: Original details dictionary with enriched data
+            
+        Returns:
+            Cleaned dictionary with only simple values (strings, numbers, booleans)
+        """
+        # Fields added by benefits enricher that should be removed
+        enriched_fields = [
+            'outPatient',
+            'inPatient',
+            'maternity',
+            'preExistingMedicalCondition',
+            'otherBenefits',
+            'basisClaim',
+            'area',
+            'copayForTest',
+            'copayForConsultation',
+            'inpatientnetworkProvider',
+            'outpatientnetworkProvider'
+        ]
+        
+        cleaned = {}
+        
+        for key, value in details.items():
+            # Skip enriched fields
+            if key in enriched_fields:
+                continue
+            
+            # Skip any remaining arrays or objects
+            if isinstance(value, (dict, list)):
+                continue
+            
+            # Keep simple types (str, int, float, bool)
+            if isinstance(value, (str, int, float, bool)):
+                cleaned[key] = value
+        
+        return cleaned
     
     def normalize_response(self, raw_vendor_data: Any, lead_id: str) -> List[Dict[str, Any]]:
         """
@@ -458,7 +579,7 @@ class SukoonAdapter(VendorAdapter):
                         'premium': premium_str,
                         'network': network_name,
                         'tpa': tpa,
-                        'coverage_details': details,
+                        'coverage_details': self._clean_coverage_details(details),
                         'full_plan_data': raw_plan
                     }
                 }

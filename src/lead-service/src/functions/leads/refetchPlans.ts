@@ -31,6 +31,21 @@ export async function refetchPlans(
       });
     }
 
+    // Extract optional metadata from request body
+    let requestBody: any = {};
+    try {
+      const bodyText = await request.text();
+      if (bodyText) {
+        requestBody = JSON.parse(bodyText);
+      }
+    } catch (error) {
+      // Body is optional, continue with empty object
+    }
+    
+    const triggeredBy = requestBody.triggeredBy || 'system';
+    const reason = requestBody.reason || 'Plans refetch requested - fetching updated plans from vendors';
+    const formUpdated = requestBody.formUpdated || false;
+
     // First, find the lead to get its partition key (lineOfBusiness)
     const querySpec = {
       query: 'SELECT * FROM c WHERE c.id = @leadId AND c.type = "lead"',
@@ -89,20 +104,27 @@ export async function refetchPlans(
         plansCount: 0,
         updatedAt: new Date()
       });
-
-      // Create timeline entry
-      await cosmosService.createTimelineEntry({
-        id: uuidv4(),
-        leadId: leadId,
-        stage: 'Plans Fetching',
-        previousStage: lead.currentStage,
-        stageId: 'stage-1',
-        remark: 'Plans refetch requested - fetching updated plans from vendors',
-        changedBy: 'system',
-        changedByName: 'System',
-        timestamp: new Date()
-      });
     }
+
+    // ALWAYS create timeline entry for refetch operations (regardless of pipeline status)
+    await cosmosService.createTimelineEntry({
+      id: uuidv4(),
+      leadId: leadId,
+      stage: hasPipeline ? latestLead.currentStage : 'Plans Fetching',
+      previousStage: lead.currentStage,
+      stageId: hasPipeline ? latestLead.stageId : 'stage-1',
+      eventType: 'refetch_plans_triggered',
+      remark: reason,
+      changedBy: triggeredBy,
+      changedByName: triggeredBy === 'system' ? 'System' : 'User',
+      timestamp: new Date(),
+      metadata: {
+        action: 'refetch_plans',
+        formUpdated: formUpdated,
+        hasPipeline: hasPipeline,
+        triggeredBy: triggeredBy
+      }
+    });
 
     // Publish lead.created event to Event Grid (primary communication method)
     // Use latestLead to ensure we have the most recent data including updated lobData

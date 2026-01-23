@@ -132,8 +132,10 @@ export function validateStatusRestrictions(
     );
   }
 
-  if (!staff.availability.isAvailable) {
-    const reason = staff.availability.awayReason || 'unavailable';
+  const defaultAvailability = { isAvailable: true };
+  const availability = staff.availability || defaultAvailability;
+  if (!availability.isAvailable) {
+    const reason = (availability as any).awayReason || 'unavailable';
     errors.push(`Staff is currently ${reason}`);
   }
 

@@ -37,7 +37,8 @@ export async function CustomerCreatedHandler(
       case 'customer.created':
       case 'customer.assigned':
         // Increment customer count for new assignee
-        const newWorkload = incrementWorkload(staff.workload, 'activeCustomers');
+        const defaultWorkload = { activeLeads: 0, activeCustomers: 0, activePolicies: 0, pendingApprovals: 0 };
+        const newWorkload = incrementWorkload(staff.workload || defaultWorkload, 'activeCustomers');
         await updateStaffWorkload(staff.staffId, newWorkload);
         context.log(`Incremented activeCustomers for ${staff.staffId}`);
 
@@ -45,7 +46,7 @@ export async function CustomerCreatedHandler(
         if (data.previousAssignee && data.previousAssignee !== data.assignedTo) {
           const prevStaff = await findStaffById(data.previousAssignee);
           if (prevStaff) {
-            const prevWorkload = decrementWorkload(prevStaff.workload, 'activeCustomers');
+            const prevWorkload = decrementWorkload(prevStaff.workload || defaultWorkload, 'activeCustomers');
             await updateStaffWorkload(prevStaff.staffId, prevWorkload);
             context.log(`Decremented activeCustomers for ${prevStaff.staffId}`);
           }

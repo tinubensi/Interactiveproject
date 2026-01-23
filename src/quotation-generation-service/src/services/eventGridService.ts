@@ -93,6 +93,15 @@ class EventGridService {
     successfulVendors: string[];
     failedVendors: string[];
     plans: any[]; // Include full plans array for Lead Service to save
+    metadata?: {
+      vendorTimings?: Array<{
+        vendorId: string;
+        vendorName: string;
+        success: boolean;
+        executionTime: string;
+        plansCount: number;
+      }>;
+    };
   }): Promise<void> {
     await this.publishEvent('plans.fetch_completed', `plans/${data.leadId}`, {
       ...data,
@@ -104,6 +113,15 @@ class EventGridService {
     leadId: string;
     fetchRequestId: string;
     error: string;
+    metadata?: {
+      vendorTimings?: Array<{
+        vendorId: string;
+        vendorName: string;
+        success: boolean;
+        executionTime: string;
+        plansCount: number;
+      }>;
+    };
   }): Promise<void> {
     await this.publishEvent('plans.fetch_failed', `plans/${data.leadId}`, {
       ...data,

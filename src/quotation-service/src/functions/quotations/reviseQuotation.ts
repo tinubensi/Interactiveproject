@@ -171,6 +171,33 @@ export async function reviseQuotation(
 
 // Mock function - will be replaced with actual API call
 async function fetchPlansFromPlanService(planIds: string[], leadId: string): Promise<any[]> {
+  try {
+    // Try to fetch real plans from quotation generation service
+    const quotGenServiceUrl = process.env.QUOTATION_GEN_SERVICE_URL || 'http://localhost:7075';
+    
+    const planPromises = planIds.map(async (planId) => {
+      try {
+        const response = await fetch(`${quotGenServiceUrl}/api/plans/${planId}`);
+        if (response.ok) {
+          return await response.json();
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch plan ${planId}:`, error);
+      }
+      return null;
+    });
+    
+    const plans = await Promise.all(planPromises);
+    const validPlans = plans.filter(p => p !== null);
+    
+    if (validPlans.length > 0) {
+      return validPlans;
+    }
+  } catch (error) {
+    console.warn('Failed to fetch plans from service, using fallback:', error);
+  }
+  
+  // Fallback to mock data only if service fetch fails
   return planIds.map((id, index) => ({
     id,
     leadId,

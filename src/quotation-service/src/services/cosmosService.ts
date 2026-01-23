@@ -81,6 +81,23 @@ class CosmosService {
     }
   }
 
+  /**
+   * Get quotation by ID without requiring leadId (uses query instead of point read)
+   * This is useful for staff operations where only quotation ID is known
+   */
+  async getQuotationByIdOnly(id: string): Promise<Quotation | null> {
+    try {
+      const query: SqlQuerySpec = {
+        query: 'SELECT * FROM c WHERE c.id = @id',
+        parameters: [{ name: '@id', value: id }]
+      };
+      const { resources } = await this.quotationsContainer.items.query<Quotation>(query).fetchAll();
+      return resources[0] || null;
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
   async getQuotationsByLeadId(leadId: string): Promise<Quotation[]> {
     const query: SqlQuerySpec = {
       query: 'SELECT * FROM c WHERE c.leadId = @leadId ORDER BY c.version DESC',
@@ -127,8 +144,24 @@ class CosmosService {
     });
   }
 
+  /**
+   * List quotations with pagination, filtering, and sorting
+   * 
+   * Filtering Behavior:
+   * - status: Filters quotations by status. Frontend typically passes only "active" statuses
+   *   (draft, pending, sent, viewed, revision_requested, rejected, superseded) to exclude
+   *   quotations with dedicated pages (pending_approval, policy_issued).
+   * - lineOfBusiness: Filters quotations by line of business (medical, motor, general, marine).
+   *   This allows filtering quotations by insurance type.
+   * - isCurrentVersion: Filters for current versions (true) or superseded versions (false).
+   * 
+   * Default Behavior for Quotation Listings:
+   * - Frontend should pass status filter to exclude statuses with dedicated pages
+   * - Backend applies the filters to ensure correct pagination counts
+   * - This ensures proper separation between different quotation views
+   */
   async listQuotations(request: QuotationListRequest): Promise<QuotationListResponse> {
-    const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc', filters = {}, leadId, customerId } = request;
+    const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc', filters = {}, leadId, customerId, search } = request;
 
     // Build query
     const conditions: string[] = [];
@@ -156,6 +189,27 @@ class CosmosService {
     if (filters.isCurrentVersion !== undefined) {
       conditions.push(`c.isCurrentVersion = @isCurrentVersion${paramIndex}`);
       parameters.push({ name: `@isCurrentVersion${paramIndex}`, value: filters.isCurrentVersion });
+      paramIndex++;
+    }
+
+    // Line of Business filter - allows filtering by insurance type (medical, motor, general, marine)
+    // This enables users to view quotations specific to a line of business
+    if (filters.lineOfBusiness && filters.lineOfBusiness.length > 0) {
+      conditions.push(`ARRAY_CONTAINS(@lobs${paramIndex}, c.lineOfBusiness)`);
+      parameters.push({ name: `@lobs${paramIndex}`, value: filters.lineOfBusiness });
+      paramIndex++;
+    }
+
+    // Global search - searches across reference ID, customer name, and email
+    if (search && search.trim()) {
+      const searchConditions = [
+        `CONTAINS(LOWER(c.referenceId), LOWER(@search${paramIndex}))`,
+        `CONTAINS(LOWER(c.leadSnapshot.firstName), LOWER(@search${paramIndex}))`,
+        `CONTAINS(LOWER(c.leadSnapshot.lastName), LOWER(@search${paramIndex}))`,
+        `CONTAINS(LOWER(c.leadSnapshot.email), LOWER(@search${paramIndex}))`
+      ];
+      conditions.push(`(${searchConditions.join(' OR ')})`);
+      parameters.push({ name: `@search${paramIndex}`, value: search.trim() });
       paramIndex++;
     }
 

@@ -19,3 +19,6 @@ GETTING_STARTED.md
 *.postman_collection.json
 test-durable-function.sh
 
+# Dev tools that shouldn't be deployed
+node_modules/azure-functions-core-tools/**
+node_modules/tsx/**

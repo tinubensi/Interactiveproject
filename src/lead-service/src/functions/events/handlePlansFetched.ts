@@ -27,6 +27,15 @@ interface PlansFetchedEvent {
     failedVendors?: string[];
     plans?: Plan[]; // Optional - plans are already saved to DB
     timestamp: Date;
+    metadata?: {
+      vendorTimings?: Array<{
+        vendorId: string;
+        vendorName: string;
+        success: boolean;
+        executionTime: string;
+        plansCount: number;
+      }>;
+    };
   };
   dataVersion: string;
 }
@@ -143,15 +152,18 @@ export async function handlePlansFetched(
     // No pipeline active - Update stage directly as fallback
     context.log(`Lead ${eventData.leadId} has no active pipeline - updating stage directly as fallback`);
 
-    // Check if already in "Plans Available" to avoid duplicate updates
+    // Check if already in "Plans Available" to avoid duplicate timeline entries
+    // This handles multiple vendor completion events - only the first one should create a timeline entry
     if (lead.currentStage === 'Plans Available') {
-      context.log(`Lead ${leadId} already in "Plans Available" stage - updating plan count only`);
+      context.log(`[DEDUP] Lead ${leadId} already in "Plans Available" stage - updating plan count only, NO timeline entry created`);
       await cosmosService.updateLead(leadId, lead.lineOfBusiness, {
         plansCount: totalPlansCount,
         updatedAt: new Date()
       });
       return;
     }
+
+    context.log(`[STAGE_CHANGE] Lead ${leadId} transitioning from "${lead.currentStage}" to "Plans Available" - will create timeline entry`);
 
     // Update lead status to "Plans Available" IMMEDIATELY
     await cosmosService.updateLead(leadId, lead.lineOfBusiness, {
@@ -162,7 +174,8 @@ export async function handlePlansFetched(
       updatedAt: new Date()
     });
 
-    // Create timeline entry
+    // Create timeline entry ONLY for actual stage change
+    context.log(`[TIMELINE] Creating timeline entry for stage change: "${lead.currentStage}" → "Plans Available"`);
     await cosmosService.createTimelineEntry({
       id: uuidv4(),
       leadId: leadId,
@@ -172,10 +185,13 @@ export async function handlePlansFetched(
       remark: `${totalPlansCount} plans available (auto-updated on first extraction)`,
       changedBy: 'system',
       changedByName: 'System',
-      timestamp: new Date()
+      timestamp: new Date(),
+      metadata: {
+        vendorTimings: eventData.metadata?.vendorTimings || []
+      }
     });
 
-    context.log(`✅ Updated lead ${leadId} to "Plans Available" stage with ${totalPlansCount} plans`);
+    context.log(`✅ Updated lead ${leadId} to "Plans Available" stage with ${totalPlansCount} plans and created timeline entry`);
 
   } catch (error: any) {
     context.error('Handle plans fetched error:', error);

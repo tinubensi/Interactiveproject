@@ -67,6 +67,48 @@ async function handleLeadCreatedEvent(
       await cosmosService.createFetchRequest(fetchRequest);
       context.log(`Created fetch request: ${fetchRequest.id}`);
       
+      // ✅ IMMEDIATE STATUS UPDATE: Update lead to "Plans Fetching" NOW
+      // This ensures the timeline shows the correct status immediately without waiting for event propagation
+      try {
+        const LEAD_SERVICE_URL = process.env.LEAD_SERVICE_URL || 'https://lead-service-func.azurewebsites.net';
+        
+        // Update lead stage
+        await fetch(`${LEAD_SERVICE_URL}/api/leads/${leadId}/stage`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-service-key': process.env.INTERNAL_SERVICE_KEY || ''
+          },
+          body: JSON.stringify({
+            stage: 'Plans Fetching',
+            stageId: 'stage-1',
+            changedBy: 'quotation-gen-service',
+            changedByName: 'Quotation Generation Service'
+          })
+        });
+        
+        // Create timeline entry
+        await fetch(`${LEAD_SERVICE_URL}/api/leads/${leadId}/timeline`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-service-key': process.env.INTERNAL_SERVICE_KEY || ''
+          },
+          body: JSON.stringify({
+            stage: 'Plans Fetching',
+            stageId: 'stage-1',
+            remark: `Started fetching plans from ${rpaVendors.length} vendors`,
+            changedBy: 'quotation-gen-service',
+            changedByName: 'Quotation Generation Service',
+            timestamp: new Date().toISOString()
+          })
+        });
+        context.log(`✅ Updated lead status and created timeline entry for "Plans Fetching"`);
+      } catch (updateError) {
+        context.warn('⚠️ Failed to update lead status immediately:', updateError);
+        // Continue anyway - event-based updates will still work
+      }
+      
       // Publish plans.fetch_started event BEFORE triggering RPA
       // This allows Pipeline Service to update lead status to "Plans Fetching"
       try {

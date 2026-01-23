@@ -7,6 +7,7 @@ import { tokenService } from '../../services/tokenService';
 import { SendQuotationRequest } from '../../models/quotation';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
 import { notifyPipelineService } from '../../utils/pipelineFallback';
+import { getFrontendUrl } from '../../utils/urlHelper';
 
 export async function sendQuotation(
   request: HttpRequest,
@@ -33,7 +34,7 @@ export async function sendQuotation(
 
     // Parse request body
     const body = await request.json() as SendQuotationRequest;
-    const { recipientEmail, recipientName, message } = body;
+    const { recipientEmail, recipientName, message, ccEmails } = body;
 
     if (!recipientEmail || !recipientName) {
       return withCors(request, {
@@ -84,8 +85,8 @@ export async function sendQuotation(
     const selectionToken = tokenService.generateSelectionToken();
     context.log(`Generated selection token for quotation ${quotationId}`);
 
-    // Construct the review link - always use localhost:3000 for now
-    const frontendUrl = 'http://localhost:3000';
+    // Construct the review link using validated frontend URL
+    const frontendUrl = getFrontendUrl();
     const reviewLink = `${frontendUrl}/quotations/review/${selectionToken}`;
     context.log(`Review link: ${reviewLink}`);
 
@@ -108,8 +109,12 @@ export async function sendQuotation(
 
     // Send email with PDF attachment and review link
     context.log(`Sending email to ${recipientEmail}...`);
+    if (ccEmails && ccEmails.length > 0) {
+      context.log(`CC recipients: ${ccEmails.join(', ')}`);
+    }
     await emailService.sendQuotationEmail({
       to: recipientEmail,
+      cc: ccEmails,
       customerName: recipientName,
       quotationReference: quotation.referenceId,
       pdfBuffer,

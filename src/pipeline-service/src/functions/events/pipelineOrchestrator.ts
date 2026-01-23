@@ -152,6 +152,14 @@ async function processSingleEvent(
     lineOfBusiness: lineOfBusiness as EventData['lineOfBusiness'],
   };
 
+  // Debug: Log metadata if present
+  if (orchestratorEventData.metadata) {
+    context.log(`[PIPELINE ORCHESTRATOR] ✓ Metadata found in event:`, JSON.stringify(orchestratorEventData.metadata, null, 2));
+  } else {
+    context.log(`[PIPELINE ORCHESTRATOR] ⚠ No metadata found in event data`);
+    context.log(`[PIPELINE ORCHESTRATOR] Event data keys: ${Object.keys(eventData).join(', ')}`);
+  }
+
   // Process the event
   try {
     context.log(`[PIPELINE ORCHESTRATOR] Processing event ${eventType} for lead ${leadId} (requestId: ${requestId || eventId})`);
