@@ -79,22 +79,22 @@ export async function AssignTerritoryHandler(
     // Get user ID from headers
     const userId = request.headers.get('x-user-id') || 'system';
 
-    const previousTerritories = [...staff.territories];
+    const previousTerritories = [...(staff.territories || [])];
     let newTerritories: string[];
 
     // Calculate new territories based on operation
     switch (body.operation) {
       case 'add':
-        newTerritories = [...new Set([...staff.territories, ...body.territories])];
+        newTerritories = [...new Set([...(staff.territories || []), ...body.territories])];
         break;
       case 'remove':
-        newTerritories = staff.territories.filter((t) => !body.territories.includes(t));
+        newTerritories = (staff.territories || []).filter((t: string) => !body.territories.includes(t));
         break;
       case 'replace':
         newTerritories = body.territories;
         break;
       default:
-        newTerritories = staff.territories;
+        newTerritories = staff.territories || [];
     }
 
     // Update staff territories

@@ -15,8 +15,6 @@ export async function ListStaffHandler(
   try {
     // Parse query parameters
     const query: StaffListQuery = {
-      teamId: request.query.get('teamId') || undefined,
-      territory: request.query.get('territory') || undefined,
       staffType: (request.query.get('staffType') as StaffType) || undefined,
       status: (request.query.get('status') as StaffStatus) || undefined,
       search: request.query.get('search') || undefined,

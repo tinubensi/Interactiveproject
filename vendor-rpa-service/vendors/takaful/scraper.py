@@ -208,6 +208,17 @@ class TakafulScraper:
                         "coverage_details": coverage_details
                     }
                     
+                    # Try to download PDF for this plan (works for up to 70 plans)
+                    try:
+                        pdf_path = await self._download_plan_pdf(plan_idx, plan_name)
+                        if pdf_path:
+                            plan_data['pdf_path'] = pdf_path
+                            self.logger.info(f"  ✓ PDF downloaded for plan {plan_idx + 1}: {plan_name}")
+                        else:
+                            self.logger.debug(f"  No PDF available for plan {plan_idx + 1}")
+                    except Exception as e:
+                        self.logger.warning(f"  ⚠️ PDF download failed for plan {plan_idx + 1}: {e}")
+                    
                     raw_plans.append(plan_data)
                     
                 except Exception as e:
@@ -231,6 +242,238 @@ class TakafulScraper:
             self.logger.error(f"❌ Failed to extract plans: {e}", exc_info=True)
         
         return structured_plans
+    
+    async def _download_plan_pdf(self, plan_idx: int, plan_name: str = None) -> Optional[str]:
+        """
+        Downloads the plan PDF for a specific plan index.
+        Uses Alsagr's download event method (works in headless mode).
+        Supports up to 70 plans.
+        
+        Args:
+            plan_idx: Zero-based index of the plan (column index in table)
+            plan_name: Optional plan name for logging
+        
+        Returns:
+            Path to downloaded PDF file, or None if download fails
+        """
+        try:
+            import time
+            import os
+            
+            filename = f"takaful_plan_{plan_idx + 1}_{int(time.time())}.pdf"
+            download_dir = "/tmp/takaful_downloads"
+            os.makedirs(download_dir, exist_ok=True)
+            try:
+                os.chmod(download_dir, 0o777)
+            except:
+                pass
+            filepath = os.path.join(download_dir, filename)
+            
+            # Find the row with plan-details-link (flexible - might not always be row 14)
+            plan_details_row = None
+            row_index = None
+            
+            # Strategy: Find row by looking for .plan-details-link in any row
+            try:
+                # Try row 14 first (common case from script)
+                row_14 = await self.page.query_selector("#pdfData tr:nth-child(14)")
+                if row_14:
+                    link = await row_14.query_selector(f"td:nth-child({plan_idx + 2}) > .plan-details-link")
+                    if link:
+                        plan_details_row = row_14
+                        row_index = 14
+                        self.logger.info(f"  ✓ Found plan details row at index 14")
+            except:
+                pass
+            
+            # If row 14 doesn't work, search all rows
+            if not plan_details_row:
+                try:
+                    all_rows = await self.page.query_selector_all("#pdfData tr")
+                    for idx, row in enumerate(all_rows, start=1):
+                        link = await row.query_selector(f"td:nth-child({plan_idx + 2}) > .plan-details-link")
+                        if link:
+                            plan_details_row = row
+                            row_index = idx
+                            self.logger.info(f"  ✓ Found plan details row at index {idx}")
+                            break
+                except Exception as e:
+                    self.logger.debug(f"  Could not find plan details row: {e}")
+            
+            if not plan_details_row:
+                self.logger.warning(f"  ⚠️ No plan details row found for plan {plan_idx + 1}")
+                return None
+            
+            # Build selector for the specific plan link
+            column_index = plan_idx + 2
+            selector = f"#pdfData tr:nth-child({row_index}) > td:nth-child({column_index}) > .plan-details-link"
+            
+            download_button = await self.page.query_selector(selector)
+            
+            if not download_button:
+                self.logger.warning(f"  ⚠️ No PDF download link found for plan {plan_idx + 1} at {selector}")
+                return None
+            
+            # Check if visible
+            is_visible = await download_button.is_visible()
+            if not is_visible:
+                self.logger.warning(f"  ⚠️ PDF download link not visible for plan {plan_idx + 1}")
+                return None
+            
+            self.logger.info(f"  ✓ Found PDF download link for plan {plan_idx + 1}")
+            
+            # Strategy 1: Use download event handler (Alsagr method - works in headless mode)
+            pdf_downloaded = False
+            downloaded_path = None
+            
+            async def handle_download(download):
+                nonlocal pdf_downloaded, downloaded_path
+                try:
+                    self.logger.info(f"  📥 Download event triggered for plan {plan_idx + 1}")
+                    # Try to get suggested filename (might be property or method)
+                    try:
+                        if hasattr(download, 'suggested_filename'):
+                            if callable(download.suggested_filename):
+                                suggested_filename = download.suggested_filename()
+                            else:
+                                suggested_filename = download.suggested_filename
+                            self.logger.info(f"  📄 Suggested filename: {suggested_filename}")
+                    except:
+                        pass
+                    
+                    # Save the download
+                    await download.save_as(filepath)
+                    pdf_downloaded = True
+                    downloaded_path = filepath
+                    file_size = os.path.getsize(filepath) if os.path.exists(filepath) else 0
+                    self.logger.info(f"  ✅ PDF downloaded via download event: {file_size} bytes")
+                except Exception as e:
+                    self.logger.warning(f"  Download handler error: {e}")
+                    import traceback
+                    self.logger.debug(f"  Download handler traceback:\n{traceback.format_exc()}")
+            
+            # Register download handler BEFORE clicking
+            self.page.on("download", handle_download)
+            
+            try:
+                self.logger.info(f"  🔘 Clicking plan details link for plan {plan_idx + 1} (Strategy 1: Download Event)...")
+                
+                # Click the download button
+                await download_button.click()
+                
+                # Wait for download to complete (max 15 seconds)
+                self.logger.debug(f"  Waiting for download event (max 15s)...")
+                for i in range(30):  # 30 × 0.5s = 15s max
+                    if pdf_downloaded:
+                        self.logger.info(f"  ✅ Download detected after {i * 0.5:.1f}s")
+                        break
+                    await asyncio.sleep(0.5)
+                
+                # Remove download handler
+                self.page.remove_listener("download", handle_download)
+                
+                if pdf_downloaded and downloaded_path:
+                    return downloaded_path
+                else:
+                    self.logger.debug(f"  ⚠️ Download event did not fire after clicking")
+                    
+            except Exception as e:
+                self.logger.warning(f"  Download event approach failed: {e}")
+                # Remove handler on error
+                try:
+                    self.page.remove_listener("download", handle_download)
+                except:
+                    pass
+            
+            # Strategy 2: Try popup approach (fallback for non-headless or if download event doesn't fire)
+            try:
+                self.logger.debug("  Trying popup approach...")
+                async with self.page.expect_popup(timeout=5000) as popup_info:
+                    await download_button.click()
+                
+                popup_page = await popup_info.value
+                await popup_page.wait_for_load_state("networkidle", timeout=10000)
+                
+                # Check if popup URL is a PDF
+                popup_url = popup_page.url
+                content_type = await popup_page.evaluate("() => document.contentType || ''")
+                
+                if popup_url.endswith(".pdf") or "application/pdf" in content_type:
+                    # Download PDF from popup URL
+                    try:
+                        response = await popup_page.request.fetch(popup_url)
+                        body = await response.body()
+                        if body.startswith(b'%PDF'):
+                            with open(filepath, "wb") as f:
+                                f.write(body)
+                            await popup_page.close()
+                            self.logger.info(f"  ✅ PDF downloaded from popup URL: {len(body)} bytes")
+                            return filepath
+                    except Exception as e:
+                        self.logger.debug(f"  Failed to fetch from popup URL: {e}")
+                
+                # Strategy 3: If popup is HTML, try to generate PDF from it
+                try:
+                    await popup_page.pdf(path=filepath, format='A4')
+                    await popup_page.close()
+                    if os.path.exists(filepath) and os.path.getsize(filepath) > 1000:
+                        self.logger.info(f"  ✅ PDF generated from popup content")
+                        return filepath
+                except Exception as e:
+                    self.logger.debug(f"  Failed to generate PDF from popup: {e}")
+                    try:
+                        await popup_page.close()
+                    except:
+                        pass
+                        
+            except Exception as e:
+                self.logger.debug(f"  Popup approach failed: {e}")
+            
+            # Strategy 4: Intercept network requests for PDF
+            try:
+                self.logger.debug("  Trying network interception...")
+                pdf_url = None
+                pdf_body = None
+                
+                async def handle_response(response):
+                    nonlocal pdf_url, pdf_body
+                    try:
+                        content_type = response.headers.get('content-type', '').lower()
+                        url = response.url
+                        if 'application/pdf' in content_type or url.endswith('.pdf'):
+                            pdf_url = url
+                            pdf_body = await response.body()
+                            if pdf_body.startswith(b'%PDF'):
+                                self.logger.info(f"  📥 Captured PDF from network: {len(pdf_body)} bytes")
+                    except:
+                        pass
+                
+                self.page.on("response", handle_response)
+                
+                # Click again to trigger network request
+                await download_button.click()
+                await asyncio.sleep(3)  # Wait for network request
+                
+                # Remove handler
+                self.page.remove_listener("response", handle_response)
+                
+                if pdf_body and pdf_body.startswith(b'%PDF'):
+                    with open(filepath, "wb") as f:
+                        f.write(pdf_body)
+                    self.logger.info(f"  ✅ PDF downloaded via network interception: {len(pdf_body)} bytes")
+                    return filepath
+                    
+            except Exception as e:
+                self.logger.debug(f"  Network interception failed: {e}")
+            
+            self.logger.warning(f"  ⚠️ All PDF download strategies failed for plan {plan_idx + 1}")
+            return None
+            
+        except Exception as e:
+            self.logger.warning(f"  ⚠️ Failed to download PDF for plan {plan_idx + 1}: {e}")
+            import traceback
+            self.logger.debug(f"  Traceback: {traceback.format_exc()}")
+            return None
 
 
 

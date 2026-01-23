@@ -1,0 +1,39 @@
+{
+  "name": "emaf-service",
+  "version": "1.0.0",
+  "description": "Electronic Medical Application Form Service",
+  "scripts": {
+    "build": "tsc && npm run copy-templates",
+    "copy-templates": "mkdir -p dist/src/templates && cp -r src/templates/* dist/src/templates/",
+    "watch": "tsc --watch",
+    "prestart": "npm run build",
+    "start": "NODE_TLS_REJECT_UNAUTHORIZED=0 npx func start --port 7078",
+    "test": "node test-html-pdf-generation.js",
+    "seed:alsagr": "npm run build && node dist/src/scripts/seed-alsagr-template.js"
+  },
+  "dependencies": {
+    "@azure/cosmos": "^4.0.0",
+    "@azure/eventgrid": "^5.0.0",
+    "@azure/functions": "^4.0.0",
+    "@azure/identity": "^4.0.0",
+    "@azure/storage-blob": "^12.17.0",
+    "@azure/storage-queue": "^12.15.0",
+    "axios": "^1.6.0",
+    "canvas": "^3.2.1",
+    "handlebars": "^4.7.8",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^1.1.4",
+    "pdf-to-png-converter": "^3.11.0",
+    "pdfjs-dist": "^5.4.530",
+    "playwright": "^1.40.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/pdf-parse": "^1.1.4",
+    "@types/uuid": "^9.0.7",
+    "azure-functions-core-tools": "^4.5.0",
+    "typescript": "^5.3.0"
+  },
+  "main": "dist/src/index.js"
+}

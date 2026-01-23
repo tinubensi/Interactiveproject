@@ -13,40 +13,7 @@ import {
   StaffSummary,
   Workload,
   Availability,
-  NotificationPreferences,
 } from '../models/StaffMember';
-
-/**
- * Default notification preferences
- */
-const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
-  email: true,
-  sms: false,
-  push: true,
-  channels: {
-    approvals: true,
-    assignments: true,
-    alerts: true,
-    marketing: false,
-  },
-};
-
-/**
- * Default workload
- */
-const DEFAULT_WORKLOAD: Workload = {
-  activeLeads: 0,
-  activeCustomers: 0,
-  activePolicies: 0,
-  pendingApprovals: 0,
-};
-
-/**
- * Default availability
- */
-const DEFAULT_AVAILABILITY: Availability = {
-  isAvailable: true,
-};
 
 /**
  * Create a new staff member
@@ -62,36 +29,13 @@ export async function createStaff(
   const document: StaffMemberDocument = {
     id: staffId,
     staffId,
-    azureAdId: request.azureAdId,
     email: request.email.toLowerCase(),
     firstName: request.firstName,
     lastName: request.lastName,
     displayName: `${request.firstName} ${request.lastName}`,
     phone: request.phone,
-    photo: request.photo,
-    employeeId: request.employeeId,
-    jobTitle: request.jobTitle,
-    department: request.department,
     staffType: request.staffType,
-    hireDate: request.hireDate,
     status: 'active',
-    statusChangedAt: now,
-    teamIds: request.teamIds,
-    managerId: request.managerId,
-    organizationId: request.organizationId || 'default',
-    territories: request.territories || [],
-    licenses: request.licenses,
-    workload: {
-      ...DEFAULT_WORKLOAD,
-      maxLeads: request.maxLeads,
-      maxCustomers: request.maxCustomers,
-    },
-    availability: DEFAULT_AVAILABILITY,
-    notificationPreferences: {
-      ...DEFAULT_NOTIFICATION_PREFERENCES,
-      ...request.notificationPreferences,
-    },
-    metadata: request.metadata,
     createdAt: now,
     createdBy,
     updatedAt: now,
@@ -181,24 +125,15 @@ export async function listStaff(query: StaffListQuery): Promise<StaffListRespons
   const offset = query.offset || 0;
 
   let queryText = 'SELECT * FROM c WHERE 1=1';
-  const parameters: { name: string; value: string }[] = [];
+  const parameters: { name: string; value: string | number }[] = [];
+
+  // Filter out soft-deleted staff by default
+  queryText += ' AND (NOT IS_DEFINED(c.deletedAt) OR c.deletedAt = null)';
 
   // Filter by status (default: active)
   const status = query.status || 'active';
   queryText += ' AND c.status = @status';
   parameters.push({ name: '@status', value: status });
-
-  // Filter by team
-  if (query.teamId) {
-    queryText += ' AND ARRAY_CONTAINS(c.teamIds, @teamId)';
-    parameters.push({ name: '@teamId', value: query.teamId });
-  }
-
-  // Filter by territory
-  if (query.territory) {
-    queryText += ' AND ARRAY_CONTAINS(c.territories, @territory)';
-    parameters.push({ name: '@territory', value: query.territory });
-  }
 
   // Filter by staff type
   if (query.staffType) {
@@ -221,8 +156,8 @@ export async function listStaff(query: StaffListQuery): Promise<StaffListRespons
 
   // Add pagination
   queryText += ' ORDER BY c.displayName OFFSET @offset LIMIT @limit';
-  parameters.push({ name: '@offset', value: offset.toString() });
-  parameters.push({ name: '@limit', value: limit.toString() });
+  parameters.push({ name: '@offset', value: offset });
+  parameters.push({ name: '@limit', value: limit });
 
   const { resources } = await container.items
     .query<StaffMemberDocument>({ query: queryText, parameters })
@@ -233,11 +168,8 @@ export async function listStaff(query: StaffListQuery): Promise<StaffListRespons
     staffId: s.staffId,
     displayName: s.displayName,
     email: s.email,
+    phone: s.phone,
     staffType: s.staffType,
-    status: s.status,
-    teamIds: s.teamIds,
-    territories: s.territories,
-    workload: s.workload,
   }));
 
   return {
@@ -272,21 +204,7 @@ export async function updateStaff(
       ? `${updates.firstName ?? existing.firstName} ${updates.lastName ?? existing.lastName}`
       : existing.displayName,
     phone: updates.phone ?? existing.phone,
-    photo: updates.photo ?? existing.photo,
-    jobTitle: updates.jobTitle ?? existing.jobTitle,
-    department: updates.department ?? existing.department,
     staffType: updates.staffType ?? existing.staffType,
-    managerId: updates.managerId ?? existing.managerId,
-    licenses: updates.licenses ?? existing.licenses,
-    workload: {
-      ...existing.workload,
-      maxLeads: updates.maxLeads ?? existing.workload.maxLeads,
-      maxCustomers: updates.maxCustomers ?? existing.workload.maxCustomers,
-    },
-    notificationPreferences: updates.notificationPreferences
-      ? { ...existing.notificationPreferences, ...updates.notificationPreferences }
-      : existing.notificationPreferences,
-    metadata: updates.metadata ?? existing.metadata,
     updatedAt: now,
     updatedBy,
   };
@@ -323,7 +241,7 @@ export async function updateStaffStatus(
     status,
     statusChangedAt: now,
     statusReason: reason,
-    availability,
+    availability: availability,
     updatedAt: now,
     updatedBy,
   };
@@ -354,7 +272,7 @@ export async function updateStaffWorkload(
   const updated: StaffMemberDocument = {
     ...existing,
     workload: {
-      ...existing.workload,
+      ...(existing.workload || { activeLeads: 0, activeCustomers: 0, activePolicies: 0, pendingApprovals: 0 }),
       ...workload,
     },
     updatedAt: new Date().toISOString(),
@@ -465,5 +383,44 @@ export async function getStaffWithExpiringLicenses(
       return expiryDate >= todayStr && expiryDate <= futureDateStr;
     });
   });
+}
+
+/**
+ * Delete staff member (soft delete)
+ */
+export async function deleteStaff(
+  staffId: string,
+  deletedBy: string
+): Promise<StaffMemberDocument> {
+  const container = getStaffContainer();
+  const existing = await findStaffById(staffId);
+
+  if (!existing) {
+    throw new Error(`Staff member "${staffId}" not found`);
+  }
+
+  if (existing.deletedAt) {
+    throw new Error('Staff member already deleted');
+  }
+
+  const now = new Date().toISOString();
+  const updated: StaffMemberDocument = {
+    ...existing,
+    status: 'terminated',
+    statusChangedAt: now,
+    statusReason: 'Deleted from system',
+    deletedAt: now,
+    deletedBy,
+    updatedAt: now,
+    updatedBy: deletedBy,
+  };
+
+  const { resource } = await container.item(staffId, staffId).replace(updated);
+
+  if (!resource) {
+    throw new Error('Failed to delete staff member');
+  }
+
+  return resource;
 }
 

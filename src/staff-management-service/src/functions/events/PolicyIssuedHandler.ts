@@ -34,48 +34,27 @@ export async function PolicyIssuedHandler(
     }
 
     // Handle based on event type
+    const defaultWorkload = { activeLeads: 0, activeCustomers: 0, activePolicies: 0, pendingApprovals: 0 };
     switch (event.eventType) {
       case 'policy.issued':
         // Increment policies count
-        const newWorkload = incrementWorkload(staff.workload, 'activePolicies');
+        const newWorkload = incrementWorkload(staff.workload || defaultWorkload, 'activePolicies');
         await updateStaffWorkload(staff.staffId, newWorkload);
 
-        // Update performance metrics
-        const currentPeriod = new Date().toISOString().slice(0, 7);
-        const currentPerformance = staff.performance || {
-          period: currentPeriod,
-          leadsConverted: 0,
-          policiesIssued: 0,
-          premiumGenerated: 0,
-        };
-
-        // Only update if same period
-        if (currentPerformance.period === currentPeriod) {
-          await updateStaff(staff.staffId, {
-            metadata: {
-              ...staff.metadata,
-              performance: {
-                ...currentPerformance,
-                policiesIssued: currentPerformance.policiesIssued + 1,
-                premiumGenerated: currentPerformance.premiumGenerated + (data.premium || 0),
-              },
-            },
-          }, 'system');
-        }
-
+        // Note: Performance metrics removed from simplified model
         context.log(`Policy issued for ${staff.staffId}`);
         break;
 
       case 'policy.assigned':
         // Update policy assignment
-        const assignedWorkload = incrementWorkload(staff.workload, 'activePolicies');
+        const assignedWorkload = incrementWorkload(staff.workload || defaultWorkload, 'activePolicies');
         await updateStaffWorkload(staff.staffId, assignedWorkload);
 
         // If reassignment, decrement for previous assignee
         if (data.previousAssignee && data.previousAssignee !== data.assignedTo) {
           const prevStaff = await findStaffById(data.previousAssignee);
           if (prevStaff) {
-            const prevWorkload = decrementWorkload(prevStaff.workload, 'activePolicies');
+            const prevWorkload = decrementWorkload(prevStaff.workload || defaultWorkload, 'activePolicies');
             await updateStaffWorkload(prevStaff.staffId, prevWorkload);
           }
         }

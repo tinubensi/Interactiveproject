@@ -60,6 +60,14 @@ export interface Quotation {
   selectionToken?: string; // Unique token for customer review link
   tokenUsedAt?: Date; // When customer used the token to select a plan
   customerSelectedPlanId?: string; // Plan ID selected by customer
+  selectedPlanPremium?: number; // Premium of the customer-selected plan
+  selectedPlanSnapshot?: {
+    planName: string;
+    vendorName: string;
+    annualPremium: number;
+    monthlyPremium: number;
+    currency: string;
+  };
   
   // PDF Document
   pdfUrl?: string; // Blob storage URL
@@ -183,6 +191,9 @@ export interface QuotationListRequest {
   sortBy?: 'createdAt' | 'sentAt' | 'totalPremium' | 'validUntil' | 'version';
   sortOrder?: 'asc' | 'desc';
   
+  // Search
+  search?: string; // Search across reference ID, customer name, and email
+  
   // Filters
   filters?: {
     status?: QuotationStatus[];
@@ -195,9 +206,6 @@ export interface QuotationListRequest {
     minPremium?: number;
     maxPremium?: number;
   };
-  
-  // Search
-  search?: string; // Search in referenceId, customerName, etc.
 }
 
 /**
@@ -273,6 +281,16 @@ export interface UpdateQuotationRequest {
   remarks?: Quotation['remarks'];
   rejectionReason?: string;
   revisionReason?: string;
+  customerSelectedPlanId?: string;
+  selectedPlanPremium?: number;
+  selectedPlanSnapshot?: {
+    planName: string;
+    vendorName: string;
+    annualPremium: number;
+    monthlyPremium: number;
+    currency: string;
+  };
+  tokenUsedAt?: Date;
 }
 
 /**

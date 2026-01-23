@@ -2,19 +2,23 @@
 // This file imports all functions to ensure they are registered
 
 // Auth functions
-import './functions/auth/signup';
-import './functions/auth/login';
-import './functions/auth/verifyOtp';
+import './src/functions/auth/signup';
+import './src/functions/auth/login';
+import './src/functions/auth/verifyOtp';
 
 // Customer functions
-import './functions/customers/getCustomer';
-import './functions/customers/updateProfile';
-import './functions/customers/addContact';
+import './src/functions/customers/listCustomers';
+import './src/functions/customers/getCustomer';
+import './src/functions/customers/updateProfile';
+import './src/functions/customers/addContact';
 
 // Integration functions
-import './functions/integrations/getPolicies';
+import './src/functions/integrations/getPolicies';
 
 // Event handlers
-import './functions/events/handlePolicyIssued';
-import './functions/events/handleDocumentUploaded';
-import './functions/events/handleDocumentExpired';
+import './src/functions/events/handlePolicyIssued';
+import './src/functions/events/handleDocumentUploaded';
+import './src/functions/events/handleDocumentExpired';
+
+// Debug functions
+import './src/functions/debug/envCheck';

@@ -15,6 +15,7 @@ export const STAFF_EVENTS = {
   STAFF_UPDATED: 'staff.updated',
   STAFF_ACTIVATED: 'staff.activated',
   STAFF_DEACTIVATED: 'staff.deactivated',
+  STAFF_DELETED: 'staff.deleted',
   STAFF_TERRITORY_ASSIGNED: 'staff.territory_assigned',
   STAFF_TEAM_JOINED: 'staff.team_joined',
   STAFF_TEAM_LEFT: 'staff.team_left',

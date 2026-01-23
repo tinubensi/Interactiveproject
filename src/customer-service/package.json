@@ -4,7 +4,7 @@
   "description": "Customer Service Azure Functions",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc && node -e \"const fs=require('fs'); const content='// Entry point for Azure Functions\\n// This file imports all functions to ensure they are registered\\n\\n// Auth functions\\nrequire(\\'./src/functions/auth/signup\\');\\nrequire(\\'./src/functions/auth/login\\');\\nrequire(\\'./src/functions/auth/verifyOtp\\');\\n\\n// Customer functions\\nrequire(\\'./src/functions/customers/listCustomers\\');\\nrequire(\\'./src/functions/customers/getCustomer\\');\\nrequire(\\'./src/functions/customers/updateProfile\\');\\nrequire(\\'./src/functions/customers/addContact\\');\\n\\n// Integration functions\\nrequire(\\'./src/functions/integrations/getPolicies\\');\\n\\n// Event handlers\\nrequire(\\'./src/functions/events/handlePolicyIssued\\');\\nrequire(\\'./src/functions/events/handleDocumentUploaded\\');\\nrequire(\\'./src/functions/events/handleDocumentExpired\\');\\n\\n// Debug functions\\nrequire(\\'./src/functions/debug/envCheck\\');\\n'; fs.writeFileSync('dist/index.js', content);\"",
+    "build": "tsc",
     "watch": "tsc -w",
     "clean": "rimraf dist",
     "prestart": "npm run clean && npm run build",

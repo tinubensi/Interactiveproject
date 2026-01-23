@@ -102,9 +102,6 @@ export interface StaffMemberDocument {
   /** Staff ID - Partition key (same as id) */
   staffId: string;
 
-  /** Azure AD object ID */
-  azureAdId: string;
-
   /** Email address */
   email: string;
 
@@ -120,62 +117,11 @@ export interface StaffMemberDocument {
   /** Phone number */
   phone: string;
 
-  /** Profile photo URL */
-  photo?: string;
-
-  /** Internal employee number */
-  employeeId: string;
-
-  /** Job title */
-  jobTitle: string;
-
-  /** Department */
-  department: string;
-
   /** Staff type */
   staffType: StaffType;
 
-  /** Hire date (ISO 8601) */
-  hireDate: string;
-
   /** Current status */
   status: StaffStatus;
-
-  /** When status was changed */
-  statusChangedAt: string;
-
-  /** Reason for status change */
-  statusReason?: string;
-
-  /** Team IDs (can belong to multiple teams) */
-  teamIds: string[];
-
-  /** Direct manager staff ID */
-  managerId?: string;
-
-  /** Organization ID */
-  organizationId: string;
-
-  /** Assigned territories */
-  territories: string[];
-
-  /** Licenses (for brokers) */
-  licenses?: License[];
-
-  /** Workload tracking */
-  workload: Workload;
-
-  /** Performance metrics */
-  performance?: PerformanceMetrics;
-
-  /** Availability status */
-  availability: Availability;
-
-  /** Notification preferences */
-  notificationPreferences: NotificationPreferences;
-
-  /** Additional metadata */
-  metadata?: Record<string, unknown>;
 
   /** Created timestamp */
   createdAt: string;
@@ -188,32 +134,61 @@ export interface StaffMemberDocument {
 
   /** Updated by user ID */
   updatedBy: string;
+
+  /** Soft delete timestamp */
+  deletedAt?: string;
+
+  /** Deleted by user ID */
+  deletedBy?: string;
+
+  // Optional fields for backward compatibility with other services
+  /** Azure AD object ID */
+  azureAdId?: string;
+  /** Internal employee number */
+  employeeId?: string;
+  /** Job title */
+  jobTitle?: string;
+  /** Department */
+  department?: string;
+  /** Hire date (ISO 8601) */
+  hireDate?: string;
+  /** When status was changed */
+  statusChangedAt?: string;
+  /** Reason for status change */
+  statusReason?: string;
+  /** Team IDs (can belong to multiple teams) */
+  teamIds?: string[];
+  /** Direct manager staff ID */
+  managerId?: string;
+  /** Organization ID */
+  organizationId?: string;
+  /** Assigned territories */
+  territories?: string[];
+  /** Licenses (for brokers) */
+  licenses?: License[];
+  /** Workload tracking */
+  workload?: Workload;
+  /** Performance metrics */
+  performance?: PerformanceMetrics;
+  /** Availability status */
+  availability?: Availability;
+  /** Notification preferences */
+  notificationPreferences?: NotificationPreferences;
+  /** Additional metadata */
+  metadata?: Record<string, unknown>;
+  /** Profile photo URL */
+  photo?: string;
 }
 
 /**
  * Create staff request
  */
 export interface CreateStaffRequest {
-  azureAdId: string;
   email: string;
   firstName: string;
   lastName: string;
   phone: string;
-  photo?: string;
-  employeeId: string;
-  jobTitle: string;
-  department: string;
   staffType: StaffType;
-  hireDate: string;
-  teamIds: string[];
-  managerId?: string;
-  organizationId?: string;
-  territories?: string[];
-  licenses?: License[];
-  maxLeads?: number;
-  maxCustomers?: number;
-  notificationPreferences?: Partial<NotificationPreferences>;
-  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -223,16 +198,7 @@ export interface UpdateStaffRequest {
   firstName?: string;
   lastName?: string;
   phone?: string;
-  photo?: string;
-  jobTitle?: string;
-  department?: string;
   staffType?: StaffType;
-  managerId?: string;
-  licenses?: License[];
-  maxLeads?: number;
-  maxCustomers?: number;
-  notificationPreferences?: Partial<NotificationPreferences>;
-  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -248,8 +214,6 @@ export interface UpdateStaffStatusRequest {
  * Staff list query parameters
  */
 export interface StaffListQuery {
-  teamId?: string;
-  territory?: string;
   staffType?: StaffType;
   status?: StaffStatus;
   search?: string;
@@ -274,11 +238,8 @@ export interface StaffSummary {
   staffId: string;
   displayName: string;
   email: string;
+  phone: string;
   staffType: StaffType;
-  status: StaffStatus;
-  teamIds: string[];
-  territories: string[];
-  workload: Workload;
 }
 
 /**
