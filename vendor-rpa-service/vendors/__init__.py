@@ -78,13 +78,13 @@ class VendorRegistry:
         Get bot class for a vendor.
         
         Args:
-            vendor_id: Vendor identifier (e.g., 'watania', 'vendor-alsagr')
+            vendor_id: Vendor identifier (e.g., 'watania', 'vendor-alsagr', 'gig-gulf')
         
         Returns:
             Bot class or None if not found
         """
-        # Remove 'vendor-' prefix if present
-        clean_id = vendor_id.lower().replace('vendor-', '')
+        # Remove 'vendor-' prefix and replace hyphens with underscores
+        clean_id = vendor_id.lower().replace('vendor-', '').replace('-', '_')
         return self._bots.get(clean_id)
     
     def get_adapter(self, vendor_id: str) -> Optional[Type]:
@@ -92,13 +92,13 @@ class VendorRegistry:
         Get adapter class for a vendor.
         
         Args:
-            vendor_id: Vendor identifier (e.g., 'watania', 'vendor-alsagr')
+            vendor_id: Vendor identifier (e.g., 'watania', 'vendor-alsagr', 'gig-gulf')
         
         Returns:
             Adapter class or None if not found
         """
-        # Remove 'vendor-' prefix if present
-        clean_id = vendor_id.lower().replace('vendor-', '')
+        # Remove 'vendor-' prefix and replace hyphens with underscores
+        clean_id = vendor_id.lower().replace('vendor-', '').replace('-', '_')
         return self._adapters.get(clean_id)
     
     def get_config(self, vendor_id: str) -> Optional[Dict]:
@@ -106,13 +106,13 @@ class VendorRegistry:
         Get configuration for a vendor.
         
         Args:
-            vendor_id: Vendor identifier (e.g., 'watania', 'vendor-alsagr')
+            vendor_id: Vendor identifier (e.g., 'watania', 'vendor-alsagr', 'gig-gulf')
         
         Returns:
             Configuration dictionary or None if not found
         """
-        # Remove 'vendor-' prefix if present
-        clean_id = vendor_id.lower().replace('vendor-', '')
+        # Remove 'vendor-' prefix and replace hyphens with underscores
+        clean_id = vendor_id.lower().replace('vendor-', '').replace('-', '_')
         return self._configs.get(clean_id)
     
     def list_vendors(self) -> list:
@@ -129,13 +129,13 @@ class VendorRegistry:
         Check if a vendor is loaded.
         
         Args:
-            vendor_id: Vendor identifier (e.g., 'watania', 'vendor-alsagr')
+            vendor_id: Vendor identifier (e.g., 'watania', 'vendor-alsagr', 'gig-gulf')
         
         Returns:
             True if vendor is loaded, False otherwise
         """
-        # Remove 'vendor-' prefix if present
-        clean_id = vendor_id.lower().replace('vendor-', '')
+        # Remove 'vendor-' prefix and replace hyphens with underscores
+        clean_id = vendor_id.lower().replace('vendor-', '').replace('-', '_')
         return clean_id in self._bots
 
 

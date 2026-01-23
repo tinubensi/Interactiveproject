@@ -21,6 +21,8 @@ import './functions/quotations/approveReject';
 // Import customer-facing public endpoints
 import './functions/customer/getQuotationByToken';
 import './functions/customer/selectPlan';
+import './functions/customer/requestRevision';
+import './functions/customer/rejectPlans';
 
 // Import all event handlers
 import './functions/events/handlePlansSelected';
