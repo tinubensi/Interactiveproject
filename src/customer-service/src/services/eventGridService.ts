@@ -59,6 +59,42 @@ class EventGridService {
       },
     ]);
   }
+
+  /**
+   * Publish customer.created_from_lead event
+   * Notifies Lead Service that a customer was successfully created from lead data
+   */
+  async publishCustomerCreatedFromLead(data: {
+    customerId: string;
+    tempCustomerId: string;
+    leadId: string;
+    referenceId: string;
+    email: string;
+    createdAt: Date;
+  }): Promise<void> {
+    const client = this.getClient();
+    if (!client) {
+      console.log('Event Grid not configured, skipping customer.created_from_lead publication');
+      return;
+    }
+
+    console.log('[DEBUG] publishCustomerCreatedFromLead called');
+    console.log('[DEBUG] Customer ID:', data.customerId);
+    console.log('[DEBUG] Temp Customer ID:', data.tempCustomerId);
+    console.log('[DEBUG] Lead ID:', data.leadId);
+
+    await client.send([
+      {
+        eventType: 'customer.created_from_lead',
+        subject: `customers/${data.customerId}`,
+        dataVersion: '1.0',
+        data,
+        eventTime: new Date(),
+      },
+    ]);
+
+    console.log('✅ customer.created_from_lead event published successfully');
+  }
 }
 
 export const eventGridService = new EventGridService();

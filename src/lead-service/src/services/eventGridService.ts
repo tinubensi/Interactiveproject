@@ -248,6 +248,39 @@ class EventGridService {
       '1.0'
     );
   }
+
+  /**
+   * Publish customer.creation_requested event
+   * Triggers async customer creation in Customer Service
+   */
+  async publishCustomerCreationRequested(data: {
+    tempCustomerId: string;
+    leadId: string;
+    referenceId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: {
+      number: string;
+      countryCode: string;
+      isoCode?: string;
+    };
+    businessType: string;
+    lineOfBusiness: string;
+    lobData?: any;
+    createdAt: Date;
+  }): Promise<void> {
+    console.log('[DEBUG] publishCustomerCreationRequested called');
+    console.log('[DEBUG] Temp Customer ID:', data.tempCustomerId);
+    console.log('[DEBUG] Lead ID:', data.leadId);
+    
+    await this.publishEvent(
+      'customer.creation_requested',
+      `customers/${data.tempCustomerId}`,
+      data,
+      '1.0'
+    );
+  }
 }
 
 export const eventGridService = new EventGridService();

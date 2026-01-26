@@ -103,6 +103,27 @@ export interface LeadHotLeadMarkedEvent extends BaseEvent {
   };
 }
 
+export interface CustomerCreationRequestedEvent extends BaseEvent {
+  eventType: 'customer.creation_requested';
+  data: {
+    tempCustomerId: string; // Temporary UUID assigned to lead
+    leadId: string;
+    referenceId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: {
+      number: string;
+      countryCode: string;
+      isoCode?: string;
+    };
+    businessType: string; // 'individual' or 'group'
+    lineOfBusiness: LineOfBusiness;
+    lobData?: any; // For extracting gender or other fields
+    createdAt: Date;
+  };
+}
+
 /**
  * Events Subscribed by Lead Service (from other services)
  */
@@ -192,6 +213,18 @@ export interface PolicyCancelledEvent extends BaseEvent {
   };
 }
 
+export interface CustomerCreatedFromLeadEvent extends BaseEvent {
+  eventType: 'customer.created_from_lead';
+  data: {
+    customerId: string; // Real customer ID from customer service
+    tempCustomerId: string; // Temporary UUID that was in the lead
+    leadId: string;
+    referenceId: string;
+    email: string;
+    createdAt: Date;
+  };
+}
+
 /**
  * Union types for type safety
  */
@@ -201,7 +234,8 @@ export type LeadServicePublishedEvent =
   | LeadStageChangedEvent
   | LeadAssignedEvent
   | LeadDeletedEvent
-  | LeadHotLeadMarkedEvent;
+  | LeadHotLeadMarkedEvent
+  | CustomerCreationRequestedEvent;
 
 export type LeadServiceSubscribedEvent =
   | PlansFetchCompletedEvent
@@ -210,7 +244,8 @@ export type LeadServiceSubscribedEvent =
   | QuotationSentEvent
   | QuotationSubmittedForApprovalEvent
   | PolicyIssuedEvent
-  | PolicyCancelledEvent;
+  | PolicyCancelledEvent
+  | CustomerCreatedFromLeadEvent;
 
 /**
  * Event Grid Event Wrapper

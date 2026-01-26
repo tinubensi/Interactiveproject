@@ -1,10 +1,46 @@
-*.js.map
-*.ts
-.git*
+# Git and IDE files
+.git
+.gitignore
+.cursor
 .vscode
+
+# Environment files
+.env
+.env.*
 local.settings.json
-test
-getting_started.md
-node_modules/@types/
-node_modules/azure-functions-core-tools/
-node_modules/typescript/
+
+# Logs and temporary files
+logs
+tmp
+*.log
+
+# Build artifacts not needed in deployment
+src/
+tsconfig.json
+*.test.ts
+*.test.js
+
+# Scripts and docs
+scripts/
+check_lead_db.js
+init-plans.js
+init-vendor-executions.js
+README.md
+API.md
+GETTING_STARTED.md
+Lead-Service.postman_collection.json
+
+# Large files
+*.pdf
+*.zip
+
+# DO NOT IGNORE (these are needed):
+# dist/
+# node_modules/
+# package.json
+# package-lock.json
+# host.json
+
+# Dev tools that shouldn't be deployed
+node_modules/azure-functions-core-tools/**
+node_modules/tsx/**

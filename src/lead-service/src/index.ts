@@ -32,6 +32,7 @@ import './functions/events/handlePlansFetchFailed';
 import './functions/events/handleQuotationCreated';
 import './functions/events/handleQuotationRevisionRequested';
 import './functions/events/handlePolicyIssued';
+import './functions/events/handleCustomerCreated';
 
 // All functions are auto-registered via app.http() and app.eventGrid() calls
 export * from './models/lead';

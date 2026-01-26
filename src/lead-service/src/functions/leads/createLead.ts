@@ -14,60 +14,7 @@ import { Lead, CreateLeadRequest } from '../../models/lead';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
 import { ensureAuthorized, requirePermission, LEAD_PERMISSIONS } from '../../lib/auth';
 import { isLeadManagedByPipeline, notifyLeadCreated } from '../../services/pipelineServiceClient';
-import { customerServiceClient, SignupRequest } from '../../services/customerServiceClient';
 import axios from 'axios';
-
-/**
- * Helper function to create customer from lead data
- */
-async function createCustomerFromLead(
-  leadData: CreateLeadRequest,
-  leadId: string,
-  context: InvocationContext
-): Promise<string> {
-  try {
-    // Determine customer type based on businessType
-    const customerType = leadData.businessType === 'individual' ? 'INDIVIDUAL' : 'COMPANY';
-    
-    // Extract gender from lobData if available
-    const gender = leadData.lobData?.gender || 'Male';
-    
-    // Prepare customer data
-    const customerData: SignupRequest = {
-      customerType,
-      agent: 'default-agent',
-      currency: 'AED',
-    };
-    
-    if (customerType === 'INDIVIDUAL') {
-      customerData.firstName = leadData.firstName;
-      customerData.lastName = leadData.lastName;
-      customerData.name = `${leadData.firstName} ${leadData.lastName}`;
-      customerData.email = leadData.email;
-      customerData.phoneNumber = leadData.phone.number;
-      customerData.gender = gender;
-    } else {
-      // For group/company
-      customerData.companyName = `${leadData.firstName} ${leadData.lastName}`;
-      customerData.email1 = leadData.email;
-      customerData.phoneNumber1 = leadData.phone.number;
-    }
-    
-    context.log('Creating new customer:', { customerType, email: leadData.email });
-    
-    const customer = await customerServiceClient.createCustomer(customerData);
-    
-    context.log(`✅ Customer created successfully: ${customer.id}`);
-    return customer.id;
-    
-  } catch (error: any) {
-    context.error('❌ Failed to create customer in Customer Service:', error.message);
-    context.error('Falling back to temporary customer ID');
-    
-    // Fallback to temporary customer ID if creation fails
-    return `customer-${leadId}`;
-  }
-}
 
 export async function createLead(
   request: HttpRequest,
@@ -147,35 +94,16 @@ export async function createLead(
     // Generate lead ID
     const leadId = uuidv4();
     
-    // Handle customer ID: use provided, check existing, or create new
+    // Handle customer ID: use provided or generate temp UUID
     let customerId = body.customerId;
-    let customerAutoCreated = false;
-    let customerLinkedByEmail = false;
+    let customerCreationPending = false;
     
     if (!customerId) {
-      context.log('No customerId provided, checking if customer exists by email...');
-      
-      try {
-        // Check if customer already exists by email
-        const existingCustomer = await customerServiceClient.checkCustomerByEmail(body.email);
-        
-        if (existingCustomer) {
-          // Customer found - link to existing customer
-          customerId = existingCustomer.id;
-          customerLinkedByEmail = true;
-          context.log(`✅ Customer found by email: ${customerId}`);
-        } else {
-          // Customer not found - create new customer
-          context.log('Customer not found, creating new customer...');
-          customerId = await createCustomerFromLead(body, leadId, context);
-          customerAutoCreated = true;
-        }
-      } catch (error: any) {
-        context.error('Error during customer check/creation:', error.message);
-        // Fallback to temporary customer ID
-        customerId = `customer-${leadId}`;
-        context.log(`⚠️ Using fallback customer ID: ${customerId}`);
-      }
+      // Generate temporary UUID for customer
+      customerId = uuidv4();
+      customerCreationPending = true;
+      context.log(`Generated temporary customerId: ${customerId}`);
+      context.log('Customer creation will be handled asynchronously via event');
     } else {
       context.log(`Using provided customerId: ${customerId}`);
     }
@@ -188,6 +116,7 @@ export async function createLead(
       lineOfBusiness: body.lineOfBusiness,
       businessType: body.businessType,
       customerId: customerId,
+      customerCreationPending, // Flag indicating customer creation is in progress
       firstName,
       lastName,
       fullName,
@@ -227,10 +156,12 @@ export async function createLead(
       timestamp: new Date()
     });
 
-    // Publish lead.created event to Event Grid (primary communication method)
-    let eventPublished = false;
+    // Publish events asynchronously (don't block lead creation)
+    let leadEventPublished = false;
+    let customerEventPublished = false;
     let httpFallbackTriggered = false;
     
+    // 1. Publish lead.created event for pipeline orchestration
     try {
       await eventGridService.publishLeadCreated({
         leadId: createdLead.id,
@@ -244,7 +175,7 @@ export async function createLead(
         assignedTo: createdLead.assignedTo,
         createdAt: createdLead.createdAt
       });
-      eventPublished = true;
+      leadEventPublished = true;
       context.log('✅ lead.created event published successfully to Event Grid');
       
     } catch (eventError: any) {
@@ -292,9 +223,33 @@ export async function createLead(
         context.error(`❌ [HTTP FALLBACK] Failed to call Pipeline Service:`, fallbackError.message);
       }
     }
+    
+    // 2. Publish customer.creation_requested event if customer creation is pending
+    if (customerCreationPending) {
+      try {
+        await eventGridService.publishCustomerCreationRequested({
+          tempCustomerId: createdLead.customerId,
+          leadId: createdLead.id,
+          referenceId: createdLead.referenceId,
+          firstName: createdLead.firstName,
+          lastName: createdLead.lastName,
+          email: createdLead.email,
+          phone: createdLead.phone,
+          businessType: createdLead.businessType,
+          lineOfBusiness: createdLead.lineOfBusiness,
+          lobData: createdLead.lobData,
+          createdAt: createdLead.createdAt
+        });
+        customerEventPublished = true;
+        context.log('✅ customer.creation_requested event published successfully');
+      } catch (customerEventError: any) {
+        context.error('❌ Failed to publish customer.creation_requested event:', customerEventError.message);
+        context.error('Customer creation will need to be handled manually for lead:', createdLead.id);
+      }
+    }
 
     // Log trigger status
-    if (eventPublished) {
+    if (leadEventPublished) {
       context.log(`[Event Grid] ✅ lead.created event published for lead ${createdLead.id}`);
       context.log(`[Event Grid] Pipeline Service will receive event and orchestrate plan fetching`);
     } else if (httpFallbackTriggered) {
@@ -305,9 +260,17 @@ export async function createLead(
       context.error(`[CRITICAL] Manual intervention required to trigger plan fetching`);
     }
     
+    if (customerCreationPending) {
+      if (customerEventPublished) {
+        context.log(`[Event Grid] ✅ customer.creation_requested event published for temp customer ${createdLead.customerId}`);
+      } else {
+        context.error(`[WARNING] ❌ Customer creation event failed - manual customer creation required`);
+      }
+    }
+    
     context.log(`Lead created successfully: ${createdLead.referenceId}`);
 
-    // Return response immediately (don't wait for RPA trigger)
+    // Return response immediately (don't wait for async customer creation)
     return withCors(request, {
       status: 201,
       jsonBody: {
@@ -318,11 +281,11 @@ export async function createLead(
           warnings: {
             isEmailRepeated,
             isPhoneRepeated,
-            rpaTriggerStatus: eventPublished ? 'event_grid' : (httpFallbackTriggered ? 'http_fallback' : 'failed'),
-            eventPublished,
+            rpaTriggerStatus: leadEventPublished ? 'event_grid' : (httpFallbackTriggered ? 'http_fallback' : 'failed'),
+            eventPublished: leadEventPublished,
             httpFallbackTriggered,
-            customerAutoCreated,
-            customerLinkedByEmail
+            customerCreationPending,
+            customerEventPublished
           }
         }
       }
