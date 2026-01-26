@@ -3,7 +3,7 @@ GIG Gulf Insurance Portal Bot
 Specialized bot for GIG Gulf Insurance portal automation
 """
 import asyncio
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from playwright.async_api import Page
 from vendors.base.vendor_bot import InsuranceBot
 from vendors.base.utils import setup_logging, save_screenshot
@@ -441,15 +441,12 @@ class Gig_gulfBot(InsuranceBot):
             await asyncio.sleep(0.5)
             
             # Fill number of dependents (if spinbutton exists)
-            num_dependents = len(form_data.get('dependents', []))
-            self.logger.debug(f"Setting number of dependents: {num_dependents}")
             try:
                 await page1.get_by_role("spinbutton").click()
-                await page1.get_by_role("spinbutton").fill(str(num_dependents))
+                await page1.get_by_role("spinbutton").fill("0")
                 await asyncio.sleep(0.3)
-                self.logger.info(f"✓ Number of dependents set to: {num_dependents}")
-            except Exception as e:
-                self.logger.debug(f"Spinbutton not found or error: {e}, skipping...")
+            except:
+                self.logger.debug("Spinbutton not found, skipping...")
             
             # Click "All" button (important step from script)
             self.logger.debug("Clicking 'All' button...")
@@ -486,10 +483,9 @@ class Gig_gulfBot(InsuranceBot):
             if self.config.get('enable_screenshots'):
                 await save_screenshot(page1, "giggulf_form_filled")
             
-            # Fill dependents form (this will handle navigation to plans)
-            self.logger.info("Primary member form filled. Proceeding to dependents section...")
-            dependents_data = form_data.get('dependents', [])
-            await self.fill_dependents_form(page1, dependents_data)
+            # Click Next button to proceed to plans
+            self.logger.info("All fields filled. Clicking Next button to proceed to plans...")
+            await page1.get_by_role("link", name="Next").click()
             
             # Wait for plans to load - give it more time for data to render
             self.logger.debug("Waiting for plans to load...")
@@ -503,7 +499,7 @@ class Gig_gulfBot(InsuranceBot):
             # Store the new page reference so scraper can use it
             self.page = page1
             
-            self.logger.info("Form filled successfully (including dependents) and plans should be loading...")
+            self.logger.info("Form filled successfully and plans should be loading...")
             
             if self.config.get('enable_screenshots'):
                 await save_screenshot(page1, "giggulf_plans_loaded")
@@ -563,25 +559,26 @@ class Gig_gulfBot(InsuranceBot):
                 await page1.get_by_role("listbox").get_by_role("option", name=title).click()
                 await asyncio.sleep(0.5)
                 
-                # Fill Full Name - use simpler direct selector
+                # Fill Full Name
                 full_name = dep.get('full_name', 'Dependent')
                 self.logger.debug(f"  Filling Name: {full_name}")
-                await page1.locator(f"{row_id} input[name='DFullName']").click()
+                # Use a more specific selector that includes the title to find the right row
+                name_input = page1.get_by_role("row", name=f"{title}    {title}").locator("input[name='DFullName']")
+                await name_input.click()
                 await asyncio.sleep(0.2)
-                await page1.locator(f"{row_id} input[name='DFullName']").fill(full_name)
+                await name_input.fill(full_name)
                 await asyncio.sleep(0.5)
                 
-                # Fill Date of Birth - use type for masked input (like primary member)
+                # Fill Date of Birth
                 dob = dep.get('dob', '01/01/2000')
                 self.logger.debug(f"  Filling DOB: {dob}")
-                dob_field = page1.locator(f"{row_id} input[placeholder='DD/MM/YYYY']")
-                await dob_field.click()
+                # Find DOB field using the full name in the row selector
+                dob_input = page1.get_by_role("row", name=f"{title}    {title} {full_name}").get_by_placeholder("DD/MM/YYYY")
+                await dob_input.click()
                 await asyncio.sleep(0.3)
-                # Clear any existing value
-                await dob_field.fill('')
+                await dob_input.fill('')
                 await asyncio.sleep(0.2)
-                # Type slowly for masked input to register properly
-                await dob_field.type(dob, delay=100)
+                await dob_input.type(dob, delay=80)
                 await asyncio.sleep(0.5)
                 
                 # Select Gender
@@ -616,13 +613,6 @@ class Gig_gulfBot(InsuranceBot):
                 await page1.get_by_role("listbox").get_by_role("option", name=nationality).click()
                 await asyncio.sleep(0.5)
                 
-                self.logger.info(f"  ✓ Dependent {index + 1} filled successfully")
-                
-            except Exception as e:
-                self.logger.error(f"  ❌ Error filling dependent {index + 1}: {e}")
-                if self.config.get('enable_screenshots'):
-                    await save_screenshot(page1, f"giggulf_dependent_{index}_error")
-                raise
                 self.logger.info(f"  ✓ Dependent {index + 1} filled successfully")
                 
             except Exception as e:

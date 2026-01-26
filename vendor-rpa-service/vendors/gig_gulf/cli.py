@@ -89,7 +89,7 @@ async def main():
         
         # Bot configuration
         bot_config = {
-            'headless': True,
+            'headless': False,
             'browser_type': 'chromium',
             'enable_screenshots': False,
             'default_timeout': 60000,

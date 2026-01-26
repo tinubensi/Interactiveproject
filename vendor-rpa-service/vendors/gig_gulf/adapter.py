@@ -19,6 +19,82 @@ class Gig_gulfAdapter(VendorAdapter):
     def __init__(self):
         super().__init__(vendor_id="gig-gulf", vendor_name="GIG Gulf Insurance")
     
+    def _map_relationship_to_giggulf(self, relationship: str, gender: str) -> str:
+        """
+        Map standard relationship types to GIG Gulf portal values
+        """
+        mapping = {
+            ('Spouse', 'Female'): 'Wife',
+            ('Spouse', 'Male'): 'Husband',
+            ('Child', 'Female'): 'Daughter',
+            ('Child', 'Male'): 'Son',
+            ('Parent', 'Female'): 'Mother',
+            ('Parent', 'Male'): 'Father'
+        }
+        return mapping.get((relationship, gender), relationship)
+    
+    def _infer_marital_status(self, relationship: str, dob_str: str) -> str:
+        """
+        Infer marital status based on relationship and age
+        """
+        # Spouse is always Married
+        if relationship == 'Spouse':
+            return 'Married'
+        
+        # Calculate age from DOB
+        try:
+            age = self._calculate_age(dob_str)
+            if age < 18:
+                return 'Single'
+        except:
+            pass
+        
+        return 'Single'  # Default
+    
+    def _calculate_age(self, dob_str: str) -> int:
+        """
+        Calculate age from date of birth string
+        """
+        try:
+            # Handle ISO format (YYYY-MM-DD)
+            if '-' in dob_str and len(dob_str) >= 10:
+                dob_obj = datetime.fromisoformat(dob_str.split('T')[0])
+            # Handle DD/MM/YYYY format
+            elif '/' in dob_str:
+                parts = dob_str.split('/')
+                if len(parts) == 3:
+                    dob_obj = datetime(int(parts[2]), int(parts[1]), int(parts[0]))
+                else:
+                    return 25  # Default age
+            else:
+                return 25  # Default age
+            
+            today = datetime.now()
+            age = today.year - dob_obj.year - ((today.month, today.day) < (dob_obj.month, dob_obj.day))
+            return age
+        except Exception:
+            return 25  # Default age if parsing fails
+    
+    def _format_date_for_giggulf(self, date_str: str) -> str:
+        """
+        Format date to DD/MM/YYYY format for GIG Gulf portal
+        """
+        if not date_str:
+            return ''
+        
+        try:
+            # Handle ISO format (YYYY-MM-DD)
+            if '-' in date_str and len(date_str) >= 10:
+                date_obj = datetime.fromisoformat(date_str.split('T')[0])
+                return date_obj.strftime('%d/%m/%Y')
+            # Already in DD/MM/YYYY format
+            elif '/' in date_str:
+                return date_str
+            else:
+                return date_str
+        except Exception:
+            return date_str
+    
     def prepare_vendor_payload(self, standard_lead: Dict[str, Any]) -> Dict[str, Any]:
         """
         Transform StandardLead into GIG Gulf-specific payload format for form filling.
@@ -54,6 +130,20 @@ class Gig_gulfAdapter(VendorAdapter):
                     dob_str = dob_obj.strftime('%d/%m/%Y')
             except Exception:
                 dob_str = '18/04/1998'  # Default fallback
+        
+        # Extract and format effective date (coverage start date) - DD/MM/YYYY format
+        effective_date_str = lob_data.get('effectiveDate') or lob_data.get('coverageStartDate') or standard_lead.get('effectiveDate', '31/01/2026')
+        if isinstance(effective_date_str, str) and effective_date_str:
+            try:
+                # Handle ISO format (YYYY-MM-DD) or datetime format
+                if '-' in effective_date_str:
+                    effective_date_obj = datetime.fromisoformat(effective_date_str.replace('Z', '+00:00'))
+                    effective_date_str = effective_date_obj.strftime('%d/%m/%Y')
+                # If it's already in DD/MM/YYYY format, keep it
+            except Exception:
+                effective_date_str = '31/01/2026'  # Default fallback
+        else:
+            effective_date_str = '31/01/2026'  # Default if not provided
         
         # Extract phone number
         phone_dict = standard_lead.get('phone', {})
@@ -121,6 +211,46 @@ class Gig_gulfAdapter(VendorAdapter):
         # Visa type
         visa_type = lob_data.get('visaType', 'Resident visa')
         
+        # Extract and process dependents
+        dependents_list = []
+        lead_dependents = lob_data.get('dependents', [])
+        
+        if lead_dependents and isinstance(lead_dependents, list):
+            for dep in lead_dependents:
+                # Extract dependent fields
+                dep_name = dep.get('name', '')
+                dep_relationship = dep.get('relationship', 'Child')
+                dep_dob = dep.get('dateOfBirth', '')
+                dep_gender = dep.get('gender', 'Male')
+                
+                # Format date
+                dep_dob_formatted = self._format_date_for_giggulf(dep_dob)
+                
+                # Determine title based on gender
+                dep_title = 'MS' if dep_gender == 'Female' else 'MR'
+                
+                # Map relationship to GIG Gulf format
+                dep_relation = self._map_relationship_to_giggulf(dep_relationship, dep_gender)
+                
+                # Infer marital status
+                dep_marital_status = self._infer_marital_status(dep_relationship, dep_dob)
+                
+                # Build dependent object
+                dependent_data = {
+                    'title': dep_title,
+                    'full_name': dep_name,
+                    'dob': dep_dob_formatted or '01/01/2000',
+                    'gender': dep_gender,
+                    'relation': dep_relation,
+                    'marital_status': dep_marital_status,
+                    'nationality': nationality  # Inherit from primary member
+                }
+                
+                dependents_list.append(dependent_data)
+        
+        # Calculate number of dependents
+        num_dependents = lob_data.get('numberOfDependents', len(dependents_list))
+        
         # Build GIG Gulf-specific payload
         return {
             'leadId': lead_id,  # Pass through for tracking
@@ -129,6 +259,7 @@ class Gig_gulfAdapter(VendorAdapter):
             'email': email,
             'phone': phone_number,  # Phone number added
             'dob': dob_str,
+            'effective_date': effective_date_str,  # Coverage start date
             'gender': gender,
             'marital_status': marital_status,
             'nationality': nationality,
@@ -138,7 +269,9 @@ class Gig_gulfAdapter(VendorAdapter):
             'work_location': work_location,
             'occupation': occupation,
             'salary_range': salary_range,
-            'visa_type': visa_type
+            'visa_type': visa_type,
+            'dependents': dependents_list,  # List of dependents
+            'numberOfDependents': num_dependents  # Count of dependents
         }
     
     def normalize_response(self, raw_vendor_data: Any, lead_id: str) -> List[Dict[str, Any]]:

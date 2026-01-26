@@ -1,0 +1,37 @@
+{
+  "id": "lead-test-003",
+  "leadId": "lead-test-003",
+  "firstName": "Kane",
+  "lastName": "Williamson",
+  "email": "kane.family3@gmail.com",
+  "phone": {
+    "number": "503456789",
+    "countryCode": "+971",
+    "isoCode": "AE"
+  },
+  "emirate": "Abu Dhabi",
+  "lobData": {
+    "dateOfBirth": "1998-04-18",
+    "gender": "Male",
+    "nationality": "Indian",
+    "maritalStatus": "Married",
+    "visaType": "Resident visa",
+    "salaryRange": "5000-10000",
+    "effectiveDate": "2026-01-31",
+    "numberOfDependents": 2,
+    "dependents": [
+      {
+        "name": "Alexandra Kane",
+        "relationship": "Spouse",
+        "dateOfBirth": "1998-08-26",
+        "gender": "Female"
+      },
+      {
+        "name": "Ravindra Kane",
+        "relationship": "Child",
+        "dateOfBirth": "2023-06-13",
+        "gender": "Male"
+      }
+    ]
+  }
+}
