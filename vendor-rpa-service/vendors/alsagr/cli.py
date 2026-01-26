@@ -61,6 +61,15 @@ async def main():
         lead_data = json.loads(args.lead_data)
         lead_id = lead_data.get('id')
         
+        # DEBUG: Log exact lead data structure received from production
+        print(f"\n{'='*60}", file=sys.stderr)
+        print(f"🔍 PRODUCTION LEAD DATA DEBUG", file=sys.stderr)
+        print(f"{'='*60}", file=sys.stderr)
+        print(f"Lead ID: {lead_id}", file=sys.stderr)
+        print(f"\n📋 Full Lead Data Structure:", file=sys.stderr)
+        print(json.dumps(lead_data, indent=2), file=sys.stderr)
+        print(f"{'='*60}\n", file=sys.stderr)
+        
         if not lead_id:
             raise ValueError("Lead ID is required")
         

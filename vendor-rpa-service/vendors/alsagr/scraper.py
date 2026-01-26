@@ -202,42 +202,80 @@ class AlsagrScraper:
                     self.page.on("response", handle_response)
                     handler_added = True
                     
+                    # CRITICAL: Ensure no modals are open before clicking
+                    try:
+                        modal_open = await self.page.locator(".modal.show").count() > 0
+                        if modal_open:
+                            self.logger.debug(f"  Previous modal still open, closing...")
+                            await self.page.keyboard.press("Escape")
+                            await asyncio.sleep(1)
+                            await self.page.wait_for_selector(".modal.show", state="hidden", timeout=3000)
+                    except:
+                        pass
+                    
+                    # CRITICAL: Scroll element into view before clicking
+                    await eye_button.scroll_into_view_if_needed()
+                    await asyncio.sleep(0.3)
+                    
                     # Click eye button to open modal and trigger API
                     self.logger.info(f"  Clicking eye button...")
-                    await asyncio.wait_for(eye_button.click(force=True), timeout=10.0)
+                    try:
+                        # Try regular click first
+                        await asyncio.wait_for(eye_button.click(), timeout=5.0)
+                    except:
+                        # Fallback to force click if regular click fails
+                        self.logger.debug(f"  Regular click failed, trying force click...")
+                        await asyncio.wait_for(eye_button.click(force=True), timeout=5.0)
                     
                     # Wait for modal to appear
                     try:
-                        await self.page.wait_for_selector(".modal.show", state="visible", timeout=5000)
+                        await self.page.wait_for_selector(".modal.show", state="visible", timeout=8000)
                         self.logger.info(f"  ✓ Modal opened")
                     except:
                         self.logger.warning(f"  Modal may not have opened")
+                        # Try clicking again
+                        try:
+                            await eye_button.click(force=True)
+                            await self.page.wait_for_selector(".modal.show", state="visible", timeout=5000)
+                            self.logger.info(f"  ✓ Modal opened on retry")
+                        except:
+                            self.logger.warning(f"  Modal still not opening after retry")
                     
-                    # Wait for JSON response - Increased to 20s timeout for all plans
-                    for _ in range(100):  # 100 × 0.2s = 20s max
+                    # Wait for JSON response - 5s max (optimized)
+                    for _ in range(25):  # 25 × 0.2s = 5s max
                         if json_captured:
                             break
                         await asyncio.sleep(0.2)
                     
-                    # Close modal - Use close button since backdrop is static
+                    # Close modal - CRITICAL for next plan to work
                     try:
-                        # Try clicking the close button (X)
-                        close_button = self.page.locator("button.btn-close, button[data-bs-dismiss='modal']").first
-                        await close_button.click(timeout=2000)
-                        await asyncio.sleep(0.3)
-                        # Wait for modal to fully disappear
-                        await self.page.wait_for_selector(".modal.show", state="hidden", timeout=3000)
-                        await asyncio.sleep(0.2)  # Extra safety
+                        # Method 1: Try clicking the close button (X)
+                        close_button = self.page.locator("button.btn-close, button[data-bs-dismiss='modal'], .modal button.close").first
+                        if await close_button.count() > 0:
+                            await close_button.click(timeout=2000)
+                            self.logger.debug(f"  Clicked close button")
+                        else:
+                            # Method 2: Press Escape key
+                            await self.page.keyboard.press("Escape")
+                            self.logger.debug(f"  Pressed Escape key")
+                        
+                        # CRITICAL: Wait for modal to fully disappear
+                        await asyncio.sleep(0.5)
+                        await self.page.wait_for_selector(".modal.show", state="hidden", timeout=5000)
+                        self.logger.debug(f"  ✓ Modal closed successfully")
+                        
+                        # Extra safety wait for DOM to settle
+                        await asyncio.sleep(0.5)
                     except Exception as e:
-                        # Fallback: try Escape key
+                        # Fallback: Force close with multiple escape presses
+                        self.logger.warning(f"  Modal close issue: {e}, forcing close...")
                         try:
                             await self.page.keyboard.press("Escape")
                             await asyncio.sleep(0.5)
+                            await self.page.keyboard.press("Escape")
+                            await asyncio.sleep(1)
                         except:
                             pass
-                        # Force wait for modal to disappear
-                        self.logger.warning(f"  Modal close slow, waiting...")
-                        await asyncio.sleep(1.5)
                     
                 except asyncio.TimeoutError:
                     self.logger.error(f"  ❌ Timeout clicking eye button (10s)")
@@ -278,7 +316,8 @@ class AlsagrScraper:
                 else:
                     self.logger.warning(f"  ⚠️ No JSON data captured for this plan")
                 
-                await asyncio.sleep(0.5)  # Wait between plans to ensure UI stability
+                # Wait between plans for UI stability (optimized for speed)
+                await asyncio.sleep(0.8)  # Balanced for speed vs stability
                 
             except Exception as e:
                 self.logger.error(f"Error processing plan {index}: {e}")
@@ -337,11 +376,11 @@ class AlsagrScraper:
                 # Click the download button
                 await download_button.click()
                 
-                # Wait for download to complete (max 15 seconds)
-                self.logger.debug(f"  Waiting for download event (max 15s)...")
-                for i in range(30):  # 30 × 0.5s = 15s max
+                # Wait for download to complete (max 8 seconds, optimized)
+                self.logger.debug(f"  Waiting for download event (max 8s)...")
+                for i in range(16):  # 16 × 0.5s = 8s max
                     if pdf_downloaded:
-                        self.logger.info(f"  ✅ Download detected after {i * 0.5:.1f}s")
+                        self.logger.debug(f"  ✅ Download after {i * 0.5:.1f}s")
                         break
                     await asyncio.sleep(0.5)
                 
@@ -361,7 +400,8 @@ class AlsagrScraper:
                 except:
                     pass
             
-            # Strategy 2: Try popup approach (fallback for non-headless or if download event doesn't fire)
+            # Strategy 2: Try popup approach (CRITICAL: Close popup immediately)
+            popup_page = None
             try:
                 self.logger.debug("  Trying popup approach...")
                 async with self.page.expect_popup(timeout=5000) as popup_info:
@@ -382,7 +422,9 @@ class AlsagrScraper:
                         if body.startswith(b'%PDF'):
                             with open(filepath, "wb") as f:
                                 f.write(body)
+                            # CRITICAL: Close popup immediately
                             await popup_page.close()
+                            popup_page = None
                             self.logger.info(f"  ✅ PDF downloaded from popup URL: {len(body)} bytes")
                             return filepath
                     except Exception as e:
@@ -391,19 +433,25 @@ class AlsagrScraper:
                 # Strategy 3: If popup is HTML, try to generate PDF from it
                 try:
                     await popup_page.pdf(path=filepath, format='A4')
-                    await popup_page.close()
                     if os.path.exists(filepath) and os.path.getsize(filepath) > 1000:
+                        # CRITICAL: Close popup immediately
+                        await popup_page.close()
+                        popup_page = None
                         self.logger.info(f"  ✅ PDF generated from popup content")
                         return filepath
                 except Exception as e:
                     self.logger.debug(f"  Failed to generate PDF from popup: {e}")
-                    try:
-                        await popup_page.close()
-                    except:
-                        pass
                         
             except Exception as e:
                 self.logger.debug(f"  Popup approach failed: {e}")
+            finally:
+                # CRITICAL: Always close popup if it's still open
+                if popup_page:
+                    try:
+                        await popup_page.close()
+                        self.logger.debug(f"  ✓ Popup closed")
+                    except:
+                        pass
             
             # Strategy 4: Intercept network requests for PDF
             try:

@@ -1,9 +1,0 @@
-node_modules/
-dist/
-.vscode/
-local.settings.json
-*.log
-.DS_Store
-*.pdf
-
-

@@ -48,13 +48,13 @@ async function handleLeadCreatedEvent(
       
       context.log(`Found ${rpaVendors.length} RPA-enabled vendors`);
       
-      // Create fetch request
+      // Create fetch request - Pass ALL event data to RPA, not just lobData
       const fetchRequest: any = {
         id: uuidv4(),
         leadId: leadId,
         lineOfBusiness: lineOfBusiness,
         businessType: eventData.businessType || 'individual',
-        leadData: lobData || {},
+        leadData: eventData, // 🔧 PASS FULL EVENT DATA (includes firstName, lastName, email, phone, lobData, formData, etc.)
         requestedAt: new Date(),
         status: 'processing',
         totalVendors: rpaVendors.length,
@@ -136,7 +136,8 @@ async function handleLeadCreatedEvent(
         emirate: eventData.emirate,
         lineOfBusiness: lineOfBusiness,
         businessType: eventData.businessType || 'individual',
-        ...lobData, // Spread lobData last so it can override any duplicates
+        lobData: lobData,              // ✅ Keep as nested object (don't flatten!)
+        formData: eventData.formData   // ✅ Pass formData with dependents (section-1, section-2, etc.)
       };
       
       const vendorIds = rpaVendors.map((v: any) => v.id);

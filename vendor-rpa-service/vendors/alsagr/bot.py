@@ -144,61 +144,137 @@ class AlsagrBot(InsuranceBot):
             await self.page.locator("#salaryBandTypeId").select_option(form_data.get('salaryBand', '23'))
             await asyncio.sleep(0.3)
             
-            # Name fields
-            await self.page.get_by_role("textbox", name="First Name").fill(form_data.get('first_name', 'Guest'))
+            # Extract primary member data
+            primary = form_data.get('primary', form_data)  # Fallback to root if no 'primary' key
+            dependents = form_data.get('dependents', [])
+            
+            # Fill primary member fields
+            self.logger.debug(f"Filling primary member: {primary.get('firstName', 'Unknown')}")
+            await self.page.get_by_role("textbox", name="First Name").fill(primary.get('firstName', primary.get('first_name', 'Guest')))
             await asyncio.sleep(0.2)
             
-            await self.page.get_by_role("textbox", name="Last Name").fill(form_data.get('last_name', 'User'))
+            await self.page.get_by_role("textbox", name="Last Name").fill(primary.get('lastName', primary.get('last_name', 'User')))
             await asyncio.sleep(0.2)
             
             # Date of Birth
-            await self.page.locator("#dateOfBirth").fill(form_data.get('dob', '2000-01-01'))
+            await self.page.locator("#dateOfBirth").fill(primary.get('dateOfBirth', primary.get('dob', '2000-01-01')))
             await asyncio.sleep(0.3)
             
             # Gender dropdown
-            await self.page.locator("#gender").select_option(form_data.get('gender', '190'))
+            await self.page.locator("#gender").select_option(primary.get('gender', '190'))
             await asyncio.sleep(0.3)
             
             # Marital Status dropdown - with fallback for portal changes
+            marital_status_value = primary.get('maritalStatus', '21')
             try:
-                await self.page.locator("#maritalStatus").select_option(form_data.get('maritalStatus', '21'), timeout=5000)
-                self.logger.debug(f"Selected maritalStatus by value: {form_data.get('maritalStatus', '21')}")
+                await self.page.locator("#maritalStatus").select_option(marital_status_value, timeout=5000)
+                self.logger.debug(f"Selected maritalStatus by value: {marital_status_value}")
             except Exception as e:
                 self.logger.warning(f"Could not select maritalStatus by value, trying by label: {e}")
                 try:
                     # Try selecting by visible text
-                    marital_text = "Married" if form_data.get('maritalStatus') == '22' else "Single"
+                    marital_text = "Married" if marital_status_value == '20' else "Single"
                     await self.page.locator("#maritalStatus").select_option(label=marital_text, timeout=5000)
                     self.logger.debug(f"Selected maritalStatus by label: {marital_text}")
                 except Exception as e2:
                     self.logger.error(f"Could not select maritalStatus at all, continuing anyway: {e2}")
-                    # Continue without failing - portal might work without this field
             await asyncio.sleep(0.3)
             
             # Phone number
-            await self.page.get_by_role("textbox", name="05X-XXXXXXX / 0X-XXXXXXX").fill(form_data.get('phone', '0502503969'))
+            await self.page.get_by_role("textbox", name="05X-XXXXXXX / 0X-XXXXXXX").fill(primary.get('phone', '0502503969'))
             await asyncio.sleep(0.2)
             
             # Email
-            await self.page.get_by_role("textbox", name="Enter Email").fill(form_data.get('email', 'demo@gmail.com'))
+            await self.page.get_by_role("textbox", name="Enter Email").fill(primary.get('email', 'demo@gmail.com'))
             await asyncio.sleep(0.3)
             
             if self.config.get('enable_screenshots'):
                 await save_screenshot(self.page, "alsagr_form_filled")
             
-            # Click consent "Yes" button
-            self.logger.debug("Clicking consent button...")
-            await self.page.get_by_role("button", name="Yes").click()
-            await asyncio.sleep(0.5)
+            # Handle dependents (multi-member support)
+            if len(dependents) > 0:
+                self.logger.info(f"Adding {len(dependents)} dependent(s)...")
+                
+                # Click "No" to reveal additional member fields
+                self.logger.debug("Clicking 'No' button to reveal dependent fields...")
+                await self.page.get_by_role("button", name="No").click()
+                await asyncio.sleep(1)
+                
+                for idx, dependent in enumerate(dependents, start=1):
+                    self.logger.debug(f"Filling dependent #{idx}: {dependent.get('firstName', 'Unknown')}")
+                    
+                    # Fill dependent fields using indexed pattern
+                    await self.page.locator(f"#memberFirstName{idx}").fill(dependent.get('firstName', ''))
+                    await asyncio.sleep(0.2)
+                    
+                    await self.page.locator(f"#memberLastName{idx}").fill(dependent.get('lastName', ''))
+                    await asyncio.sleep(0.2)
+                    
+                    await self.page.locator(f"#memberDateOfBirth{idx}").fill(dependent.get('dateOfBirth', ''))
+                    await asyncio.sleep(0.3)
+                    
+                    await self.page.locator(f"#relation{idx}").select_option(dependent.get('relationshipCode', '49'))
+                    await asyncio.sleep(0.3)
+                    
+                    await self.page.locator(f"#memberGender{idx}").select_option(dependent.get('genderCode', '190'))
+                    await asyncio.sleep(0.3)
+                    
+                    await self.page.locator(f"#memberMaritalStatus{idx}").select_option(dependent.get('maritalStatusCode', '21'))
+                    await asyncio.sleep(0.3)
+                    
+                    # If not the last dependent, click "Add New Member"
+                    if idx < len(dependents):
+                        self.logger.debug(f"Clicking 'Add New Member' for next dependent...")
+                        await self.page.get_by_title("Add New Member").click()
+                        await asyncio.sleep(1)
+            else:
+                # Single member - click "Yes"
+                self.logger.debug("Single member - clicking 'Yes' button...")
+                await self.page.get_by_role("button", name="Yes").click()
+                await asyncio.sleep(0.5)
             
             # Click "Show Plans" button
-            self.logger.debug("Clicking Show Plans button...")
+            self.logger.info("🔘 Clicking Show Plans button...")
             await self.page.get_by_role("button", name="Show Plans").click()
             
-            # Wait for plans to load - EXACT timing from browser_actions.py lines 59-61
-            self.logger.debug("Waiting for plans to load...")
-            await self.page.wait_for_load_state("networkidle")
-            await asyncio.sleep(3)  # Grace period for UI rendering (matching original)
+            # Wait for plans to load
+            self.logger.info("⏳ Waiting for page to load after Show Plans...")
+            await self.page.wait_for_load_state("networkidle", timeout=30000)
+            await asyncio.sleep(3)
+            
+            # CRITICAL: Check if we're still on form page or moved to plans page
+            current_url_after = self.page.url
+            self.logger.info(f"📍 URL after Show Plans: {current_url_after}")
+            
+            # Check for validation errors or alert messages
+            error_selectors = [
+                ".alert-danger",
+                ".text-danger", 
+                ".error-message",
+                ".validation-error",
+                "[class*='error']",
+                "[class*='alert']"
+            ]
+            
+            for selector in error_selectors:
+                error_elements = await self.page.locator(selector).all()
+                if len(error_elements) > 0:
+                    for elem in error_elements:
+                        try:
+                            error_text = await elem.inner_text(timeout=1000)
+                            if error_text.strip():
+                                self.logger.error(f"🚨 VALIDATION ERROR: {error_text.strip()}")
+                        except:
+                            pass
+            
+            # If still on form page, log all visible text to debug
+            if "indicativequote" in current_url_after:
+                self.logger.error("⚠️ STILL ON FORM PAGE - Form did not submit!")
+                try:
+                    page_text = await self.page.locator("body").inner_text()
+                    self.logger.error(f"📄 Full page text:\n{page_text[:1000]}")
+                except:
+                    pass
             
             # CRITICAL: Verify we're on the plans page and check what's visible
             current_url = self.page.url
@@ -215,6 +291,27 @@ class AlsagrBot(InsuranceBot):
             # Check for table (plans are usually in a table)
             table_exists = await self.page.locator("table").count() > 0
             self.logger.info(f"Table exists on page: {table_exists}")
+            
+            # NEW: Check for error messages or alerts
+            try:
+                error_selectors = [
+                    ".alert-danger", ".alert-error", ".error", ".validation-error",
+                    "[class*='error']", "[role='alert']", ".invalid-feedback"
+                ]
+                for selector in error_selectors:
+                    error_count = await self.page.locator(selector).count()
+                    if error_count > 0:
+                        error_text = await self.page.locator(selector).first.inner_text()
+                        self.logger.warning(f"⚠️ ERROR MESSAGE FOUND ({selector}): {error_text[:200]}")
+            except Exception as e:
+                self.logger.debug(f"No error messages found: {e}")
+            
+            # NEW: Log all visible text on the page (first 2000 chars) to see what's shown
+            try:
+                page_text = await self.page.locator("body").inner_text()
+                self.logger.info(f"📄 Page visible text (first 500 chars):\n{page_text[:500]}")
+            except Exception as e:
+                self.logger.debug(f"Could not get page text: {e}")
             
             if not plantype_exists:
                 self.logger.warning("⚠️ WARNING: Plan type dropdown not found! May not be on plans page.")

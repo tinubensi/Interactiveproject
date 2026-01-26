@@ -159,7 +159,13 @@ export async function createLead(
         formData: createdLead.formData,
         lobData: createdLead.lobData,
         assignedTo: createdLead.assignedTo,
-        createdAt: createdLead.createdAt
+        createdAt: createdLead.createdAt,
+        // 🔧 ADD CONTACT FIELDS FOR RPA BOTS
+        firstName: createdLead.firstName,
+        lastName: createdLead.lastName,
+        email: createdLead.email,
+        phone: createdLead.phone,
+        emirate: createdLead.emirate
       });
       eventPublished = true;
       context.log('✅ lead.created event published successfully to Event Grid');
@@ -190,7 +196,13 @@ export async function createLead(
               formData: createdLead.formData,
               lobData: createdLead.lobData,
               assignedTo: createdLead.assignedTo,
-              createdAt: createdLead.createdAt.toISOString()
+              createdAt: createdLead.createdAt.toISOString(),
+              // 🔧 ADD CONTACT FIELDS FOR RPA BOTS
+              firstName: createdLead.firstName,
+              lastName: createdLead.lastName,
+              email: createdLead.email,
+              phone: createdLead.phone,
+              emirate: createdLead.emirate
             }
           },
           {
