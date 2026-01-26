@@ -319,17 +319,11 @@ describe('validators', () => {
 
   describe('validateCreateStaffRequest', () => {
     const validRequest = {
-      azureAdId: 'azure-123',
       email: 'user@example.com',
       firstName: 'John',
       lastName: 'Doe',
       phone: '+971501234567',
-      employeeId: 'EMP001',
-      jobTitle: 'Insurance Broker',
-      department: 'Sales',
       staffType: 'broker',
-      hireDate: '2025-01-15',
-      teamIds: ['team-1'],
     };
 
     it('should validate a valid request', () => {
@@ -338,44 +332,46 @@ describe('validators', () => {
       assert.strictEqual(result.errors.length, 0);
     });
 
-    it('should require azureAdId', () => {
-      const result = validateCreateStaffRequest({ ...validRequest, azureAdId: undefined });
-      assert.strictEqual(result.valid, false);
-      assert.ok(result.errors.some((e) => e.includes('Azure AD')));
-    });
-
     it('should require email', () => {
       const result = validateCreateStaffRequest({ ...validRequest, email: undefined });
       assert.strictEqual(result.valid, false);
+      assert.ok(result.errors.some((e) => e.includes('Email')));
     });
 
     it('should require firstName', () => {
       const result = validateCreateStaffRequest({ ...validRequest, firstName: undefined });
       assert.strictEqual(result.valid, false);
+      assert.ok(result.errors.some((e) => e.includes('First name')));
     });
 
-    it('should require at least one team', () => {
-      const result = validateCreateStaffRequest({ ...validRequest, teamIds: [] });
+    it('should require lastName', () => {
+      const result = validateCreateStaffRequest({ ...validRequest, lastName: undefined });
       assert.strictEqual(result.valid, false);
-      assert.ok(result.errors.some((e) => e.includes('team')));
+      assert.ok(result.errors.some((e) => e.includes('Last name')));
     });
 
-    it('should validate licenses if provided', () => {
-      const result = validateCreateStaffRequest({
-        ...validRequest,
-        licenses: [
-          {
-            licenseType: '',
-            licenseNumber: 'TEST-001',
-            issuingAuthority: 'Test',
-            issueDate: '2025-01-01',
-            expiryDate: '2026-01-01',
-            status: 'active' as const,
-          },
-        ],
-      });
+    it('should require phone', () => {
+      const result = validateCreateStaffRequest({ ...validRequest, phone: undefined });
       assert.strictEqual(result.valid, false);
-      assert.ok(result.errors.some((e) => e.includes('License')));
+      assert.ok(result.errors.some((e) => e.includes('Phone')));
+    });
+
+    it('should require staffType', () => {
+      const result = validateCreateStaffRequest({ ...validRequest, staffType: undefined });
+      assert.strictEqual(result.valid, false);
+      assert.ok(result.errors.some((e) => e.includes('Staff type')));
+    });
+
+    it('should validate email format', () => {
+      const result = validateCreateStaffRequest({ ...validRequest, email: 'invalid-email' });
+      assert.strictEqual(result.valid, false);
+      assert.ok(result.errors.some((e) => e.includes('Invalid email')));
+    });
+
+    it('should validate phone format', () => {
+      const result = validateCreateStaffRequest({ ...validRequest, phone: '12345' });
+      assert.strictEqual(result.valid, false);
+      assert.ok(result.errors.some((e) => e.includes('Invalid phone')));
     });
   });
 });

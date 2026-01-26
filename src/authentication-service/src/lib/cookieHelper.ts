@@ -16,44 +16,73 @@ export const COOKIE_NAMES = {
 
 /**
  * Create access token cookie
+ * 
+ * For cross-site requests (any external domain -> azurewebsites.net), we need SameSite=None with Secure=true
+ * This includes both localhost and production frontends (Vercel, etc.)
  */
 export function createAccessTokenCookie(token: string): Cookie {
   const config = getConfig();
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  
+  // Check if frontend is on a different domain than the backend
+  // Backend is always: func-nectaria-authentication-dev.azurewebsites.net
+  // If frontend is localhost, vercel.app, or any other domain, it's cross-site
+  const isLocalhost = frontendUrl.includes('localhost') || frontendUrl.includes('127.0.0.1');
+  const isVercel = frontendUrl.includes('vercel.app');
+  const isCrossSite = isLocalhost || isVercel || !frontendUrl.includes('azurewebsites.net');
+  
+  // For cross-site requests, ALWAYS use SameSite=None with Secure=true
+  // For same-site requests, use SameSite=Lax
+  const sameSite = isCrossSite ? 'None' : (config.cookies.sameSite === 'strict' ? 'Strict' : 'Lax');
+  const secure = true; // Always true since backend is HTTPS
   
   return {
     name: COOKIE_NAMES.ACCESS_TOKEN,
     value: token,
     httpOnly: true,
-    secure: config.cookies.secure,
-    sameSite: config.cookies.sameSite === 'strict' ? 'Strict' : 
-              config.cookies.sameSite === 'lax' ? 'Lax' : 'None',
+    secure: secure,
+    sameSite: sameSite === 'Strict' ? 'Strict' : sameSite === 'Lax' ? 'Lax' : 'None',
     maxAge: config.tokens.accessTokenLifetime,
     path: '/',
-    domain: config.cookies.domain !== 'localhost' ? config.cookies.domain : undefined,
+    domain: undefined, // Don't set domain for cross-site cookies
   };
 }
 
 /**
  * Create refresh token cookie
+ * 
+ * For cross-site requests (any external domain -> azurewebsites.net), we need SameSite=None with Secure=true
  */
 export function createRefreshTokenCookie(token: string): Cookie {
   const config = getConfig();
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  
+  // Check if frontend is on a different domain than the backend
+  const isLocalhost = frontendUrl.includes('localhost') || frontendUrl.includes('127.0.0.1');
+  const isVercel = frontendUrl.includes('vercel.app');
+  const isCrossSite = isLocalhost || isVercel || !frontendUrl.includes('azurewebsites.net');
+  
+  // For cross-site requests, ALWAYS use SameSite=None with Secure=true
+  const sameSite = isCrossSite ? 'None' : (config.cookies.sameSite === 'strict' ? 'Strict' : 'Lax');
+  const secure = true; // Always true since backend is HTTPS
   
   return {
     name: COOKIE_NAMES.REFRESH_TOKEN,
     value: token,
     httpOnly: true,
-    secure: config.cookies.secure,
-    sameSite: config.cookies.sameSite === 'strict' ? 'Strict' : 
-              config.cookies.sameSite === 'lax' ? 'Lax' : 'None',
+    secure: secure,
+    sameSite: sameSite === 'Strict' ? 'Strict' : sameSite === 'Lax' ? 'Lax' : 'None',
     maxAge: config.tokens.refreshTokenLifetime,
     path: '/api/auth/refresh', // Only sent to refresh endpoint
-    domain: config.cookies.domain !== 'localhost' ? config.cookies.domain : undefined,
+    domain: undefined, // Don't set domain for cross-site cookies
   };
 }
 
 /**
  * Create PKCE verifier cookie (short-lived)
+ * 
+ * IMPORTANT: This cookie must survive cross-site OAuth redirects (Azure AD -> callback)
+ * Therefore it MUST use SameSite=None with Secure=true
  */
 export function createPkceVerifierCookie(verifier: string): Cookie {
   const config = getConfig();
@@ -62,11 +91,11 @@ export function createPkceVerifierCookie(verifier: string): Cookie {
     name: COOKIE_NAMES.PKCE_VERIFIER,
     value: verifier,
     httpOnly: true,
-    secure: config.cookies.secure,
-    sameSite: 'Lax',  // Must be Lax for OAuth redirects from Azure AD
+    secure: true, // MUST be true when using SameSite=None (backend is HTTPS, so this works)
+    sameSite: 'None',  // MUST be None for cross-site OAuth redirects from Azure AD
     maxAge: 5 * 60, // 5 minutes
-    path: '/api/auth',  // Broadened path to ensure cookie is sent to all auth endpoints
-    domain: config.cookies.domain !== 'localhost' ? config.cookies.domain : undefined,
+    path: '/',  // Use root path to ensure cookie is sent to all auth endpoints
+    domain: undefined, // Don't set domain - let browser use default (exact domain match)
   };
 }
 
@@ -109,9 +138,9 @@ export function clearPkceVerifierCookie(): Cookie {
     value: '',
     httpOnly: true,
     secure: true,
-    sameSite: 'Lax',
+    sameSite: 'None', // Must match createPkceVerifierCookie
     maxAge: 0,
-    path: '/api/auth',  // Must match the path used in createPkceVerifierCookie
+    path: '/',  // Must match the path used in createPkceVerifierCookie
   };
 }
 

@@ -10,6 +10,10 @@ import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
 import { v4 as uuidv4 } from 'uuid';
 
+// 🔒 In-memory deduplication cache (leadId -> timestamp)
+const processingCache = new Map<string, number>();
+const DEDUP_WINDOW_MS = 3600000; // 60 minutes (1 hour) to block all old retries
+
 /**
  * Main Event Grid handler for lead.created events
  * Automatically triggers plan fetching for RPA-enabled vendors
@@ -35,6 +39,28 @@ async function handleLeadCreatedEvent(
       if (!leadId || !lineOfBusiness) {
         context.warn('Missing leadId or lineOfBusiness in event data, skipping');
         continue;
+      }
+      
+      // 🔒 DEDUPLICATION: Check if already processing recently (in-memory cache)
+      const now = Date.now();
+      const lastProcessed = processingCache.get(leadId);
+      
+      if (lastProcessed) {
+        const timeSince = now - lastProcessed;
+        if (timeSince < DEDUP_WINDOW_MS) {
+          context.log(`⏭️  Skipping duplicate event - Lead ${leadId} was processed ${Math.round(timeSince/1000)}s ago`);
+          continue; // Skip to next event
+        }
+      }
+      
+      // Mark this lead as being processed
+      processingCache.set(leadId, now);
+      
+      // Cleanup old entries from cache (older than 10 minutes)
+      for (const [cachedLeadId, timestamp] of processingCache.entries()) {
+        if (now - timestamp > 600000) { // 10 minutes
+          processingCache.delete(cachedLeadId);
+        }
       }
       
       // Get RPA-enabled vendors

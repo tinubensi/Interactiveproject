@@ -17,6 +17,7 @@
       "routePrefix": "api"
     }
   },
+  "functionTimeout": "00:10:00",
   "cors": {
     "allowedOrigins": ["http://localhost:3000"],
     "supportCredentials": true

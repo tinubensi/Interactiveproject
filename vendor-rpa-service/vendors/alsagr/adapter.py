@@ -138,13 +138,13 @@ def transform_lead_to_alsagr_format(lead_data: Dict[str, Any]) -> Dict[str, Any]
     phone_formatted = format_phone_for_portal(phone_raw)
     
     primary = {
-        'firstName': lead_data.get('firstName', ''),
-        'lastName': lead_data.get('lastName', ''),
+        'firstName': lead_data.get('firstName') or form_data.get('firstName', ''),
+        'lastName': lead_data.get('lastName') or form_data.get('lastName', ''),
         'dateOfBirth': lob_data.get('dateOfBirth', ''),
         'gender': map_gender(lob_data.get('gender', 'Male')),
         'maritalStatus': map_marital_status(lob_data.get('maritalStatus', 'Single')),
         'phone': phone_formatted,
-        'email': lead_data.get('email', '')
+        'email': lead_data.get('email') or form_data.get('email', '')
     }
     
     # Map dependents - look in formData sections (dynamic key) AND lobData (backward compatibility)

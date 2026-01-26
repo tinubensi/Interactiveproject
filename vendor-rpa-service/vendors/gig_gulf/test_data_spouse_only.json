@@ -1,0 +1,31 @@
+{
+  "id": "lead-test-002",
+  "leadId": "lead-test-002",
+  "firstName": "Kane",
+  "lastName": "Williamson",
+  "email": "kane.family@gmail.com",
+  "phone": {
+    "number": "502345678",
+    "countryCode": "+971",
+    "isoCode": "AE"
+  },
+  "emirate": "Dubai",
+  "lobData": {
+    "dateOfBirth": "1998-04-18",
+    "gender": "Male",
+    "nationality": "Indian",
+    "maritalStatus": "Married",
+    "visaType": "Resident visa",
+    "salaryRange": "5000-10000",
+    "effectiveDate": "2026-01-31",
+    "numberOfDependents": 1,
+    "dependents": [
+      {
+        "name": "Sarah Williamson",
+        "relationship": "Spouse",
+        "dateOfBirth": "1999-05-20",
+        "gender": "Female"
+      }
+    ]
+  }
+}

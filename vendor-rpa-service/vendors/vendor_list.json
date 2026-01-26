@@ -28,6 +28,15 @@
       "priority": 3
     },
     {
+      "id": "vendor-gig-gulf",
+      "name": "GIG Gulf Insurance",
+      "enabled": true,
+      "portalUrl": "https://health.gig-gulf.com/broker-quotation/BrokerIndividualQuotation/Index",
+      "requiresAuth": true,
+      "timeout": 420,
+      "priority": 4
+    },
+    {
       "id": "watania",
       "name": "Watania Takaful",
       "enabled": false,

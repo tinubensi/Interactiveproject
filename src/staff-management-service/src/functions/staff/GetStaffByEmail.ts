@@ -4,7 +4,6 @@
 
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { findStaffByEmail } from '../../lib/staffRepository';
-import { getWorkloadInfo } from '../../lib/workloadService';
 
 export async function GetStaffByEmailHandler(
   request: HttpRequest,
@@ -38,15 +37,9 @@ export async function GetStaffByEmailHandler(
       };
     }
 
-    // Get workload info
-    const workloadInfo = getWorkloadInfo(staff);
-
     return {
       status: 200,
-      jsonBody: {
-        ...staff,
-        workloadDetails: workloadInfo,
-      },
+      jsonBody: staff,
     };
   } catch (error) {
     context.error('GetStaffByEmail error:', error);

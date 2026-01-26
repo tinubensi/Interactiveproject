@@ -1,0 +1,24 @@
+{
+  "id": "lead-test-001",
+  "leadId": "lead-test-001",
+  "firstName": "Kane",
+  "lastName": "Williamson",
+  "email": "kane.test@gmail.com",
+  "phone": {
+    "number": "501234567",
+    "countryCode": "+971",
+    "isoCode": "AE"
+  },
+  "emirate": "Dubai",
+  "lobData": {
+    "dateOfBirth": "1998-04-18",
+    "gender": "Male",
+    "nationality": "Indian",
+    "maritalStatus": "Single",
+    "visaType": "Resident visa",
+    "salaryRange": "5000-10000",
+    "effectiveDate": "2026-01-31",
+    "numberOfDependents": 0,
+    "dependents": []
+  }
+}

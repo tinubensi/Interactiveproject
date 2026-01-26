@@ -170,24 +170,14 @@ export function needsRenewalAlert(license: License, alertDays: number[]): number
  * Validate create staff request
  */
 export function validateCreateStaffRequest(request: {
-  azureAdId?: string;
   email?: string;
   firstName?: string;
   lastName?: string;
   phone?: string;
-  employeeId?: string;
-  jobTitle?: string;
-  department?: string;
   staffType?: string;
-  hireDate?: string;
-  teamIds?: string[];
-  licenses?: License[];
 }): ValidationResult {
   const errors: string[] = [];
 
-  if (!request.azureAdId) {
-    errors.push('Azure AD ID is required');
-  }
   if (!request.email) {
     errors.push('Email is required');
   } else {
@@ -206,33 +196,8 @@ export function validateCreateStaffRequest(request: {
     const phoneValidation = validatePhone(request.phone);
     errors.push(...phoneValidation.errors);
   }
-  if (!request.employeeId) {
-    errors.push('Employee ID is required');
-  }
-  if (!request.jobTitle) {
-    errors.push('Job title is required');
-  }
-  if (!request.department) {
-    errors.push('Department is required');
-  }
   if (!request.staffType) {
     errors.push('Staff type is required');
-  }
-  if (!request.hireDate) {
-    errors.push('Hire date is required');
-  }
-  if (!request.teamIds || request.teamIds.length === 0) {
-    errors.push('At least one team is required');
-  }
-
-  // Validate licenses if provided
-  if (request.licenses) {
-    for (let i = 0; i < request.licenses.length; i++) {
-      const licenseValidation = validateLicense(request.licenses[i]);
-      if (!licenseValidation.valid) {
-        errors.push(`License ${i + 1}: ${licenseValidation.errors.join(', ')}`);
-      }
-    }
   }
 
   return {
