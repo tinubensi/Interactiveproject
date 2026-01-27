@@ -93,20 +93,49 @@ class Gig_gulfParser:
         
         # Extract plan name
         if "plan_name" in raw_data and raw_data["plan_name"]:
-            plan_name_raw = self.clean_text(raw_data["plan_name"])
-            plan_data["planName"] = plan_name_raw
-            plan_data["planCode"] = f"GIG-PLA-{re.sub(r'[^a-zA-Z0-9]', '', plan_name_raw)[:50]}"
-            plan_data["rawPlanData"]["plan_name"] = plan_name_raw
+            plan_name_raw = self.clean_text(str(raw_data["plan_name"]))
+            if plan_name_raw and plan_name_raw.strip():
+                plan_data["planName"] = plan_name_raw
+                plan_data["planCode"] = f"GIG-PLA-{re.sub(r'[^a-zA-Z0-9]', '', plan_name_raw)[:50]}"
+                plan_data["rawPlanData"]["plan_name"] = plan_name_raw
+        elif "raw_text" in raw_data and raw_data["raw_text"]:
+            # Try to extract plan name from raw_text if not directly provided
+            raw_text = raw_data["raw_text"]
+            # Look for plan name at the beginning of raw_text (usually first line)
+            lines = raw_text.split('\n')
+            if lines and len(lines[0].strip()) > 0:
+                # Skip if it's just a quotation reference
+                first_line = lines[0].strip()
+                if not first_line.startswith("Quotation Ref") and len(first_line) > 3:
+                    plan_name_raw = self.clean_text(first_line)
+                    plan_data["planName"] = plan_name_raw
+                    plan_data["planCode"] = f"GIG-PLA-{re.sub(r'[^a-zA-Z0-9]', '', plan_name_raw)[:50]}"
+                    plan_data["rawPlanData"]["plan_name"] = plan_name_raw
         
         # Extract premium
         if "premium" in raw_data and raw_data["premium"]:
             try:
-                annual_premium = float(raw_data["premium"])
+                premium_value = raw_data["premium"]
+                # Handle string values with "AED" prefix or commas
+                if isinstance(premium_value, str):
+                    # Remove "AED", commas, and whitespace
+                    premium_value = premium_value.replace("AED", "").replace(",", "").strip()
+                annual_premium = float(premium_value)
                 plan_data["annualPremium"] = annual_premium
                 plan_data["monthlyPremium"] = round(annual_premium / 12, 2)
                 plan_data["rawPlanData"]["premium"] = f"AED {annual_premium}"
-            except:
-                pass
+            except Exception as e:
+                # If direct extraction fails, try parsing from raw_text
+                if "raw_text" in raw_data and raw_data["raw_text"]:
+                    try:
+                        premium_match = re.search(r'AED\s*([\d,]+\.?\d*)', raw_data["raw_text"])
+                        if premium_match:
+                            annual_premium = float(premium_match.group(1).replace(",", ""))
+                            plan_data["annualPremium"] = annual_premium
+                            plan_data["monthlyPremium"] = round(annual_premium / 12, 2)
+                            plan_data["rawPlanData"]["premium"] = f"AED {annual_premium}"
+                    except:
+                        pass
         
         # Extract coverage limit
         if "coverage_limit" in raw_data and raw_data["coverage_limit"]:
@@ -348,12 +377,106 @@ class Gig_gulfParser:
         
         # Extract premium if not already set
         if plan_data["annualPremium"] == 0:
-            premium_match = re.search(r'AED\s*([\d,]+\.?\d*)', raw_text)
-            if premium_match:
+            # Try multiple patterns for premium
+            premium_patterns = [
+                r'AED\s*([\d,]+\.?\d*)',  # AED 14,355.0
+                r'([\d,]+\.?\d*)\s*AED',  # 14,355.0 AED
+                r'Yearly[^\d]*([\d,]+\.?\d*)',  # Yearly 14,355
+                r'Premium[^\d]*([\d,]+\.?\d*)',  # Premium: 14,355
+            ]
+            for pattern in premium_patterns:
+                premium_match = re.search(pattern, raw_text, re.IGNORECASE)
+                if premium_match:
+                    try:
+                        premium = float(premium_match.group(1).replace(",", ""))
+                        plan_data["annualPremium"] = premium
+                        plan_data["monthlyPremium"] = round(premium / 12, 2)
+                        plan_data["rawPlanData"]["premium"] = f"AED {premium}"
+                        break
+                    except:
+                        continue
+        
+        # Extract plan name if not already set
+        if plan_data["planName"] == "Unknown Plan" and raw_text:
+            # First line is usually the plan name (skip quotation ref)
+            lines = raw_text.split('\n')
+            for line in lines[:3]:  # Check first 3 lines
+                line = line.strip()
+                if line and not line.startswith("Quotation Ref") and len(line) > 3:
+                    # Check if it looks like a plan name (not a number, not "AED")
+                    if not re.match(r'^[\d,\.\sAED]+$', line) and len(line) < 100:
+                        plan_name_raw = self.clean_text(line)
+                        plan_data["planName"] = plan_name_raw
+                        plan_data["planCode"] = f"GIG-PLA-{re.sub(r'[^a-zA-Z0-9]', '', plan_name_raw)[:50]}"
+                        plan_data["rawPlanData"]["plan_name"] = plan_name_raw
+                        break
+        
+        # Extract annual limit/coverage
+        if plan_data["annualLimit"] == 0:
+            limit_patterns = [
+                r'Yearly Maximum[^\d]*AED\s*([\d,]+)',  # Yearly Maximum AED 7,500,000
+                r'Annual Limit[^\d]*AED\s*([\d,]+)',  # Annual Limit AED 7,500,000
+                r'Coverage[^\d]*AED\s*([\d,]+)',  # Coverage AED 7,500,000
+            ]
+            for pattern in limit_patterns:
+                limit_match = re.search(pattern, raw_text, re.IGNORECASE)
+                if limit_match:
+                    try:
+                        limit = float(limit_match.group(1).replace(",", ""))
+                        plan_data["annualLimit"] = limit
+                        plan_data["rawPlanData"]["coverage_limit"] = str(limit)
+                        break
+                    except:
+                        continue
+        
+        # Extract specific benefit limits from raw text
+        benefit_patterns = {
+            'maternity': r'Maternity[^\d]*AED\s*([\d,]+)',
+            'dental': r'Dental[^\d]*AED\s*([\d,]+)',
+            'optical': r'Optical[^\d]*AED\s*([\d,]+)',
+            'pharmacy': r'Pharmacy[^\d]*AED\s*([\d,]+)',
+        }
+        
+        for benefit_type, pattern in benefit_patterns.items():
+            match = re.search(pattern, raw_text, re.IGNORECASE)
+            if match:
                 try:
-                    premium = float(premium_match.group(1).replace(",", ""))
-                    plan_data["annualPremium"] = premium
-                    plan_data["monthlyPremium"] = round(premium / 12, 2)
+                    value = float(match.group(1).replace(",", ""))
+                    if benefit_type == 'maternity' and plan_data["maternityLimit"] == 0:
+                        plan_data["maternityLimit"] = value
+                    elif benefit_type == 'dental' and plan_data["dentalLimit"] == 0:
+                        plan_data["dentalLimit"] = value
+                    elif benefit_type == 'optical' and plan_data["opticalLimit"] == 0:
+                        plan_data["opticalLimit"] = value
+                    elif benefit_type == 'pharmacy' and plan_data["pharmacyLimit"] == 0:
+                        plan_data["pharmacyLimit"] = value
+                except:
+                    pass
+        
+        # Extract deductible
+        if plan_data["deductible"] == 0:
+            deductible_patterns = [
+                r'Deductible[^\d]*AED\s*([\d,]+)',
+                r'Deductible[^\d]*(\d+)%',
+            ]
+            for pattern in deductible_patterns:
+                match = re.search(pattern, raw_text, re.IGNORECASE)
+                if match:
+                    try:
+                        value = float(match.group(1).replace(",", ""))
+                        plan_data["deductible"] = value
+                        if "%" in match.group(0):
+                            plan_data["deductibleMetric"] = "%"
+                        break
+                    except:
+                        continue
+        
+        # Extract co-insurance
+        if plan_data["coInsurance"] == 0:
+            coinsurance_match = re.search(r'co-insurance[^\d]*(\d+)%', raw_text, re.IGNORECASE)
+            if coinsurance_match:
+                try:
+                    plan_data["coInsurance"] = float(coinsurance_match.group(1))
                 except:
                     pass
         

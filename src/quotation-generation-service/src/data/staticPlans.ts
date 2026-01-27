@@ -57,6 +57,18 @@ export const STATIC_VENDORS: Omit<Vendor, 'createdAt' | 'updatedAt'>[] = [
     isActive: true,
     priority: 3
   },
+  {
+    id: 'vendor-gig-gulf',
+    name: 'GIG Gulf',
+    code: 'GIGGULF',
+    lineOfBusiness: 'medical',
+    logo: 'https://example.com/logos/gig-gulf.png',
+    website: 'https://www.giggulf.com',
+    rpaEnabled: true,
+    hasStaticPlans: false,
+    isActive: true,
+    priority: 5
+  },
   
 ];
 

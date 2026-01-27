@@ -1,6 +1,12 @@
+/**
+ * EMAF Service Client for Quotation Service
+ * Handles communication with the EMAF service
+ */
+
+import axios from 'axios';
 import { InvocationContext } from '@azure/functions';
 
-export interface CreateEmafSubmissionRequest {
+interface CreateEmafSubmissionParams {
   leadId: string;
   quotationId: string;
   customerName: string;
@@ -10,91 +16,63 @@ export interface CreateEmafSubmissionRequest {
   vendorName: string;
 }
 
-export interface EmafSubmissionResponse {
-  success: boolean;
+interface CreateEmafSubmissionResult {
   token: string;
   emafUrl: string;
 }
 
 class EmafService {
-  private emafServiceUrl: string;
-  private serviceKey: string;
-
-  constructor() {
-    // EMAF service is deployed as Azure Function App
-    this.emafServiceUrl = process.env.EMAF_SERVICE_URL || 'https://emaf-service-func.azurewebsites.net/api';
-    // Updated default to ensure both services use the same key
-    this.serviceKey = process.env.SERVICE_KEY || 'nectaria-internal-2026';
+  private getEmafServiceUrl(): string {
+    const baseUrl = process.env.EMAF_SERVICE_URL || 'http://localhost:7078';
+    return baseUrl.includes('/api') ? baseUrl : `${baseUrl}/api`;
   }
 
-  /**
-   * Create an EMAF submission for a customer
-   */
   async createEmafSubmission(
-    data: CreateEmafSubmissionRequest,
-    context: InvocationContext
-  ): Promise<EmafSubmissionResponse> {
+    params: CreateEmafSubmissionParams,
+    context?: InvocationContext
+  ): Promise<CreateEmafSubmissionResult> {
+    const emafServiceUrl = this.getEmafServiceUrl();
+    const endpoint = `${emafServiceUrl}/emaf/submissions`;
+
     try {
-      context.log('Creating EMAF submission for:', {
-        leadId: data.leadId,
-        quotationId: data.quotationId,
-        vendorId: data.vendorId,
-      });
-
-      const response = await fetch(`${this.emafServiceUrl}/internal/submissions/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-service-key': this.serviceKey,
+      const response = await axios.post(
+        endpoint,
+        {
+          leadId: params.leadId,
+          quotationId: params.quotationId,
+          customerName: params.customerName,
+          customerEmail: params.customerEmail,
+          selectedPlanId: params.selectedPlanId,
+          vendorId: params.vendorId,
+          vendorName: params.vendorName,
         },
-        body: JSON.stringify({
-          leadId: data.leadId,
-          quotationId: data.quotationId,
-          vendorId: data.vendorId,
-          customerName: data.customerName,
-          customerEmail: data.customerEmail,
-          selectedPlanId: data.selectedPlanId,
-          vendorName: data.vendorName,
-        }),
-      });
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-service-key': process.env.INTERNAL_SERVICE_KEY || '',
+          },
+          timeout: 30000, // 30 seconds
+        }
+      );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        context.error('EMAF service error response:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorText: errorText,
-          url: `${this.emafServiceUrl}/internal/submissions/create`,
-        });
-        throw new Error(`EMAF service error: ${response.status} - ${errorText}`);
+      if (response.data && response.data.success && response.data.data) {
+        const data = response.data.data;
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const emafUrl = `${frontendUrl}/emaf/${data.token || data.id}`;
+
+        return {
+          token: data.token || data.id,
+          emafUrl,
+        };
       }
 
-      const result: any = await response.json();
-      context.log('EMAF service response:', JSON.stringify(result, null, 2));
-      
-      // Handle response structure: { success: true, token: "...", emafUrl: "...", data: {...} }
-      const token = result.token || result.data?.submissionId || result.data?.token;
-      const emafUrl = result.emafUrl || (token ? `${this.getFrontendUrl()}/emaf/${token}` : undefined);
-      
-      if (!token) {
-        throw new Error('EMAF service did not return a token in response');
-      }
-      
-      context.log('EMAF submission created successfully:', { token, emafUrl });
-
-      return {
-        success: true,
-        token: token as string,
-        emafUrl: emafUrl as string,
-      };
+      throw new Error('Invalid response from EMAF service');
     } catch (error: any) {
-      context.error('Failed to create EMAF submission:', error);
-      throw new Error(`Failed to create EMAF submission: ${error.message}`);
+      if (context) {
+        context.error('Failed to create EMAF submission:', error.message);
+      }
+      throw new Error(`EMAF service error: ${error.message || 'Unknown error'}`);
     }
-  }
-
-  private getFrontendUrl(): string {
-    return process.env.FRONTEND_URL || 'http://localhost:3000';
   }
 }
 

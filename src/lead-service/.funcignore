@@ -18,9 +18,7 @@ tmp
 src/
 tsconfig.json
 *.test.ts
-*.test.js
-
-# Scripts and docs
+*.test.js# Scripts and docs
 scripts/
 check_lead_db.js
 init-plans.js

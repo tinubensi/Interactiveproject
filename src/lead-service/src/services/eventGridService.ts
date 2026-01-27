@@ -80,6 +80,23 @@ class EventGridService {
     }
 
     try {
+      // 🔍 DEBUG: Log formData structure before publishing (for lead.created events)
+      if (eventType === 'lead.created' && data.formData) {
+        const sectionKeys = Object.keys(data.formData).filter((k: string) => k.startsWith('section-'));
+        console.log(`[Event Grid DEBUG] Publishing lead.created with formData:`);
+        console.log(`  - Has formData: true`);
+        console.log(`  - formData section-* keys: ${sectionKeys.join(', ')}`);
+        if (sectionKeys.length > 0) {
+          const firstSection = data.formData[sectionKeys[0]];
+          console.log(`  - ${sectionKeys[0]}: ${Array.isArray(firstSection) ? firstSection.length : 0} items`);
+          if (Array.isArray(firstSection) && firstSection.length > 0) {
+            console.log(`  - First dependent: ${firstSection[0].firstName || 'N/A'} ${firstSection[0].lastName || 'N/A'}`);
+          }
+        }
+      } else if (eventType === 'lead.created') {
+        console.log(`[Event Grid DEBUG] Publishing lead.created WITHOUT formData!`);
+      }
+      
       const event = {
         id: uuidv4(),
         eventType,
@@ -135,6 +152,12 @@ class EventGridService {
     lobData: any;
     assignedTo?: string;
     createdAt: Date;
+    // 🔧 Contact fields for RPA bots
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: any;
+    emirate?: string;
   }): Promise<void> {
     console.log('===========================================');
     console.log('[DEBUG] publishLeadCreated called');

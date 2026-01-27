@@ -93,9 +93,17 @@ class AlsagrScraper:
             self.logger.error("❌ NO PLANS FOUND!")
             return []
 
+        # Download PDFs for ALL plans to ensure Alternative Medicine and Claims Settlement Basis are extracted
+        # (These fields are only available in PDFs, not in JSON API)
+        max_pdf_downloads = num_plans
+        self.logger.info(f"📥 Will download PDFs for all {max_pdf_downloads} plans using download events (fast, no tabs)")
+        
         # Process each plan row
         for index in range(num_plans):
             self.logger.info(f"\nProcessing plan {index + 1}/{num_plans}...")
+            
+            # Close any extra tabs/pages before processing next plan
+            await self._close_all_extra_pages()
             
             try:
                 # Re-query to get fresh buttons
@@ -202,42 +210,80 @@ class AlsagrScraper:
                     self.page.on("response", handle_response)
                     handler_added = True
                     
+                    # CRITICAL: Ensure no modals are open before clicking
+                    try:
+                        modal_open = await self.page.locator(".modal.show").count() > 0
+                        if modal_open:
+                            self.logger.debug(f"  Previous modal still open, closing...")
+                            await self.page.keyboard.press("Escape")
+                            await asyncio.sleep(1)
+                            await self.page.wait_for_selector(".modal.show", state="hidden", timeout=3000)
+                    except:
+                        pass
+                    
+                    # CRITICAL: Scroll element into view before clicking
+                    await eye_button.scroll_into_view_if_needed()
+                    await asyncio.sleep(0.3)
+                    
                     # Click eye button to open modal and trigger API
                     self.logger.info(f"  Clicking eye button...")
-                    await asyncio.wait_for(eye_button.click(force=True), timeout=10.0)
+                    try:
+                        # Try regular click first
+                        await asyncio.wait_for(eye_button.click(), timeout=5.0)
+                    except:
+                        # Fallback to force click if regular click fails
+                        self.logger.debug(f"  Regular click failed, trying force click...")
+                        await asyncio.wait_for(eye_button.click(force=True), timeout=5.0)
                     
                     # Wait for modal to appear
                     try:
-                        await self.page.wait_for_selector(".modal.show", state="visible", timeout=5000)
+                        await self.page.wait_for_selector(".modal.show", state="visible", timeout=8000)
                         self.logger.info(f"  ✓ Modal opened")
                     except:
                         self.logger.warning(f"  Modal may not have opened")
+                        # Try clicking again
+                        try:
+                            await eye_button.click(force=True)
+                            await self.page.wait_for_selector(".modal.show", state="visible", timeout=5000)
+                            self.logger.info(f"  ✓ Modal opened on retry")
+                        except:
+                            self.logger.warning(f"  Modal still not opening after retry")
                     
-                    # Wait for JSON response - Increased to 20s timeout for all plans
-                    for _ in range(100):  # 100 × 0.2s = 20s max
+                    # Wait for JSON response - 5s max (optimized)
+                    for _ in range(25):  # 25 × 0.2s = 5s max
                         if json_captured:
                             break
                         await asyncio.sleep(0.2)
                     
-                    # Close modal - Use close button since backdrop is static
+                    # Close modal - CRITICAL for next plan to work
                     try:
-                        # Try clicking the close button (X)
-                        close_button = self.page.locator("button.btn-close, button[data-bs-dismiss='modal']").first
-                        await close_button.click(timeout=2000)
-                        await asyncio.sleep(0.3)
-                        # Wait for modal to fully disappear
-                        await self.page.wait_for_selector(".modal.show", state="hidden", timeout=3000)
-                        await asyncio.sleep(0.2)  # Extra safety
+                        # Method 1: Try clicking the close button (X)
+                        close_button = self.page.locator("button.btn-close, button[data-bs-dismiss='modal'], .modal button.close").first
+                        if await close_button.count() > 0:
+                            await close_button.click(timeout=2000)
+                            self.logger.debug(f"  Clicked close button")
+                        else:
+                            # Method 2: Press Escape key
+                            await self.page.keyboard.press("Escape")
+                            self.logger.debug(f"  Pressed Escape key")
+                        
+                        # CRITICAL: Wait for modal to fully disappear
+                        await asyncio.sleep(0.5)
+                        await self.page.wait_for_selector(".modal.show", state="hidden", timeout=5000)
+                        self.logger.debug(f"  ✓ Modal closed successfully")
+                        
+                        # Extra safety wait for DOM to settle
+                        await asyncio.sleep(0.5)
                     except Exception as e:
-                        # Fallback: try Escape key
+                        # Fallback: Force close with multiple escape presses
+                        self.logger.warning(f"  Modal close issue: {e}, forcing close...")
                         try:
                             await self.page.keyboard.press("Escape")
                             await asyncio.sleep(0.5)
+                            await self.page.keyboard.press("Escape")
+                            await asyncio.sleep(1)
                         except:
                             pass
-                        # Force wait for modal to disappear
-                        self.logger.warning(f"  Modal close slow, waiting...")
-                        await asyncio.sleep(1.5)
                     
                 except asyncio.TimeoutError:
                     self.logger.error(f"  ❌ Timeout clicking eye button (10s)")
@@ -265,11 +311,15 @@ class AlsagrScraper:
                             form_data=self.form_data
                         )
                         
-                        # Download PDF for additional data extraction
-                        pdf_path = await self._download_plan_pdf(download_button, index)
-                        if pdf_path:
-                            plan['pdf_path'] = pdf_path
-                            self.logger.info(f"  ✓ PDF downloaded: {pdf_path}")
+                        # Download PDF for additional data extraction (only for first N plans)
+                        # Using download event method - fast and no tabs opened
+                        if index < max_pdf_downloads:
+                            pdf_path = await self._download_plan_pdf(download_button, index)
+                            if pdf_path:
+                                plan['pdf_path'] = pdf_path
+                                self.logger.info(f"  ✓ PDF downloaded: {pdf_path}")
+                        else:
+                            self.logger.info(f"  ⏭️  Skipping PDF download (limit reached: {max_pdf_downloads})")
                         
                         structured_plans.append(plan)
                         self.logger.info(f"  ✓ Plan parsed successfully from JSON")
@@ -278,19 +328,46 @@ class AlsagrScraper:
                 else:
                     self.logger.warning(f"  ⚠️ No JSON data captured for this plan")
                 
-                await asyncio.sleep(0.5)  # Wait between plans to ensure UI stability
+                # Wait between plans for UI stability (optimized for speed)
+                await asyncio.sleep(0.8)  # Balanced for speed vs stability
                 
             except Exception as e:
                 self.logger.error(f"Error processing plan {index}: {e}")
                 continue
 
+        # Final cleanup: Close all extra tabs before returning
+        await self._close_all_extra_pages()
+        
         self.logger.info(f"\n✅ Successfully extracted {len(structured_plans)} plans")
         return structured_plans
     
+    async def _close_all_extra_pages(self):
+        """
+        Closes all pages/tabs except the main page to prevent tab accumulation.
+        """
+        try:
+            # Get context from the page
+            context = self.page.context
+            if not context:
+                return
+            
+            pages = context.pages
+            main_page = self.page
+            
+            # Close all pages except the main one
+            for page in pages:
+                if page != main_page and not page.is_closed():
+                    try:
+                        await page.close()
+                        self.logger.debug(f"  🗑️  Closed extra tab/page")
+                    except Exception as e:
+                        self.logger.debug(f"  ⚠️  Could not close page: {e}")
+        except Exception as e:
+            self.logger.debug(f"  ⚠️  Error closing extra pages: {e}")
+    
     async def _download_plan_pdf(self, download_button, index: int) -> Optional[str]:
         """
-        Downloads the plan PDF by clicking the download button.
-        Works in both headless and non-headless modes.
+        Downloads the plan PDF using download event (fastest method, works in headless mode).
         Returns the path to the downloaded PDF file, or None if download fails.
         """
         try:
@@ -299,7 +376,7 @@ class AlsagrScraper:
             filename = f"plan_{index}_{int(time.time())}.pdf"
             filepath = os.path.join(self.download_dir, filename)
             
-            # Strategy 1: Use download event handler (works in headless mode)
+            # PRIMARY STRATEGY: Use download event handler (fastest, works in headless mode)
             pdf_downloaded = False
             downloaded_path = None
             
@@ -314,7 +391,7 @@ class AlsagrScraper:
                                 suggested_filename = download.suggested_filename()
                             else:
                                 suggested_filename = download.suggested_filename
-                            self.logger.info(f"  📄 Suggested filename: {suggested_filename}")
+                            self.logger.debug(f"  📄 Suggested filename: {suggested_filename}")
                     except:
                         pass
                     
@@ -326,32 +403,35 @@ class AlsagrScraper:
                     self.logger.info(f"  ✅ PDF downloaded via download event: {file_size} bytes")
                 except Exception as e:
                     self.logger.warning(f"  Download handler error: {e}")
-                    import traceback
-                    self.logger.warning(f"  Download handler traceback:\n{traceback.format_exc()}")
             
             # Register download handler BEFORE clicking
             self.page.on("download", handle_download)
             
             try:
-                self.logger.info(f"  🔘 Clicking download button (Strategy 1: Download Event)...")
+                self.logger.info(f"  🔘 Clicking download button (download event method)...")
                 # Click the download button
                 await download_button.click()
                 
-                # Wait for download to complete (max 15 seconds)
-                self.logger.debug(f"  Waiting for download event (max 15s)...")
-                for i in range(30):  # 30 × 0.5s = 15s max
+                # Wait for download to complete (max 5 seconds - faster)
+                self.logger.debug(f"  Waiting for download event (max 5s)...")
+                for i in range(10):  # 10 × 0.5s = 5s max
                     if pdf_downloaded:
-                        self.logger.info(f"  ✅ Download detected after {i * 0.5:.1f}s")
+                        self.logger.debug(f"  ✅ Download completed after {i * 0.5:.1f}s")
                         break
                     await asyncio.sleep(0.5)
                 
                 # Remove download handler
                 self.page.remove_listener("download", handle_download)
                 
-                if pdf_downloaded and downloaded_path:
-                    return downloaded_path
+                if pdf_downloaded and downloaded_path and os.path.exists(downloaded_path):
+                    file_size = os.path.getsize(downloaded_path)
+                    if file_size > 1000:  # Verify PDF is not empty
+                        self.logger.info(f"  ✅ PDF saved: {os.path.basename(downloaded_path)} ({file_size} bytes)")
+                        return downloaded_path
+                    else:
+                        self.logger.warning(f"  ⚠️ Downloaded file too small ({file_size} bytes), may be invalid")
                 else:
-                    self.logger.debug(f"  ⚠️ Download event did not fire after clicking")
+                    self.logger.debug(f"  ⚠️ Download event did not fire or file not found")
                 
             except Exception as e:
                 self.logger.warning(f"  Download event approach failed: {e}")
@@ -361,53 +441,10 @@ class AlsagrScraper:
                 except:
                     pass
             
-            # Strategy 2: Try popup approach (fallback for non-headless or if download event doesn't fire)
+            # FALLBACK: Only try network interception if download event failed
+            # (Skip popup approach to avoid opening tabs)
             try:
-                self.logger.debug("  Trying popup approach...")
-                async with self.page.expect_popup(timeout=5000) as popup_info:
-                    await download_button.click()
-                
-                popup_page = await popup_info.value
-                await popup_page.wait_for_load_state("networkidle", timeout=10000)
-                
-                # Check if popup URL is a PDF
-                popup_url = popup_page.url
-                content_type = await popup_page.evaluate("() => document.contentType || ''")
-                
-                if popup_url.endswith(".pdf") or "application/pdf" in content_type:
-                    # Download PDF from popup URL
-                    try:
-                        response = await popup_page.request.fetch(popup_url)
-                        body = await response.body()
-                        if body.startswith(b'%PDF'):
-                            with open(filepath, "wb") as f:
-                                f.write(body)
-                            await popup_page.close()
-                            self.logger.info(f"  ✅ PDF downloaded from popup URL: {len(body)} bytes")
-                            return filepath
-                    except Exception as e:
-                        self.logger.debug(f"  Failed to fetch from popup URL: {e}")
-                
-                # Strategy 3: If popup is HTML, try to generate PDF from it
-                try:
-                    await popup_page.pdf(path=filepath, format='A4')
-                    await popup_page.close()
-                    if os.path.exists(filepath) and os.path.getsize(filepath) > 1000:
-                        self.logger.info(f"  ✅ PDF generated from popup content")
-                        return filepath
-                except Exception as e:
-                    self.logger.debug(f"  Failed to generate PDF from popup: {e}")
-                    try:
-                        await popup_page.close()
-                    except:
-                        pass
-                        
-            except Exception as e:
-                self.logger.debug(f"  Popup approach failed: {e}")
-            
-            # Strategy 4: Intercept network requests for PDF
-            try:
-                self.logger.debug("  Trying network interception...")
+                self.logger.debug("  Trying network interception fallback...")
                 pdf_url = None
                 pdf_body = None
                 
@@ -428,7 +465,7 @@ class AlsagrScraper:
                 
                 # Click again to trigger network request
                 await download_button.click()
-                await asyncio.sleep(3)  # Wait for network request
+                await asyncio.sleep(2)  # Wait for network request
                 
                 # Remove handler
                 self.page.remove_listener("response", handle_response)
@@ -440,9 +477,9 @@ class AlsagrScraper:
                     return filepath
                     
             except Exception as e:
-                self.logger.debug(f"  Network interception failed: {e}")
+                self.logger.debug(f"  Network interception fallback failed: {e}")
             
-            self.logger.warning(f"  ⚠️ All PDF download strategies failed")
+            self.logger.warning(f"  ⚠️ PDF download failed (download event + network interception)")
             return None
             
         except Exception as e:

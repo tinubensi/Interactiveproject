@@ -1,18 +1,18 @@
 /**
- * Service Completion Event Publisher
- * DRY utility for publishing service completion events to Event Grid
+ * Publish Service Completion Event
+ * Used to notify pipeline service when an action is completed
  */
 
 import { eventGridService } from '../services/eventGridService';
 
-export interface CompletionParams {
+interface PublishServiceCompletionParams {
   instanceId: string;
   leadId: string;
   actionCompleted: string;
   serviceName: string;
   correlationId: string;
   status: 'success' | 'failure';
-  result?: Record<string, any>;
+  result?: any;
   error?: {
     code: string;
     message: string;
@@ -20,32 +20,24 @@ export interface CompletionParams {
   };
 }
 
-/**
- * Publish service completion event to Event Grid
- * Event format: service.{actionCompleted}.completed or service.{actionCompleted}.failed
- */
-export async function publishServiceCompletion(params: CompletionParams): Promise<void> {
-  const eventType = params.status === 'success' 
-    ? `service.${params.actionCompleted}.completed`
-    : `service.${params.actionCompleted}.failed`;
+export async function publishServiceCompletion(params: PublishServiceCompletionParams): Promise<void> {
+  const { instanceId, leadId, actionCompleted, serviceName, correlationId, status, result, error } = params;
 
-  await eventGridService.publishEvent(
-    eventType,
-    `/${params.serviceName}/${params.leadId}/completion`,
-    {
-      instanceId: params.instanceId,
-      leadId: params.leadId,
-      actionCompleted: params.actionCompleted,
-      status: params.status,
-      result: params.result || {},
-      error: params.error,
-      metadata: {
-        correlationId: params.correlationId,
-        timestamp: new Date().toISOString(),
-        serviceName: params.serviceName,
-      },
-    },
-    '2.0'
-  );
+  const eventType = status === 'success'
+    ? `service.${actionCompleted}.completed`
+    : `service.${actionCompleted}.failed`;
+
+  const subject = `pipeline/${instanceId}/${leadId}`;
+
+  await eventGridService.publishEvent(eventType, subject, {
+    instanceId,
+    leadId,
+    actionCompleted,
+    serviceName,
+    correlationId,
+    status,
+    result,
+    error,
+    timestamp: new Date().toISOString(),
+  });
 }
-
