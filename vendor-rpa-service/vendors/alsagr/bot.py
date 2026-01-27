@@ -3,6 +3,7 @@ Alsagr Insurance Portal Bot
 Specialized bot for Alsagr Insurance portal automation
 """
 import asyncio
+import re
 from typing import Optional, Dict, Any
 from playwright.async_api import Page
 from vendors.base.vendor_bot import InsuranceBot
@@ -156,7 +157,7 @@ class AlsagrBot(InsuranceBot):
             await self.page.get_by_role("textbox", name="Last Name").fill(primary.get('lastName', primary.get('last_name', 'User')))
             await asyncio.sleep(0.2)
             
-            # Date of Birth
+            # Date of Birth (date input type accepts YYYY-MM-DD format)
             await self.page.locator("#dateOfBirth").fill(primary.get('dateOfBirth', primary.get('dob', '2000-01-01')))
             await asyncio.sleep(0.3)
             
@@ -262,68 +263,214 @@ class AlsagrBot(InsuranceBot):
                             self.logger.error(f"All 'Yes' selectors failed. Last error: {e3}")
                             # Continue anyway
             
-            # NOW handle dependents (if any) - AFTER setting Single Member Policy
-            if has_dependents:
-                self.logger.info(f"Adding {len(dependents)} dependent(s)...")
+            # NOW handle primary member in Row 1 and dependents - AFTER setting Single Member Policy
+            # CRITICAL: Row 1 (#memberFirstName1, etc.) must be filled with PRIMARY member details
+            # Then dependents go in Row 2, 3, etc.
+            
+            # Fill Row 1 with PRIMARY member details
+            self.logger.info("Filling Row 1 with PRIMARY member details...")
+            try:
+                await self.page.locator("#memberFirstName1").fill(primary.get('firstName', primary.get('first_name', 'Guest')))
+                self.logger.debug(f"  ✓ Filled Row 1 First Name: {primary.get('firstName', primary.get('first_name', 'Guest'))}")
+                await asyncio.sleep(0.2)
+            except Exception as e:
+                self.logger.error(f"  ❌ Failed to fill Row 1 First Name: {e}")
+            
+            try:
+                await self.page.locator("#memberLastName1").fill(primary.get('lastName', primary.get('last_name', 'User')))
+                self.logger.debug(f"  ✓ Filled Row 1 Last Name: {primary.get('lastName', primary.get('last_name', 'User'))}")
+                await asyncio.sleep(0.2)
+            except Exception as e:
+                self.logger.error(f"  ❌ Failed to fill Row 1 Last Name: {e}")
+            
+            try:
+                await self.page.locator("#memberDateOfBirth1").fill(primary.get('dateOfBirth', primary.get('dob', '2000-01-01')))
+                self.logger.debug(f"  ✓ Filled Row 1 Date of Birth: {primary.get('dateOfBirth', primary.get('dob', '2000-01-01'))}")
+                await asyncio.sleep(0.3)
+            except Exception as e:
+                self.logger.error(f"  ❌ Failed to fill Row 1 Date of Birth: {e}")
+            
+            try:
+                await self.page.locator("#memberGender1").select_option(primary.get('gender', '190'))
+                self.logger.debug(f"  ✓ Selected Row 1 Gender: {primary.get('gender', '190')}")
+                await asyncio.sleep(0.3)
+            except Exception as e:
+                self.logger.error(f"  ❌ Failed to select Row 1 Gender: {e}")
+            
+            try:
+                marital_status_value = primary.get('maritalStatus', '21')
+                await self.page.locator("#memberMaritalStatus1").select_option(marital_status_value)
+                self.logger.debug(f"  ✓ Selected Row 1 Marital Status: {marital_status_value}")
+                await asyncio.sleep(0.3)
+            except Exception as e:
+                self.logger.error(f"  ❌ Failed to select Row 1 Marital Status: {e}")
+            
+            # CRITICAL: Set relation to "Principal" for Row 1 (primary member)
+            # Principal is between Spouse (48) and Parent (50) in the dropdown
+            # So Principal is likely code 47 or 46
+            try:
+                # First, try to find Principal by searching through all options
+                # This is the most reliable method
+                relation_set = False
+                try:
+                    # Get all options from the dropdown
+                    options = await self.page.locator("#relation1 option").all()
+                    self.logger.debug(f"  Found {len(options)} relation options")
+                    
+                    for opt in options:
+                        text = await opt.inner_text()
+                        value = await opt.get_attribute('value')
+                        text_lower = text.lower().strip()
+                        
+                        # Look for Principal (case-insensitive)
+                        if 'principal' in text_lower and value and value != '48':  # Not Spouse
+                            await self.page.locator("#relation1").select_option(value)
+                            self.logger.info(f"  ✅ Selected Row 1 Relation: {text} (value: {value})")
+                            relation_set = True
+                            break
+                    
+                    if not relation_set:
+                        self.logger.warning("  ⚠️ 'Principal' not found in options, trying codes...")
+                except Exception as e:
+                    self.logger.debug(f"  Could not search options: {e}")
                 
-                # Wait a bit for dependent fields to appear (if they were hidden)
+                # Fallback: Try common Principal codes (between Spouse=48 and Parent=50)
+                if not relation_set:
+                    # Principal is likely 47 (between 48 and 50) or 46
+                    principal_codes = ['47', '46']
+                    for code in principal_codes:
+                        try:
+                            await self.page.locator("#relation1").select_option(code, timeout=3000)
+                            selected_value = await self.page.locator("#relation1").input_value()
+                            # Verify it's not Spouse (48) or Parent (50)
+                            if selected_value not in ['48', '50']:
+                                self.logger.info(f"  ✅ Selected Row 1 Relation: code {code} (value: {selected_value})")
+                                relation_set = True
+                                break
+                        except:
+                            continue
+                
+                if not relation_set:
+                    self.logger.error("  ❌ FAILED to set Row 1 Relation to Principal - validation may fail!")
+                else:
+                    await asyncio.sleep(0.3)
+            except Exception as e:
+                self.logger.error(f"  ❌ Failed to select Row 1 Relation: {e}")
+            
+            self.logger.info("  ✅ Row 1 filled with PRIMARY member details (including Relation=Principal)")
+            await asyncio.sleep(0.5)
+            
+            # NOW handle dependents (if any) - AFTER filling Row 1 with primary
+            if has_dependents:
+                self.logger.info(f"Adding {len(dependents)} dependent(s) in Row 2, 3, etc....")
+                
+                # Wait a bit for fields to be ready
                 await asyncio.sleep(1)
                 
+                # Dependents go in Row 2, 3, etc. (Row 1 is already filled with primary)
                 for idx, dependent in enumerate(dependents, start=1):
                     dep_name = f"{dependent.get('firstName', 'Unknown')} {dependent.get('lastName', '')}"
                     self.logger.info(f"Filling dependent #{idx}: {dep_name.strip()}")
                     
-                    # Fill dependent fields using indexed pattern
+                    # CRITICAL: Click "Add New Member" FIRST to create a NEW row for this dependent
+                    # Row 1 is for primary member - we need row 2, 3, etc. for dependents
+                    # So dependent row index = idx + 1 (idx=1 → row 2, idx=2 → row 3, etc.)
+                    dependent_row_idx = idx + 1
+                    
+                    self.logger.info(f"  🔘 Clicking 'Add New Member' button to create row #{dependent_row_idx} for dependent...")
+                    clicked = await self._click_add_new_member_button()
+                    
+                    if not clicked:
+                        self.logger.error(f"  ❌ FAILED to click 'Add New Member' for dependent #{idx}!")
+                        self.logger.error(f"  ❌ Cannot create new row for dependent!")
+                        continue
+                    
+                    self.logger.info(f"  ✅ Successfully clicked 'Add New Member' - waiting for row #{dependent_row_idx} to appear...")
+                    await asyncio.sleep(2)  # Wait for new row to appear
+                    
+                    # Verify the new row fields are visible (row 2, 3, etc. - NOT row 1!)
                     try:
-                        await self.page.locator(f"#memberFirstName{idx}").fill(dependent.get('firstName', ''))
-                        self.logger.debug(f"  ✓ Filled First Name: {dependent.get('firstName', '')}")
+                        await self.page.locator(f"#memberFirstName{dependent_row_idx}").wait_for(state="visible", timeout=5000)
+                        self.logger.debug(f"  ✓ Dependent row #{dependent_row_idx} is now visible")
+                    except:
+                        self.logger.warning(f"  ⚠️ Dependent row #{dependent_row_idx} not visible after clicking 'Add New Member'")
+                    
+                    # Fill dependent fields in the NEW row (row 2, 3, etc.)
+                    try:
+                        await self.page.locator(f"#memberFirstName{dependent_row_idx}").fill(dependent.get('firstName', ''))
+                        self.logger.debug(f"  ✓ Filled First Name in row #{dependent_row_idx}: {dependent.get('firstName', '')}")
                         await asyncio.sleep(0.2)
                     except Exception as e:
                         self.logger.error(f"  ❌ Failed to fill First Name: {e}")
                     
                     try:
-                        await self.page.locator(f"#memberLastName{idx}").fill(dependent.get('lastName', ''))
-                        self.logger.debug(f"  ✓ Filled Last Name: {dependent.get('lastName', '')}")
+                        await self.page.locator(f"#memberLastName{dependent_row_idx}").fill(dependent.get('lastName', ''))
+                        self.logger.debug(f"  ✓ Filled Last Name in row #{dependent_row_idx}: {dependent.get('lastName', '')}")
                         await asyncio.sleep(0.2)
                     except Exception as e:
                         self.logger.error(f"  ❌ Failed to fill Last Name: {e}")
                     
                     try:
-                        await self.page.locator(f"#memberDateOfBirth{idx}").fill(dependent.get('dateOfBirth', ''))
-                        self.logger.debug(f"  ✓ Filled Date of Birth: {dependent.get('dateOfBirth', '')}")
+                        # Date of Birth (date input type accepts YYYY-MM-DD format)
+                        await self.page.locator(f"#memberDateOfBirth{dependent_row_idx}").fill(dependent.get('dateOfBirth', ''))
+                        self.logger.debug(f"  ✓ Filled Date of Birth in row #{dependent_row_idx}: {dependent.get('dateOfBirth', '')}")
                         await asyncio.sleep(0.3)
                     except Exception as e:
                         self.logger.error(f"  ❌ Failed to fill Date of Birth: {e}")
                     
                     try:
-                        await self.page.locator(f"#relation{idx}").select_option(dependent.get('relationshipCode', '49'))
-                        self.logger.debug(f"  ✓ Selected Relation: {dependent.get('relationshipCode', '49')}")
+                        await self.page.locator(f"#relation{dependent_row_idx}").select_option(dependent.get('relationshipCode', '49'))
+                        self.logger.debug(f"  ✓ Selected Relation in row #{dependent_row_idx}: {dependent.get('relationshipCode', '49')}")
                         await asyncio.sleep(0.3)
                     except Exception as e:
                         self.logger.error(f"  ❌ Failed to select Relation: {e}")
                     
                     try:
-                        await self.page.locator(f"#memberGender{idx}").select_option(dependent.get('genderCode', '190'))
-                        self.logger.debug(f"  ✓ Selected Gender: {dependent.get('genderCode', '190')}")
+                        await self.page.locator(f"#memberGender{dependent_row_idx}").select_option(dependent.get('genderCode', '190'))
+                        self.logger.debug(f"  ✓ Selected Gender in row #{dependent_row_idx}: {dependent.get('genderCode', '190')}")
                         await asyncio.sleep(0.3)
                     except Exception as e:
                         self.logger.error(f"  ❌ Failed to select Gender: {e}")
                     
                     try:
-                        await self.page.locator(f"#memberMaritalStatus{idx}").select_option(dependent.get('maritalStatusCode', '21'))
-                        self.logger.debug(f"  ✓ Selected Marital Status: {dependent.get('maritalStatusCode', '21')}")
+                        await self.page.locator(f"#memberMaritalStatus{dependent_row_idx}").select_option(dependent.get('maritalStatusCode', '21'))
+                        self.logger.debug(f"  ✓ Selected Marital Status in row #{dependent_row_idx}: {dependent.get('maritalStatusCode', '21')}")
                         await asyncio.sleep(0.3)
                     except Exception as e:
                         self.logger.error(f"  ❌ Failed to select Marital Status: {e}")
                     
-                    # If not the last dependent, click "Add New Member"
-                    if idx < len(dependents):
-                        self.logger.debug(f"Clicking 'Add New Member' for next dependent...")
-                        try:
-                            await self.page.get_by_title("Add New Member").click()
-                            await asyncio.sleep(1)
-                        except Exception as e:
-                            self.logger.error(f"Failed to click 'Add New Member': {e}")
+                    # After filling all fields, the dependent should be in the table
+                    self.logger.info(f"  ✓ Filled all fields for dependent #{idx} in row #{dependent_row_idx}")
+                    await asyncio.sleep(1)  # Wait for form to register the dependent
+            
+            # CRITICAL: Verify dependents are in the member table before submitting
+            if has_dependents:
+                self.logger.info("🔍 Verifying dependents in member table before submission...")
+                try:
+                    # Wait a moment for table to update
+                    await asyncio.sleep(1)
+                    
+                    # Check member table for dependent names
+                    table_text = await self.page.locator("table").inner_text() if await self.page.locator("table").count() > 0 else ""
+                    
+                    if table_text:
+                        dependent_found = False
+                        for dep in dependents:
+                            dep_first_name = dep.get('firstName', '').lower()
+                            dep_last_name = dep.get('lastName', '').lower()
+                            if dep_first_name and dep_first_name in table_text.lower():
+                                dependent_found = True
+                                self.logger.info(f"  ✅ Verified dependent '{dep_first_name} {dep_last_name}' in member table")
+                                break
+                        
+                        if not dependent_found:
+                            self.logger.warning("  ⚠️ Dependent not found in member table - may cause single member premium")
+                            # Log table content for debugging
+                            self.logger.debug(f"  Table content preview: {table_text[:200]}")
+                    else:
+                        self.logger.warning("  ⚠️ Member table not found - cannot verify dependents")
+                except Exception as e:
+                    self.logger.warning(f"  ⚠️ Could not verify dependents in table: {e}")
             
             # Click "Show Plans" button
             self.logger.info("🔘 Clicking Show Plans button...")
@@ -334,90 +481,74 @@ class AlsagrBot(InsuranceBot):
             await self.page.wait_for_load_state("networkidle", timeout=30000)
             await asyncio.sleep(3)
             
-            # CRITICAL: Check if we're still on form page or moved to plans page
-            current_url_after = self.page.url
-            self.logger.info(f"📍 URL after Show Plans: {current_url_after}")
-            
-            # Check for validation errors or alert messages
-            error_selectors = [
-                ".alert-danger",
-                ".text-danger", 
-                ".error-message",
-                ".validation-error",
-                "[class*='error']",
-                "[class*='alert']"
-            ]
-            
-            for selector in error_selectors:
-                error_elements = await self.page.locator(selector).all()
-                if len(error_elements) > 0:
-                    for elem in error_elements:
-                        try:
-                            error_text = await elem.inner_text(timeout=1000)
-                            if error_text.strip():
-                                self.logger.error(f"🚨 VALIDATION ERROR: {error_text.strip()}")
-                        except:
-                            pass
-            
-            # If still on form page, log all visible text to debug
-            if "indicativequote" in current_url_after:
-                self.logger.error("⚠️ STILL ON FORM PAGE - Form did not submit!")
-                try:
-                    page_text = await self.page.locator("body").inner_text()
-                    self.logger.error(f"📄 Full page text:\n{page_text[:1000]}")
-                except:
-                    pass
-            
-            # CRITICAL: Verify we're on the plans page and check what's visible
-            current_url = self.page.url
-            self.logger.info(f"After Show Plans - Current URL: {current_url}")
-            
-            # Check if planType dropdown exists (indicates we're on plans page)
-            plantype_exists = await self.page.locator("#planType").count() > 0
-            self.logger.info(f"Plan type dropdown exists: {plantype_exists}")
-            
-            # Check for any buttons/links that might be plan-related
-            all_clickables = await self.page.locator("button, a").count()
-            self.logger.info(f"Total clickable elements on page: {all_clickables}")
-            
-            # Check for table (plans are usually in a table)
-            table_exists = await self.page.locator("table").count() > 0
-            self.logger.info(f"Table exists on page: {table_exists}")
-            
-            # NEW: Check for error messages or alerts
-            try:
-                error_selectors = [
-                    ".alert-danger", ".alert-error", ".error", ".validation-error",
-                    "[class*='error']", "[role='alert']", ".invalid-feedback"
-                ]
-                for selector in error_selectors:
-                    error_count = await self.page.locator(selector).count()
-                    if error_count > 0:
-                        error_text = await self.page.locator(selector).first.inner_text()
-                        self.logger.warning(f"⚠️ ERROR MESSAGE FOUND ({selector}): {error_text[:200]}")
-            except Exception as e:
-                self.logger.debug(f"No error messages found: {e}")
-            
-            # NEW: Log all visible text on the page (first 2000 chars) to see what's shown
-            try:
-                page_text = await self.page.locator("body").inner_text()
-                self.logger.info(f"📄 Page visible text (first 500 chars):\n{page_text[:500]}")
-            except Exception as e:
-                self.logger.debug(f"Could not get page text: {e}")
-            
-            if not plantype_exists:
-                self.logger.warning("⚠️ WARNING: Plan type dropdown not found! May not be on plans page.")
-            
-            self.logger.info("Form filled successfully and plans should be loading...")
-            
-            if self.config.get('enable_screenshots'):
-                await save_screenshot(self.page, "alsagr_after_show_plans")
-            
-            if self.config.get('enable_screenshots'):
-                await save_screenshot(self.page, "alsagr_plans_loaded")
-        
         except Exception as e:
             self.logger.error(f"Failed to fill form: {e}")
             if self.config.get('enable_screenshots'):
                 await save_screenshot(self.page, "alsagr_form_error")
             raise
+    
+    async def _click_add_new_member_button(self) -> bool:
+        """
+        Helper method to click the "Add New Member" button using multiple selector strategies
+        Returns True if button was clicked successfully, False otherwise
+        """
+        try:
+            # Method 1: Try by title attribute
+            try:
+                add_button = self.page.get_by_title("Add New Member")
+                if await add_button.count() > 0:
+                    await add_button.click(timeout=5000)
+                    self.logger.debug("  ✓ Clicked 'Add New Member' (by title)")
+                    return True
+            except:
+                pass
+            
+            # Method 2: Try by locator with title
+            try:
+                add_button = self.page.locator('button[title="Add New Member"]')
+                if await add_button.count() > 0:
+                    await add_button.click(timeout=5000)
+                    self.logger.debug("  ✓ Clicked 'Add New Member' (by locator)")
+                    return True
+            except:
+                pass
+            
+            # Method 3: Try by text content
+            try:
+                add_button = self.page.get_by_text("Add New Member", exact=False)
+                if await add_button.count() > 0:
+                    await add_button.click(timeout=5000)
+                    self.logger.debug("  ✓ Clicked 'Add New Member' (by text)")
+                    return True
+            except:
+                pass
+            
+            # Method 4: Try by role button with text pattern
+            try:
+                add_button = self.page.get_by_role("button", name=re.compile("Add.*Member", re.IGNORECASE))
+                if await add_button.count() > 0:
+                    await add_button.click(timeout=5000)
+                    self.logger.debug("  ✓ Clicked 'Add New Member' (by role)")
+                    return True
+            except:
+                pass
+            
+            # Method 5: Try by icon/plus button (common pattern)
+            try:
+                # Look for button with plus icon or add icon
+                add_button = self.page.locator('button:has(svg), button[aria-label*="Add"], button[aria-label*="add"]')
+                buttons = await add_button.all()
+                for btn in buttons:
+                    text = await btn.inner_text()
+                    aria_label = await btn.get_attribute('aria-label') or ''
+                    if 'add' in text.lower() or 'add' in aria_label.lower() or 'member' in text.lower():
+                        await btn.click(timeout=5000)
+                        self.logger.debug("  ✓ Clicked 'Add New Member' (by icon/aria-label)")
+                        return True
+            except:
+                pass
+            
+            return False
+        except Exception as e:
+            self.logger.error(f"  ❌ Error in _click_add_new_member_button: {e}")
+            return False

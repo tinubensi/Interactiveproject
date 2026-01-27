@@ -36,6 +36,31 @@ async function handleLeadCreatedEvent(
       
       context.log(`Processing lead.created event for lead: ${leadId}`);
       
+      // 🔍 CRITICAL DEBUG: Log what we received in the event
+      context.log(`[CRITICAL DEBUG] Event data received:`);
+      context.log(`  - Has formData: ${!!eventData.formData}`);
+      context.log(`  - Has lobData: ${!!eventData.lobData}`);
+      context.log(`  - Has id: ${!!eventData.id}`);
+      context.log(`  - Has leadId: ${!!eventData.leadId}`);
+      context.log(`  - Has firstName: ${!!eventData.firstName}`);
+      context.log(`  - Has phone: ${!!eventData.phone}`);
+      if (eventData.formData) {
+        const sectionKeys = Object.keys(eventData.formData).filter((k: string) => k.startsWith('section-'));
+        context.log(`  - formData section-* keys: ${sectionKeys.join(', ')}`);
+        if (sectionKeys.length > 0) {
+          const firstSection = eventData.formData[sectionKeys[0]];
+          context.log(`  - ${sectionKeys[0]}: ${Array.isArray(firstSection) ? firstSection.length : 0} items`);
+          if (Array.isArray(firstSection) && firstSection.length > 0) {
+            context.log(`  - First dependent: ${firstSection[0].firstName || 'N/A'} ${firstSection[0].lastName || 'N/A'}`);
+          }
+        } else {
+          context.log(`  - ⚠️ WARNING: formData exists but has NO section-* keys!`);
+          context.log(`  - formData keys: ${Object.keys(eventData.formData).join(', ')}`);
+        }
+      } else {
+        context.log(`  - ⚠️ WARNING: formData is MISSING from event!`);
+      }
+      
       if (!leadId || !lineOfBusiness) {
         context.warn('Missing leadId or lineOfBusiness in event data, skipping');
         continue;
@@ -74,13 +99,39 @@ async function handleLeadCreatedEvent(
       
       context.log(`Found ${rpaVendors.length} RPA-enabled vendors`);
       
+      // 🔍 DEBUG: Log what's in eventData to verify formData is present
+      context.log(`[DEBUG] Event data structure check:`);
+      context.log(`  - Has formData: ${!!eventData.formData}`);
+      context.log(`  - Has lobData: ${!!eventData.lobData}`);
+      context.log(`  - Has firstName: ${!!eventData.firstName}`);
+      context.log(`  - Has phone: ${!!eventData.phone}`);
+      if (eventData.formData) {
+        const sectionKeys = Object.keys(eventData.formData).filter(k => k.startsWith('section-'));
+        context.log(`  - formData section-* keys: ${sectionKeys.join(', ')}`);
+        if (sectionKeys.length > 0) {
+          const firstSection = eventData.formData[sectionKeys[0]];
+          context.log(`  - ${sectionKeys[0]}: ${Array.isArray(firstSection) ? firstSection.length : 0} items`);
+        }
+      }
+      
       // Create fetch request - Pass ALL event data to RPA, not just lobData
+      // Ensure we include ALL fields including formData with dependents
+      const leadDataForRpa = {
+        ...eventData,
+        id: leadId, // Ensure id is set
+        leadId: leadId, // Also set leadId for compatibility
+        // Explicitly ensure formData is included
+        formData: eventData.formData || {},
+        // Explicitly ensure lobData is included
+        lobData: eventData.lobData || {}
+      };
+      
       const fetchRequest: any = {
         id: uuidv4(),
         leadId: leadId,
         lineOfBusiness: lineOfBusiness,
         businessType: eventData.businessType || 'individual',
-        leadData: eventData, // 🔧 PASS FULL EVENT DATA (includes firstName, lastName, email, phone, lobData, formData, etc.)
+        leadData: leadDataForRpa, // 🔧 PASS FULL EVENT DATA with explicit formData and lobData
         requestedAt: new Date(),
         status: 'processing',
         totalVendors: rpaVendors.length,
@@ -152,19 +203,33 @@ async function handleLeadCreatedEvent(
       
       // Trigger RPA via VM
       // Build complete lead data for RPA (VM requires id field + all lead details)
+      // CRITICAL: Use leadDataForRpa which already has formData explicitly included
+      // Don't rebuild manually - that might lose formData if eventData.formData is undefined
       const completeLeadData = {
-        id: leadId,
-        leadId: leadId,
-        firstName: eventData.firstName,
-        lastName: eventData.lastName,
-        email: eventData.email,
-        phone: eventData.phone,
-        emirate: eventData.emirate,
-        lineOfBusiness: lineOfBusiness,
-        businessType: eventData.businessType || 'individual',
-        lobData: lobData,              // ✅ Keep as nested object (don't flatten!)
-        formData: eventData.formData   // ✅ Pass formData with dependents (section-1, section-2, etc.)
+        ...leadDataForRpa,  // Start with leadDataForRpa which has formData
+        id: leadId,         // Ensure id is set
+        leadId: leadId,     // Also set leadId for compatibility
+        lineOfBusiness: lineOfBusiness,  // Ensure lineOfBusiness is set
+        // Explicitly ensure formData is included (even if undefined in eventData)
+        formData: leadDataForRpa.formData || eventData.formData || {},
+        // Explicitly ensure lobData is included
+        lobData: leadDataForRpa.lobData || lobData || {}
       };
+      
+      // 🔍 CRITICAL DEBUG: Verify formData is in completeLeadData before sending to VM
+      context.log(`[CRITICAL DEBUG] completeLeadData structure before sending to VM:`);
+      context.log(`  - Has formData: ${!!completeLeadData.formData}`);
+      context.log(`  - Has lobData: ${!!completeLeadData.lobData}`);
+      if (completeLeadData.formData) {
+        const sectionKeys = Object.keys(completeLeadData.formData).filter((k: string) => k.startsWith('section-'));
+        context.log(`  - formData section-* keys: ${sectionKeys.join(', ')}`);
+        if (sectionKeys.length > 0) {
+          const firstSection = completeLeadData.formData[sectionKeys[0]];
+          context.log(`  - ${sectionKeys[0]}: ${Array.isArray(firstSection) ? firstSection.length : 0} items`);
+        }
+      } else {
+        context.log(`  - ⚠️ CRITICAL: formData is MISSING from completeLeadData!`);
+      }
       
       const vendorIds = rpaVendors.map((v: any) => v.id);
       const vmResults = await rpaVmService.fetchPlansFromAllVendors(

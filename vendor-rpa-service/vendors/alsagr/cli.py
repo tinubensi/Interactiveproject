@@ -85,14 +85,23 @@ async def main():
         print(f"\n📋 Full Lead Data Structure:", file=sys.stderr)
         print(json.dumps(lead_data, indent=2), file=sys.stderr)
         
-        # ADD: Specifically check for dependents
+        # ADD: Comprehensive dependents check
         print(f"\n🔍 DEPENDENTS CHECK:", file=sys.stderr)
         lob_data = lead_data.get('lobData', {})
         form_data = lead_data.get('formData', {})
         print(f"  - Has lobData: {bool(lob_data)}", file=sys.stderr)
-        print(f"  - lobData.dependents: {lob_data.get('dependents', [])}", file=sys.stderr)
         print(f"  - Has formData: {bool(form_data)}", file=sys.stderr)
         print(f"  - Top-level dependents: {lead_data.get('dependents', [])}", file=sys.stderr)
+        print(f"  - Marital Status: {lead_data.get('maritalStatus', 'N/A')}", file=sys.stderr)
+        
+        # Check all possible locations for dependents
+        all_section_keys = [k for k in lead_data.keys() if k.startswith('section-')]
+        if form_data:
+            form_section_keys = [k for k in form_data.keys() if k.startswith('section-')]
+            all_section_keys.extend(form_section_keys)
+        
+        print(f"  - All section-* keys found: {list(set(all_section_keys))}", file=sys.stderr)
+        
         if form_data:
             section_keys = [k for k in form_data.keys() if k.startswith('section-')]
             print(f"  - formData section-* keys: {section_keys}", file=sys.stderr)
@@ -101,6 +110,18 @@ async def main():
                 print(f"    - {section_key}: {len(section_data)} items", file=sys.stderr)
                 if section_data:
                     print(f"      First item: {json.dumps(section_data[0], indent=6)}", file=sys.stderr)
+        
+        # Check top-level section keys
+        for key in lead_data.keys():
+            if key.startswith('section-'):
+                section_data = lead_data.get(key, [])
+                print(f"  - Top-level {key}: {len(section_data)} items", file=sys.stderr)
+                if section_data:
+                    print(f"    First item: {json.dumps(section_data[0], indent=6)}", file=sys.stderr)
+        
+        if lob_data:
+            print(f"  - lobData.dependents: {lob_data.get('dependents', [])}", file=sys.stderr)
+        
         print(f"{'='*60}\n", file=sys.stderr)
         
         if not lead_id:
@@ -126,9 +147,9 @@ async def main():
         vendor_config = vendor_registry.get_config(registry_vendor_id) or {}
         
         # Bot configuration
-        # Use headless=True for faster execution with download events
+        # Use headless=True for production (faster, PDF downloads work better)
         bot_config = {
-            'headless': True,  # Faster with download events
+            'headless': True,  # Production mode - faster execution
             'browser_type': 'chromium',
             'enable_screenshots': False,
             'default_timeout': 60000,
@@ -173,10 +194,17 @@ async def main():
             print(f"Extracted {len(raw_plans)} raw plans", file=sys.stderr)
             
             # Step 6.5: Enrich plans with PDF data
+            # CRITICAL: All plans MUST be enriched with PDF data to get:
+            # - Inpatient limit
+            # - Alternative Medicine
+            # - Claims Settlement Basis
+            # - Full inpatient/outpatient benefits
             print("Enriching plans with PDF data...", file=sys.stderr)
             from vendors.alsagr.pdf_parser import parse_plan_pdf
             enriched_plans = []
             pdf_paths_to_cleanup = []  # Track PDFs in case parsing fails
+            enriched_count = 0
+            missing_pdf_count = 0
             
             for plan in raw_plans:
                 if plan.get('pdf_path'):
@@ -184,10 +212,31 @@ async def main():
                     try:
                         # Parse PDF and enrich plan data (PDF will be deleted inside parse_plan_pdf)
                         enriched_plan = await parse_plan_pdf(plan['pdf_path'], plan)
+                        
+                        # Verify critical fields were extracted
+                        has_alt_med = bool(enriched_plan.get('lobSpecificData', {}).get('alternativeMedicine'))
+                        has_claims = bool(enriched_plan.get('lobSpecificData', {}).get('claimsSettlementBasis'))
+                        has_inpatient = bool(enriched_plan.get('inpatientLimit', 0) > 0 or 
+                                          any(b.get('categoryId') == 'inpatient' for b in enriched_plan.get('benefits', [])))
+                        
                         enriched_plans.append(enriched_plan)
-                        print(f"  ✓ Enriched plan with PDF data", file=sys.stderr)
+                        enriched_count += 1
+                        
+                        # Log what was extracted
+                        extracted_fields = []
+                        if has_alt_med:
+                            extracted_fields.append("Alternative Medicine")
+                        if has_claims:
+                            extracted_fields.append("Claims Settlement Basis")
+                        if has_inpatient:
+                            extracted_fields.append("Inpatient")
+                        
+                        if extracted_fields:
+                            print(f"  ✓ Enriched plan {enriched_plan.get('planCode', 'N/A')}: {', '.join(extracted_fields)}", file=sys.stderr)
+                        else:
+                            print(f"  ✓ Enriched plan {enriched_plan.get('planCode', 'N/A')} (basic data)", file=sys.stderr)
                     except Exception as e:
-                        print(f"  ⚠️ PDF parsing failed, using base plan: {e}", file=sys.stderr)
+                        print(f"  ⚠️ PDF parsing failed for plan {plan.get('planCode', 'N/A')}, using base plan: {e}", file=sys.stderr)
                         enriched_plans.append(plan)
                         # Cleanup failed PDF
                         try:
@@ -196,8 +245,11 @@ async def main():
                         except:
                             pass
                 else:
+                    missing_pdf_count += 1
+                    print(f"  ⚠️ Plan {plan.get('planCode', 'N/A')} missing PDF - will not have Alternative Medicine, Claims Settlement Basis, or Inpatient limit", file=sys.stderr)
                     enriched_plans.append(plan)
-            print(f"PDF enrichment complete: {len(enriched_plans)} plans", file=sys.stderr)
+            
+            print(f"PDF enrichment complete: {enriched_count} plans enriched, {missing_pdf_count} plans without PDF", file=sys.stderr)
             
             # Cleanup any remaining PDFs in download directory
             try:

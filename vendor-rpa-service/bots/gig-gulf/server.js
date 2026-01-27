@@ -77,13 +77,13 @@ app.post('/scrape', async (req, res) => {
           } else {
             const jsonStr = trimmedOutput.substring(jsonStart, jsonEnd);
             const plans = JSON.parse(jsonStr);
-            console.log(`[GIG-Gulf] Success: ${plans.length} plans in ${duration}s`);
-            res.json({ 
-              success: true, 
-              vendorId: 'vendor-gig-gulf', 
-              plans,
-              executionTime: `${duration}s`
-            });
+          console.log(`[GIG-Gulf] Success: ${plans.length} plans in ${duration}s`);
+          res.json({ 
+            success: true, 
+            vendorId: 'vendor-gig-gulf', 
+            plans,
+            executionTime: `${duration}s`
+          });
           }
         } catch (parseError) {
           console.error('[GIG-Gulf] Failed to parse output:', parseError);

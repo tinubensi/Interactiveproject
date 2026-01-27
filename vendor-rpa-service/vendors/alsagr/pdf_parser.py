@@ -93,11 +93,44 @@ async def parse_plan_pdf(pdf_path: str, base_plan_data: Dict[str, Any]) -> Dict[
         # Extract Structured Inpatient & Outpatient Coverage
         inpatient_benefits = []
         outpatient_benefits = []
+        inpatient_limit = None
         
         # Extract In-Patient Treatment section
         inpatient_match = re.search(r'In-Patient Treatment.*?\n(.*?)(?=Out-Patient|Exclusions)', full_text, re.DOTALL | re.IGNORECASE)
         if inpatient_match:
             content = inpatient_match.group(1)
+            
+            # Extract inpatient limit from the section
+            # Look for patterns like "AED 500,000/-" or "AED 500,000" or "Covered as per annual limit"
+            inpatient_limit_patterns = [
+                r'In-Patient.*?AED\s*([\d,]+(?:\.\d+)?)',
+                r'In-Patient.*?limit.*?AED\s*([\d,]+(?:\.\d+)?)',
+                r'AED\s*([\d,]+(?:\.\d+)?).*?In-Patient',
+                r'Covered.*?as\s+per.*?annual\s+limit',
+            ]
+            for pattern in inpatient_limit_patterns:
+                limit_match = re.search(pattern, content, re.IGNORECASE | re.DOTALL)
+                if limit_match:
+                    try:
+                        if 'annual limit' in limit_match.group(0).lower():
+                            # If it says "as per annual limit", use annualLimit if available
+                            if base_plan_data.get("annualLimit"):
+                                inpatient_limit = base_plan_data.get("annualLimit")
+                                break
+                        else:
+                            inpatient_limit = float(limit_match.group(1).replace(",", ""))
+                            break
+                    except:
+                        continue
+            
+            # If no specific limit found, check if it says "Covered" or "as per annual limit"
+            if not inpatient_limit:
+                if re.search(r'Covered.*?as\s+per.*?annual|as\s+per.*?annual.*?limit', content, re.IGNORECASE):
+                    inpatient_limit = base_plan_data.get("annualLimit", 0)
+                elif re.search(r'Covered\s+(?:in\s+full|fully)', content, re.IGNORECASE):
+                    # If it says "Covered in full", use annual limit
+                    inpatient_limit = base_plan_data.get("annualLimit", 0)
+            
             # Extract numbered items (1. , 2. , etc.)
             items = re.findall(r'(\d+\.\s+[A-Za-z][^\n]*(?:\n(?!\d+\.)[^\n]*)*)', content)
             for item in items[:20]:
@@ -150,7 +183,14 @@ async def parse_plan_pdf(pdf_path: str, base_plan_data: Dict[str, Any]) -> Dict[
                 "categoryName": "In-Patient Treatment",
                 "benefits": inpatient_benefits
             })
-        
+            
+        # Set inpatientLimit if extracted from PDF
+        if inpatient_limit is not None:
+            base_plan_data["inpatientLimit"] = inpatient_limit
+        elif inpatient_benefits and base_plan_data.get("annualLimit"):
+            # If we have inpatient benefits but no specific limit, use annual limit
+            base_plan_data["inpatientLimit"] = base_plan_data.get("annualLimit", 0)
+            
         if outpatient_benefits:
             base_plan_data["benefits"].append({
                 "categoryId": "outpatient",
