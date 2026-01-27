@@ -85,7 +85,7 @@ async def main():
         
         # Bot configuration
         bot_config = {
-            'headless': True,
+            'headless': False,
             'browser_type': 'chromium',
             'enable_screenshots': False,
             'default_timeout': 60000,
@@ -109,7 +109,7 @@ async def main():
             await asyncio.sleep(2)
             
             # Step 3: Fill form with vendor payload
-            await asyncio.wait_for(bot.fill_insurance_form(vendor_payload), timeout=120.0)
+            await asyncio.wait_for(bot.fill_insurance_form(vendor_payload), timeout=180.0)
             print("Form filled successfully", file=sys.stderr)
             
             # Step 4: Wait for plans to load

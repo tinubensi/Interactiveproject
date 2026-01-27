@@ -42,6 +42,22 @@ class Gig_gulfScraper:
         self.logger.info(f"Current URL: {current_url}")
         self.logger.info(f"Page title: {page_title}")
         
+        # Verify we're on the plans page, not the dependents/form page
+        if "AdditionalFamily" in current_url:
+            self.logger.warning("⚠️ Still on AdditionalFamily page! Plans may not be available.")
+            self.logger.warning("⚠️ Attempting to navigate to plans page...")
+            try:
+                # Try to find and click Next button
+                next_button = self.page.get_by_role("link", name="Next")
+                if await next_button.count() > 0:
+                    await next_button.click()
+                    await asyncio.sleep(5)
+                    await self.page.wait_for_load_state("networkidle")
+                    current_url = self.page.url
+                    self.logger.info(f"After clicking Next, URL: {current_url}")
+            except Exception as e:
+                self.logger.error(f"Could not navigate to plans page: {e}")
+        
         structured_plans = []
         
         try:
@@ -156,8 +172,28 @@ class Gig_gulfScraper:
                     if plan_data:
                         # Parse the plan data
                         parsed_plan = self.parser.parse_plan_data(plan_data, self.form_data)
-                        structured_plans.append(parsed_plan)
-                        self.logger.info(f"  ✓ Plan extracted: {parsed_plan.get('planName', 'Unknown')}")
+                        
+                        # Additional safety filter: Skip if it's a quotation reference or invalid plan
+                        if parsed_plan:
+                            plan_name = parsed_plan.get('planName', '')
+                            raw_text = parsed_plan.get('rawPlanData', {}).get('full_data', {}).get('raw_text', '')
+                            
+                            # Skip if it's marked as Unknown Plan and contains quotation reference
+                            if plan_name == 'Unknown Plan':
+                                if 'quotation ref' in raw_text.lower() or len(raw_text.strip()) < 100:
+                                    self.logger.info(f"  ⚠️ Skipping quotation reference (not a plan)")
+                                    continue
+                            
+                            # Skip if no plan name and insufficient content
+                            if not plan_name or plan_name == 'Unknown Plan':
+                                if len(raw_text.strip()) < 200:
+                                    self.logger.info(f"  ⚠️ Skipping invalid plan element (insufficient data)")
+                                    continue
+                            
+                            structured_plans.append(parsed_plan)
+                            self.logger.info(f"  ✓ Plan extracted: {parsed_plan.get('planName', 'Unknown')}")
+                        else:
+                            self.logger.warning(f"  ⚠️ Parser returned None for plan {index + 1}")
                     else:
                         self.logger.warning(f"  ⚠️ No data extracted for plan {index + 1}")
                 
@@ -179,11 +215,39 @@ class Gig_gulfScraper:
         Extract plan details from a single plan element
         
         Returns:
-            Dictionary with raw plan data
+            Dictionary with raw plan data, or None if element is not a valid plan
         """
         try:
             # Get text content
             text_content = await element.inner_text()
+            text_stripped = text_content.strip()
+            text_lower = text_stripped.lower()
+            
+            # Filter out quotation reference and other non-plan elements
+            # Skip quotation references
+            if text_lower.startswith("quotation ref") or "quotation ref #" in text_lower:
+                self.logger.debug(f"Skipping quotation reference element: {text_stripped[:50]}")
+                return None
+            
+            # Skip elements that are too short (likely headers, footers, or UI elements)
+            # Real plans should have substantial content (at least 200 characters)
+            if len(text_stripped) < 200:
+                self.logger.debug(f"Skipping element with insufficient content ({len(text_stripped)} chars): {text_stripped[:50]}")
+                return None
+            
+            # Skip elements that only contain navigation/UI text without plan details
+            ui_keywords = ['add to compare', 'buy now', 'next', 'previous', 'back', 'close']
+            if all(keyword in text_lower for keyword in ['add to compare', 'buy now']) and len(text_stripped) < 300:
+                # If it only has UI buttons and nothing else, skip it
+                if 'area of cover' not in text_lower and 'yearly maximum' not in text_lower:
+                    self.logger.debug(f"Skipping UI-only element: {text_stripped[:50]}")
+                    return None
+            
+            # Skip elements that don't contain any plan-related keywords
+            plan_keywords = ['area of cover', 'yearly maximum', 'premium', 'aed', 'coverage', 'plan', 'benefit']
+            if not any(keyword in text_lower for keyword in plan_keywords):
+                self.logger.debug(f"Skipping element without plan keywords: {text_stripped[:50]}")
+                return None
             
             # Try to extract structured data
             plan_data = {
@@ -374,6 +438,12 @@ class Gig_gulfScraper:
                     header_text = await cell.inner_text()
                     headers.append(header_text.strip())
                 
+                # Skip form tables (tables with form field names)
+                form_keywords = ['title', 'name', 'dob', 'gender', 'relation', 'marital status', 'nationality', 'remove']
+                if any(keyword in ' '.join(headers).lower() for keyword in form_keywords):
+                    self.logger.debug(f"  Skipping form table {table_index + 1} (contains form fields)")
+                    continue
+                
                 # Extract data rows
                 for row_index, row in enumerate(rows[1:], start=1):
                     cells = await row.locator("td").all()
@@ -381,16 +451,30 @@ class Gig_gulfScraper:
                         continue
                     
                     row_data = {}
+                    row_text = ""
                     for i, cell in enumerate(cells):
                         cell_text = await cell.inner_text()
                         header = headers[i] if i < len(headers) else f"column_{i}"
                         row_data[header] = cell_text.strip()
+                        row_text += cell_text.strip() + " "
+                    
+                    # Skip rows that are quotation references
+                    row_text_lower = row_text.lower()
+                    if 'quotation ref' in row_text_lower or row_text_lower.startswith('quotation ref'):
+                        self.logger.debug(f"  Skipping quotation reference row in table {table_index + 1}, row {row_index}")
+                        continue
+                    
+                    # Skip rows with insufficient content
+                    if len(row_text.strip()) < 100:
+                        self.logger.debug(f"  Skipping row with insufficient content in table {table_index + 1}, row {row_index}")
+                        continue
                     
                     if row_data:
                         # Parse the row data as a plan
                         plan = self.parser.parse_plan_data(row_data, self.form_data)
-                        plans.append(plan)
-                        self.logger.info(f"  ✓ Extracted plan from table {table_index + 1}, row {row_index}")
+                        if plan:
+                            plans.append(plan)
+                            self.logger.info(f"  ✓ Extracted plan from table {table_index + 1}, row {row_index}")
             
             return plans
         

@@ -849,12 +849,29 @@ class Gig_gulfBot(InsuranceBot):
             dependents_data = form_data.get('dependents', [])
             await self.fill_dependents_form(page1, dependents_data)
             
+            # Wait for navigation and check if we're on plans page
+            await page1.wait_for_load_state("domcontentloaded", timeout=60000)
+            await asyncio.sleep(3)
+            
+            # Check if we're on the plans page, if not click Next again
+            current_url = page1.url
+            self.logger.info(f"Current URL after dependents: {current_url}")
+            
+            # If still on AdditionalFamily page, click Next again to go to plans
+            if "AdditionalFamily" in current_url or "ProductPlan" not in current_url:
+                self.logger.info("Still on dependents page, clicking Next again to navigate to plans...")
+                try:
+                    await page1.get_by_role("link", name="Next").click()
+                    await asyncio.sleep(3)
+                    await page1.wait_for_load_state("domcontentloaded", timeout=60000)
+                except Exception as e:
+                    self.logger.warning(f"Could not click Next again: {e}")
+            
             # Wait for plans to load - give it more time for data to render
             self.logger.debug("Waiting for plans to load...")
-            await page1.wait_for_load_state("domcontentloaded", timeout=60000)
             await asyncio.sleep(5)  # Extra time for dynamic content to load
             
-            # Check if we're on the plans page
+            # Check final URL
             plans_url = page1.url
             self.logger.info(f"Plans page URL: {plans_url}")
             
