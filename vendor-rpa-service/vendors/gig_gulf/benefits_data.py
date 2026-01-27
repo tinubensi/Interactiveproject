@@ -636,12 +636,18 @@ def normalize_plan_name(plan_name: str) -> Optional[str]:
     Normalize plan name for matching against GIG benefits.
     
     Extracts the base plan name and normalizes it to lowercase without spaces.
+    Handles both static data format and portal format.
     
     Examples:
         "GIG - Gold" -> "gold"
         "GIG - Silver" -> "silver"
         "GIG-Global" -> "global"
         "GIG - Regional" -> "regional"
+        "Smart Health - Global-AUH" -> "global"
+        "Smart Health - Gold-AUH" -> "gold"
+        "Smart Health - Silver-AUH" -> "silver"
+        "Smart Health - Regional-AUH" -> "regional"
+        "Smart Health - Bronze-AUH" -> "bronze"
     
     Args:
         plan_name: The plan name string to normalize
@@ -655,6 +661,29 @@ def normalize_plan_name(plan_name: str) -> Optional[str]:
     # Convert to lowercase first for case-insensitive matching
     plan_name_lower = plan_name.lower()
     
+    # Handle portal format: "Smart Health - {PlanName}-AUH" or "Smart Health - {PlanName}"
+    if 'smart health' in plan_name_lower:
+        # Extract plan name after "Smart Health - "
+        if 'smart health - ' in plan_name_lower:
+            plan_name = plan_name_lower.split('smart health - ')[1]
+            # Remove "-AUH" or "-AUH" suffix if present
+            if plan_name.endswith('-auh'):
+                plan_name = plan_name[:-4]
+            plan_name = plan_name.strip()
+        else:
+            # Try "Smart Health {PlanName}"
+            if 'smart health' in plan_name_lower:
+                plan_name = plan_name_lower.replace('smart health', '').strip()
+                if plan_name.startswith('-'):
+                    plan_name = plan_name[1:].strip()
+                if plan_name.endswith('-auh'):
+                    plan_name = plan_name[:-4]
+    
+    # Handle "Privilege-AUH" -> try to match to "global" (highest tier)
+    elif 'privilege' in plan_name_lower:
+        # Privilege is typically the highest tier, map to global
+        return 'global'
+    
     # Remove common prefixes (case-insensitive)
     prefixes = ['gig - ', 'gig-', 'gig ']
     for prefix in prefixes:
@@ -662,8 +691,8 @@ def normalize_plan_name(plan_name: str) -> Optional[str]:
             plan_name = plan_name[len(prefix):]
             break
     
-    # Normalize: lowercase and remove spaces
-    normalized = plan_name.lower().replace(' ', '').strip()
+    # Normalize: lowercase and remove spaces, hyphens, and special chars
+    normalized = plan_name.lower().replace(' ', '').replace('-', '').strip()
     
     return normalized if normalized else None
 

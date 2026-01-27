@@ -322,6 +322,7 @@ class Gig_gulfAdapter(VendorAdapter):
         
         Similar to Sukoon's categorization approach, groups benefits into
         semantic categories (outpatient, inpatient, maternity, etc.)
+        Network information is extracted separately into a "network" category.
         
         Args:
             coverage_details: Coverage details dictionary (with GIG Gulf field names)
@@ -332,8 +333,18 @@ class Gig_gulfAdapter(VendorAdapter):
         # Initialize categories dict
         categorized = {cat_id: [] for cat_id in BENEFIT_CATEGORY_KEYWORDS.keys()}
         
+        # Extract network information separately
+        inpatient_network = None
+        outpatient_network = None
+        
         # Process each coverage detail
         for vendor_key, value in coverage_details.items():
+            # Extract network information
+            if vendor_key == 'inpatientDirectBillingNetwork' and value:
+                inpatient_network = str(value).strip()
+            elif vendor_key == 'outpatientDirectBillingNetwork' and value:
+                outpatient_network = str(value).strip()
+            
             # Skip if value is empty or not a string
             if not value or not isinstance(value, str):
                 continue
@@ -341,6 +352,10 @@ class Gig_gulfAdapter(VendorAdapter):
             # Skip if value indicates no benefit
             value_str = str(value).strip()
             if value_str in ['No Benefit', 'No benefit', 'N/A', 'X', '✘', 'x', '']:
+                continue
+            
+            # Skip network fields - they'll be handled separately
+            if vendor_key in ['inpatientDirectBillingNetwork', 'outpatientDirectBillingNetwork']:
                 continue
             
             # Find which category this field belongs to
@@ -373,6 +388,30 @@ class Gig_gulfAdapter(VendorAdapter):
         
         # Build final structure - only include non-empty categories
         result = []
+        
+        # Add network category if network information exists
+        if inpatient_network or outpatient_network:
+            network_parts = []
+            if outpatient_network:
+                network_parts.append(f"OP@ {outpatient_network}")
+            if inpatient_network:
+                network_parts.append(f"IP@ {inpatient_network}")
+            
+            network_description = " / ".join(network_parts) if network_parts else "Network information not available"
+            
+            result.append({
+                'categoryId': 'network',
+                'categoryName': 'Network',
+                'benefits': [{
+                    'name': 'Network',
+                    'description': network_description,
+                    'covered': True,
+                    'limit': network_description,
+                    'benefitId': '1'
+                }]
+            })
+        
+        # Add other categories
         for cat_id, benefits_list in categorized.items():
             if len(benefits_list) > 0:
                 result.append({
@@ -417,6 +456,10 @@ class Gig_gulfAdapter(VendorAdapter):
                 # Create a copy to avoid modifying the original
                 normalized_plan = plan.copy()
                 
+                # Preserve enriched details field (contains static benefits from enricher)
+                # This field is added by benefits_enricher and should be preserved
+                enriched_details = normalized_plan.get('details', {})
+                
                 # Get raw coverage details (with vendor-specific field names)
                 raw_plan_data = normalized_plan.get('rawPlanData', {})
                 original_coverage_details = raw_plan_data.get('coverage_details', {})
@@ -429,6 +472,10 @@ class Gig_gulfAdapter(VendorAdapter):
                 
                 # Update the plan with normalized data
                 normalized_plan['benefits'] = categorized_benefits
+                
+                # Preserve enriched details if they exist (static benefits from enricher)
+                if enriched_details:
+                    normalized_plan['details'] = enriched_details
                 
                 # Update rawPlanData with normalized coverage_details
                 # Keep original in a separate key for reference
