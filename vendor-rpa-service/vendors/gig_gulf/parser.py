@@ -333,8 +333,19 @@ class Gig_gulfParser:
     
     def _parse_raw_text(self, raw_text: str, plan_data: Dict[str, Any]):
         """
-        Parse raw text content to extract additional information
+        Parse raw text content to extract all plan details
         """
+        if not raw_text:
+            return
+        
+        raw_text_lower = raw_text.lower()
+        
+        # Initialize coverage details if not exists
+        if "coverage_details" not in plan_data["rawPlanData"]:
+            plan_data["rawPlanData"]["coverage_details"] = {}
+        
+        coverage_details = plan_data["rawPlanData"]["coverage_details"]
+        
         # Extract premium if not already set
         if plan_data["annualPremium"] == 0:
             premium_match = re.search(r'AED\s*([\d,]+\.?\d*)', raw_text)
@@ -345,6 +356,219 @@ class Gig_gulfParser:
                     plan_data["monthlyPremium"] = round(premium / 12, 2)
                 except:
                     pass
+        
+        # Extract Area Of Cover
+        area_match = re.search(r'Area Of Cover\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if area_match:
+            coverage_details["areaOfCover"] = area_match.group(1).strip()
+        
+        # Extract Yearly Maximum (Annual Limit)
+        yearly_max_match = re.search(r'Yearly Maximum\s*\n\s*AED\s*([\d,]+)', raw_text, re.IGNORECASE)
+        if yearly_max_match:
+            try:
+                limit = float(yearly_max_match.group(1).replace(",", ""))
+                plan_data["annualLimit"] = limit
+                coverage_details["yearlyMaximum"] = f"AED {limit:,.0f}"
+            except:
+                pass
+        
+        # Extract Outside Area of Cover
+        outside_area_match = re.search(r'Outside Area of Cover\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if outside_area_match:
+            coverage_details["outsideAreaOfCover"] = outside_area_match.group(1).strip()
+        
+        # Extract In-Patient direct billing Network
+        inpatient_network_match = re.search(r'In-Patient direct billing Network[^\n]*\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if inpatient_network_match:
+            coverage_details["inpatientDirectBillingNetwork"] = inpatient_network_match.group(1).strip()
+        
+        # Extract Complementary Therapy (with variations)
+        # Try "Complementary Therapy" first (actual format)
+        complementary_match = re.search(r'Complementary Therapy[^\n]*\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if not complementary_match:
+            # Fallback to "Complementary and Alternative Therapy"
+            complementary_match = re.search(r'Complementary and Alternative Therapy[^\n]*\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if complementary_match:
+            coverage_details["complementaryTherapy"] = complementary_match.group(1).strip()
+        
+        # Extract Homeopathy and Ayurvedic treatment
+        homeopathy_match = re.search(r'Homeopathy and Ayurvedic treatment[^\n]*\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if homeopathy_match:
+            coverage_details["homeopathyAyurvedicTreatment"] = homeopathy_match.group(1).strip()
+        
+        # Extract Per visit deductible/co-insurance
+        per_visit_match = re.search(r'Per visit (?:deductible|co-insurance)[^\n]*\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if per_visit_match:
+            per_visit_text = per_visit_match.group(1).strip()
+            coverage_details["perVisitDeductible"] = per_visit_text
+            
+            # Extract deductible amount if present
+            deductible_amount_match = re.search(r'AED\s*([\d,]+)', per_visit_text)
+            if deductible_amount_match:
+                try:
+                    deductible = float(deductible_amount_match.group(1).replace(",", ""))
+                    if plan_data["deductible"] == 0:
+                        plan_data["deductible"] = deductible
+                        plan_data["deductibleMetric"] = "AED"
+                except:
+                    pass
+        
+        # Extract Out-patient direct billing network
+        outpatient_network_match = re.search(r'Applicable Out-patient direct billing network\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if outpatient_network_match:
+            coverage_details["outpatientDirectBillingNetwork"] = outpatient_network_match.group(1).strip()
+        
+        # Extract Health Screen
+        health_screen_match = re.search(r'Health Screen\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if health_screen_match:
+            health_screen_text = health_screen_match.group(1).strip()
+            coverage_details["healthScreen"] = health_screen_text
+            
+            # Extract amount if present
+            health_screen_amount_match = re.search(r'AED\s*([\d,]+)', health_screen_text)
+            if health_screen_amount_match:
+                try:
+                    amount = float(health_screen_amount_match.group(1).replace(",", ""))
+                    coverage_details["healthScreenAmount"] = amount
+                except:
+                    pass
+        
+        # Extract Pre-existing conditions - Within UAE/Abu Dhabi
+        preexisting_within_match = re.search(r'Pre-existing conditions[^\n]*Within (?:UAE|Abu Dhabi)[^\n]*\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if preexisting_within_match:
+            coverage_details["preexistingConditionsWithinUAE"] = preexisting_within_match.group(1).strip()
+            
+            # Extract amount
+            amount_match = re.search(r'AED\s*([\d,]+)', preexisting_within_match.group(1))
+            if amount_match:
+                try:
+                    amount = float(amount_match.group(1).replace(",", ""))
+                    coverage_details["preexistingConditionsWithinUAEAmount"] = amount
+                except:
+                    pass
+        
+        # Extract Pre-existing conditions - Outside UAE/Abu Dhabi
+        preexisting_outside_match = re.search(r'Pre-existing conditions[^\n]*Outside (?:UAE|Abu Dhabi)[^\n]*\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if preexisting_outside_match:
+            coverage_details["preexistingConditionsOutsideUAE"] = preexisting_outside_match.group(1).strip()
+            
+            # Extract amount
+            amount_match = re.search(r'AED\s*([\d,]+)', preexisting_outside_match.group(1))
+            if amount_match:
+                try:
+                    amount = float(amount_match.group(1).replace(",", ""))
+                    coverage_details["preexistingConditionsOutsideUAEAmount"] = amount
+                except:
+                    pass
+        
+        # Extract Optical
+        optical_match = re.search(r'Optical\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if optical_match:
+            optical_text = optical_match.group(1).strip()
+            coverage_details["optical"] = optical_text
+            
+            # Extract amount if present
+            optical_amount_match = re.search(r'AED\s*([\d,]+)', optical_text)
+            if optical_amount_match:
+                try:
+                    amount = float(optical_amount_match.group(1).replace(",", ""))
+                    plan_data["opticalLimit"] = amount
+                except:
+                    pass
+            
+            # Extract co-insurance percentage
+            optical_coins_match = re.search(r'(\d+)%\s*co-insurance', optical_text, re.IGNORECASE)
+            if optical_coins_match:
+                try:
+                    coins = float(optical_coins_match.group(1))
+                    coverage_details["opticalCoInsurance"] = coins
+                except:
+                    pass
+        
+        # Extract Psychiatric Treatment
+        psychiatric_match = re.search(r'Psychiatric treatment[^\n]*\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if psychiatric_match:
+            psychiatric_text = psychiatric_match.group(1).strip()
+            coverage_details["psychiatricTreatment"] = psychiatric_text
+            
+            # Extract amount if present
+            psychiatric_amount_match = re.search(r'AED\s*([\d,]+)', psychiatric_text)
+            if psychiatric_amount_match:
+                try:
+                    amount = float(psychiatric_amount_match.group(1).replace(",", ""))
+                    coverage_details["psychiatricTreatmentAmount"] = amount
+                except:
+                    pass
+        
+        # Extract Maternity out-patient
+        maternity_outpatient_match = re.search(r'Maternity out-patient\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if maternity_outpatient_match:
+            coverage_details["maternityOutpatient"] = maternity_outpatient_match.group(1).strip()
+        
+        # Extract Normal Pregnancy, Childbirth (Delivery) and medically necessary Caesarean section
+        pregnancy_match = re.search(r'Normal Pregnancy, Childbirth \(Delivery\) and medically necessary Caesarean section[^\n]*\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if pregnancy_match:
+            pregnancy_text = pregnancy_match.group(1).strip()
+            coverage_details["normalPregnancyChildbirth"] = pregnancy_text
+            
+            # Extract amount if present
+            pregnancy_amount_match = re.search(r'AED\s*([\d,]+)', pregnancy_text)
+            if pregnancy_amount_match:
+                try:
+                    amount = float(pregnancy_amount_match.group(1).replace(",", ""))
+                    plan_data["maternityLimit"] = amount
+                except:
+                    pass
+        
+        # Extract Routine dental care
+        dental_match = re.search(r'Routine dental care\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if dental_match:
+            dental_text = dental_match.group(1).strip()
+            coverage_details["routineDentalCare"] = dental_text
+            
+            # Extract amount if present
+            dental_amount_match = re.search(r'AED\s*([\d,]+)', dental_text)
+            if dental_amount_match:
+                try:
+                    amount = float(dental_amount_match.group(1).replace(",", ""))
+                    plan_data["dentalLimit"] = amount
+                except:
+                    pass
+        
+        # Extract Ancillary equipment
+        ancillary_match = re.search(r'Ancillary equipment\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if ancillary_match:
+            ancillary_text = ancillary_match.group(1).strip()
+            coverage_details["ancillaryEquipment"] = ancillary_text
+            
+            # Extract amount if present
+            ancillary_amount_match = re.search(r'AED\s*([\d,]+)', ancillary_text)
+            if ancillary_amount_match:
+                try:
+                    amount = float(ancillary_amount_match.group(1).replace(",", ""))
+                    coverage_details["ancillaryEquipmentAmount"] = amount
+                except:
+                    pass
+        
+        # Extract Personal accident
+        personal_accident_match = re.search(r'Personal accident\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if personal_accident_match:
+            personal_accident_text = personal_accident_match.group(1).strip()
+            coverage_details["personalAccident"] = personal_accident_text
+            
+            # Extract amount if present
+            personal_accident_amount_match = re.search(r'AED\s*([\d,]+)', personal_accident_text)
+            if personal_accident_amount_match:
+                try:
+                    amount = float(personal_accident_amount_match.group(1).replace(",", ""))
+                    coverage_details["personalAccidentAmount"] = amount
+                except:
+                    pass
+        
+        # Extract Tele-consultation
+        teleconsultation_match = re.search(r'Tele-consultation\s*\n\s*([^\n]+)', raw_text, re.IGNORECASE)
+        if teleconsultation_match:
+            coverage_details["teleConsultation"] = teleconsultation_match.group(1).strip()
         
         # Extract waiting period
         waiting_match = re.search(r'(\d+)\s*(?:days?|months?)\s+waiting', raw_text, re.IGNORECASE)
@@ -357,3 +581,238 @@ class Gig_gulfParser:
                 plan_data["waitingPeriods"]["general"] = value
             except:
                 pass
+        
+        # Extract co-insurance percentage from various fields
+        coinsurance_match = re.search(r'(\d+)%\s*co-insurance', raw_text, re.IGNORECASE)
+        if coinsurance_match and plan_data["coInsurance"] == 0:
+            try:
+                plan_data["coInsurance"] = float(coinsurance_match.group(1))
+            except:
+                pass
+        
+        # Line-by-line parsing as fallback to catch any missed fields
+        lines = raw_text.split('\n')
+        lines = [line.strip() for line in lines if line.strip()]
+        
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            line_lower = line.lower()
+            
+            # Complementary Therapy (if not already extracted)
+            if "complementary therapy" in line_lower and "complementaryTherapy" not in coverage_details:
+                if i + 1 < len(lines):
+                    coverage_details["complementaryTherapy"] = lines[i + 1]
+                    # Also extract amount if present
+                    amount_match = re.search(r'AED\s*([\d,]+)', lines[i + 1])
+                    if amount_match:
+                        try:
+                            coverage_details["complementaryTherapyAmount"] = float(amount_match.group(1).replace(',', ''))
+                        except:
+                            pass
+                    i += 2
+                    continue
+            
+            # Check for any other fields that might have been missed
+            # Area Of Cover
+            if line_lower == "area of cover" and "areaOfCover" not in coverage_details and i + 1 < len(lines):
+                coverage_details["areaOfCover"] = lines[i + 1]
+                i += 2
+                continue
+            
+            # Yearly Maximum
+            if line_lower == "yearly maximum" and "yearlyMaximum" not in coverage_details and i + 1 < len(lines):
+                next_line = lines[i + 1]
+                coverage_details["yearlyMaximum"] = next_line
+                amount_match = re.search(r'([\d,]+)', next_line.replace(',', ''))
+                if amount_match:
+                    try:
+                        limit = float(amount_match.group(1))
+                        if plan_data.get("annualLimit", 0) == 0:
+                            plan_data["annualLimit"] = limit
+                    except:
+                        pass
+                i += 2
+                continue
+            
+            # Outside Area of Cover
+            if line_lower == "outside area of cover" and "outsideAreaOfCover" not in coverage_details and i + 1 < len(lines):
+                coverage_details["outsideAreaOfCover"] = lines[i + 1]
+                i += 2
+                continue
+            
+            # In-Patient direct billing Network
+            if "in-patient direct billing" in line_lower and "inpatientDirectBillingNetwork" not in coverage_details and i + 1 < len(lines):
+                coverage_details["inpatientDirectBillingNetwork"] = lines[i + 1]
+                i += 2
+                continue
+            
+            # Out-patient direct billing network
+            if "out-patient direct billing" in line_lower and "outpatientDirectBillingNetwork" not in coverage_details and i + 1 < len(lines):
+                coverage_details["outpatientDirectBillingNetwork"] = lines[i + 1]
+                i += 2
+                continue
+            
+            # Health Screen
+            if line_lower == "health screen" and "healthScreen" not in coverage_details and i + 1 < len(lines):
+                coverage_details["healthScreen"] = lines[i + 1]
+                amount_match = re.search(r'AED\s*([\d,]+)', lines[i + 1])
+                if amount_match:
+                    try:
+                        coverage_details["healthScreenAmount"] = float(amount_match.group(1).replace(',', ''))
+                    except:
+                        pass
+                i += 2
+                continue
+            
+            # Pre-existing conditions - Within
+            if "pre-existing conditions" in line_lower and "within" in line_lower and "preexistingConditionsWithinUAE" not in coverage_details and i + 1 < len(lines):
+                coverage_details["preexistingConditionsWithinUAE"] = lines[i + 1]
+                amount_match = re.search(r'AED\s*([\d,]+)', lines[i + 1])
+                if amount_match:
+                    try:
+                        coverage_details["preexistingConditionsWithinUAEAmount"] = float(amount_match.group(1).replace(',', ''))
+                    except:
+                        pass
+                i += 2
+                continue
+            
+            # Pre-existing conditions - Outside
+            if "pre-existing conditions" in line_lower and "outside" in line_lower and "preexistingConditionsOutsideUAE" not in coverage_details and i + 1 < len(lines):
+                coverage_details["preexistingConditionsOutsideUAE"] = lines[i + 1]
+                amount_match = re.search(r'AED\s*([\d,]+)', lines[i + 1])
+                if amount_match:
+                    try:
+                        coverage_details["preexistingConditionsOutsideUAEAmount"] = float(amount_match.group(1).replace(',', ''))
+                    except:
+                        pass
+                i += 2
+                continue
+            
+            # Optical
+            if line_lower == "optical" and "optical" not in coverage_details and i + 1 < len(lines):
+                coverage_details["optical"] = lines[i + 1]
+                amount_match = re.search(r'AED\s*([\d,]+)', lines[i + 1])
+                if amount_match:
+                    try:
+                        if plan_data.get("opticalLimit", 0) == 0:
+                            plan_data["opticalLimit"] = float(amount_match.group(1).replace(',', ''))
+                    except:
+                        pass
+                i += 2
+                continue
+            
+            # Psychiatric Treatment
+            if "psychiatric treatment" in line_lower and "psychiatricTreatment" not in coverage_details and i + 1 < len(lines):
+                coverage_details["psychiatricTreatment"] = lines[i + 1]
+                amount_match = re.search(r'AED\s*([\d,]+)', lines[i + 1])
+                if amount_match:
+                    try:
+                        coverage_details["psychiatricTreatmentAmount"] = float(amount_match.group(1).replace(',', ''))
+                    except:
+                        pass
+                i += 2
+                continue
+            
+            # Maternity out-patient
+            if line_lower == "maternity out-patient" and "maternityOutpatient" not in coverage_details and i + 1 < len(lines):
+                coverage_details["maternityOutpatient"] = lines[i + 1]
+                i += 2
+                continue
+            
+            # Normal Pregnancy, Childbirth
+            if "normal pregnancy" in line_lower and "childbirth" in line_lower and "normalPregnancyChildbirth" not in coverage_details and i + 1 < len(lines):
+                coverage_details["normalPregnancyChildbirth"] = lines[i + 1]
+                amount_match = re.search(r'AED\s*([\d,]+)', lines[i + 1])
+                if amount_match:
+                    try:
+                        if plan_data.get("maternityLimit", 0) == 0:
+                            plan_data["maternityLimit"] = float(amount_match.group(1).replace(',', ''))
+                    except:
+                        pass
+                i += 2
+                continue
+            
+            # Routine dental care
+            if line_lower == "routine dental care" and "routineDentalCare" not in coverage_details and i + 1 < len(lines):
+                coverage_details["routineDentalCare"] = lines[i + 1]
+                amount_match = re.search(r'AED\s*([\d,]+)', lines[i + 1])
+                if amount_match:
+                    try:
+                        if plan_data.get("dentalLimit", 0) == 0:
+                            plan_data["dentalLimit"] = float(amount_match.group(1).replace(',', ''))
+                    except:
+                        pass
+                i += 2
+                continue
+            
+            # Ancillary equipment
+            if line_lower == "ancillary equipment" and "ancillaryEquipment" not in coverage_details and i + 1 < len(lines):
+                coverage_details["ancillaryEquipment"] = lines[i + 1]
+                amount_match = re.search(r'AED\s*([\d,]+)', lines[i + 1])
+                if amount_match:
+                    try:
+                        coverage_details["ancillaryEquipmentAmount"] = float(amount_match.group(1).replace(',', ''))
+                    except:
+                        pass
+                i += 2
+                continue
+            
+            # Personal accident
+            if line_lower == "personal accident" and "personalAccident" not in coverage_details and i + 1 < len(lines):
+                coverage_details["personalAccident"] = lines[i + 1]
+                amount_match = re.search(r'AED\s*([\d,]+)', lines[i + 1])
+                if amount_match:
+                    try:
+                        coverage_details["personalAccidentAmount"] = float(amount_match.group(1).replace(',', ''))
+                    except:
+                        pass
+                i += 2
+                continue
+            
+            # Tele-consultation
+            if line_lower == "tele-consultation" and "teleConsultation" not in coverage_details and i + 1 < len(lines):
+                coverage_details["teleConsultation"] = lines[i + 1]
+                i += 2
+                continue
+            
+            # Per visit deductible/co-insurance
+            if "per visit" in line_lower and ("deductible" in line_lower or "co-insurance" in line_lower) and "perVisitDeductible" not in coverage_details and i + 1 < len(lines):
+                coverage_details["perVisitDeductible"] = lines[i + 1]
+                amount_match = re.search(r'AED\s*([\d,]+)', lines[i + 1])
+                if amount_match:
+                    try:
+                        deductible = float(amount_match.group(1).replace(',', ''))
+                        if plan_data.get("deductible", 0) == 0:
+                            plan_data["deductible"] = deductible
+                            plan_data["deductibleMetric"] = "AED"
+                    except:
+                        pass
+                i += 2
+                continue
+            
+            # Homeopathy and Ayurvedic treatment
+            if ("homeopathy" in line_lower and "ayurvedic" in line_lower) and "homeopathyAyurvedicTreatment" not in coverage_details and i + 1 < len(lines):
+                coverage_details["homeopathyAyurvedicTreatment"] = lines[i + 1]
+                i += 2
+                continue
+            
+            i += 1
+        
+        # Build benefits array from coverage details
+        benefits_list = []
+        for key, value in coverage_details.items():
+            if value and value != "No Benefit" and value != "No benefit":
+                if isinstance(value, str):
+                    benefits_list.append({
+                        "name": key,
+                        "value": value,
+                        "covered": True
+                    })
+        
+        if benefits_list:
+            plan_data["benefits"] = [{
+                "categoryId": "coverage",
+                "categoryName": "Coverage Details",
+                "benefits": benefits_list
+            }]
