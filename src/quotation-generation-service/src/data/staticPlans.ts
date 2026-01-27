@@ -17,6 +17,8 @@ export const STATIC_VENDORS: Omit<Vendor, 'createdAt' | 'updatedAt'>[] = [
     logo: 'https://www.watania.com/logo.png',
     website: 'https://www.watania.com',
     rpaEnabled: true, // Re-enabled for VM testing
+    apiEnabled: false,
+    integrationPriority: 'rpa',
     hasStaticPlans: false,
     isActive: true,
     priority: 1
@@ -29,6 +31,8 @@ export const STATIC_VENDORS: Omit<Vendor, 'createdAt' | 'updatedAt'>[] = [
     logo: 'https://example.com/logos/takaful.png',
     website: 'https://www.takafulemarat.ae',
     rpaEnabled: true,
+    apiEnabled: true,
+    integrationPriority: 'api',
     hasStaticPlans: false,
     isActive: true,
     priority: 2
@@ -41,6 +45,8 @@ export const STATIC_VENDORS: Omit<Vendor, 'createdAt' | 'updatedAt'>[] = [
     logo: 'https://example.com/logos/alsagr.png',
     website: 'https://www.alsagr.ae',
     rpaEnabled: true,
+    apiEnabled: false,
+    integrationPriority: 'rpa',
     hasStaticPlans: false,
     isActive: true,
     priority: 4
@@ -53,6 +59,8 @@ export const STATIC_VENDORS: Omit<Vendor, 'createdAt' | 'updatedAt'>[] = [
     logo: 'https://individualonline.sukoon.com/logo.png',
     website: 'https://individualonline.sukoon.com',
     rpaEnabled: true,
+    apiEnabled: false,
+    integrationPriority: 'rpa',
     hasStaticPlans: false,
     isActive: true,
     priority: 3

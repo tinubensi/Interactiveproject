@@ -304,6 +304,17 @@ export interface Vendor {
   rpaApiKey?: string;
   rpaConfig?: any;
   
+  // API Integration (NEW)
+  apiEnabled: boolean;
+  apiEndpoint?: string;
+  apiKey?: string;
+  apiAuthType?: 'none' | 'apiKey' | 'bearer' | 'oauth' | 'basic';
+  apiHeaders?: Record<string, string>;
+  apiTimeout?: number;
+  
+  // Integration Priority
+  integrationPriority: 'rpa' | 'api' | 'both';
+  
   // Static Plans (for now)
   hasStaticPlans: boolean;
   

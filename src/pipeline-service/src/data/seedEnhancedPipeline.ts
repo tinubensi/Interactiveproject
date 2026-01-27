@@ -38,8 +38,8 @@ export function generateEnhancedMedicalPipeline(): PipelineDefinition {
           asyncAction: {
             targetService: 'quotation-gen',
             actionEvent: 'pipeline.action.fetch_plans',
-            requiredData: ['leadId', 'lineOfBusiness', 'businessType', 'lobData'],
-            completionEvent: 'service.fetch_plans.completed',
+            requiredData: ['leadId', 'lineOfBusiness'],
+            completionEvent: 'plans.fetch_completed',
             timeout: 300000, // 5 minutes
             retryPolicy: { maxRetries: 2, retryDelayMs: 60000 },
           },
@@ -49,7 +49,7 @@ export function generateEnhancedMedicalPipeline(): PipelineDefinition {
         estimatedDuration: 180000,
         requiresUserInput: false,
         canSkip: false,
-        exitConditions: ['service.fetch_plans.completed'],
+        exitConditions: ['plans.fetch_completed'],
       },
     } as EnhancedStageStep,
 

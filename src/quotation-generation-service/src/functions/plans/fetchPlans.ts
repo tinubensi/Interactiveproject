@@ -137,14 +137,17 @@ export async function fetchPlans(
       }
     }
 
-    // Separate RPA-enabled vendors from static-plan vendors
-    const rpaVendors = vendors.filter(v => v.rpaEnabled === true);
-    const staticVendors = vendors.filter(v => v.hasStaticPlans === true && v.rpaEnabled !== true);
+    // Separate vendors by integration type
+    const rpaVendors = vendors.filter(v => v.rpaEnabled === true && v.integrationPriority !== 'api');
+    const apiVendors = vendors.filter(v => 
+      v.apiEnabled === true && (v.integrationPriority === 'api' || v.integrationPriority === 'both')
+    );
+    const staticVendors = vendors.filter(v => 
+      v.hasStaticPlans === true && !v.rpaEnabled && !v.apiEnabled
+    );
     
-    context.log(`Vendors breakdown: ${rpaVendors.length} RPA-enabled, ${staticVendors.length} static plans`);
+    context.log(`Vendors breakdown: ${rpaVendors.length} RPA, ${apiVendors.length} API, ${staticVendors.length} static`);
     
-    // Trigger RPA via VM for RPA-enabled vendors
-    const vendorIds = rpaVendors.map(v => v.id);
     let totalPlans = 0;
     let successfulVendors = 0;
     let vendorTimings: Array<{
@@ -153,8 +156,115 @@ export async function fetchPlans(
       success: boolean;
       executionTime: string;
       plansCount: number;
+      method?: 'api' | 'rpa';
       error?: string;
     }> = [];
+
+    // Process API vendors first
+    if (apiVendors.length > 0) {
+      context.log(`Calling API for ${apiVendors.length} vendor(s)...`);
+      
+      const { vendorApiService } = await import('../../services/vendorApiService');
+      
+      const apiResults = await vendorApiService.fetchPlansFromMultipleVendors(
+        apiVendors,
+        body.leadData
+      );
+      
+      // Process API results and handle fallback
+      for (const apiResult of apiResults) {
+        if (apiResult.success && apiResult.plans.length > 0) {
+          // API succeeded - save plans
+          successfulVendors++;
+          totalPlans += apiResult.plans.length;
+          
+          // Save plans to Cosmos DB
+          for (const plan of apiResult.plans) {
+            await cosmosService.createPlan(plan);
+          }
+          
+          vendorTimings.push({
+            vendorId: apiResult.vendorId,
+            vendorName: apiResult.vendorId.replace('vendor-', ''),
+            success: true,
+            executionTime: apiResult.executionTime,
+            plansCount: apiResult.plans.length,
+            method: 'api'
+          });
+          
+          context.log(`✅ ${apiResult.vendorId} API: ${apiResult.plans.length} plans in ${apiResult.executionTime}`);
+        } else {
+          // API failed - try RPA fallback if available
+          const vendor = apiVendors.find(v => v.id === apiResult.vendorId);
+          const shouldFallback = vendor && vendor.rpaEnabled && vendor.integrationPriority === 'both';
+          
+          context.warn(`❌ ${apiResult.vendorId} API failed: ${apiResult.error}`);
+          
+          if (shouldFallback) {
+            context.log(`🔄 Attempting RPA fallback for ${apiResult.vendorId}...`);
+            
+            try {
+              const { rpaVmService } = await import('../../services/rpaVmService');
+              
+              if (rpaVmService.isEnabled()) {
+                const rpaResult = await rpaVmService.fetchPlansFromVendor(
+                  apiResult.vendorId,
+                  body.leadData
+                );
+                
+                if (rpaResult.success && rpaResult.plans.length > 0) {
+                  successfulVendors++;
+                  totalPlans += rpaResult.plans.length;
+                  
+                  vendorTimings.push({
+                    vendorId: rpaResult.vendorId,
+                    vendorName: rpaResult.vendorId.replace('vendor-', ''),
+                    success: true,
+                    executionTime: rpaResult.executionTime || 'N/A',
+                    plansCount: rpaResult.plans.length,
+                    method: 'rpa'
+                  });
+                  
+                  context.log(`✅ ${rpaResult.vendorId} RPA fallback: ${rpaResult.plans.length} plans`);
+                } else {
+                  vendorTimings.push({
+                    vendorId: apiResult.vendorId,
+                    vendorName: apiResult.vendorId.replace('vendor-', ''),
+                    success: false,
+                    executionTime: apiResult.executionTime,
+                    plansCount: 0,
+                    method: 'api',
+                    error: `API and RPA both failed: ${apiResult.error}`
+                  });
+                  
+                  context.error(`❌ ${apiResult.vendorId} RPA fallback also failed`);
+                }
+              } else {
+                context.warn(`RPA VM not configured, cannot fallback for ${apiResult.vendorId}`);
+              }
+            } catch (fallbackError: any) {
+              context.error(`Error during RPA fallback for ${apiResult.vendorId}:`, fallbackError);
+            }
+          } else {
+            // No fallback - record failure
+            vendorTimings.push({
+              vendorId: apiResult.vendorId,
+              vendorName: apiResult.vendorId.replace('vendor-', ''),
+              success: false,
+              executionTime: apiResult.executionTime,
+              plansCount: 0,
+              method: 'api',
+              error: apiResult.error
+            });
+          }
+        }
+      }
+      
+      context.log(`API execution complete: ${successfulVendors} vendor(s) successful, ${totalPlans} plans fetched`);
+    }
+    
+    // Trigger RPA via VM for RPA-only vendors
+    const vendorIds = rpaVendors.map(v => v.id);
     
     if (vendorIds.length === 0) {
       context.log('No RPA-enabled vendors found, skipping RPA');
@@ -192,15 +302,18 @@ export async function fetchPlans(
         }
       }
       
-      // Collect vendor timing data for timeline (FIX: use let vendorTimings, not const)
-      vendorTimings = vmResults.map(result => ({
+      // Collect vendor timing data for timeline
+      const rpaTimings = vmResults.map(result => ({
         vendorId: result.vendorId,
         vendorName: result.vendorId.replace('vendor-', ''),
         success: result.success,
         executionTime: result.executionTime || 'N/A',
         plansCount: result.plans.length,
+        method: 'rpa' as const,
         error: result.error  // For backend logging only
       }));
+      
+      vendorTimings.push(...rpaTimings);
       
       context.log(`VM execution complete: ${successfulVendors}/${vendorIds.length} vendors successful, ${totalPlans} plans fetched`);
       context.log(`[VENDOR TIMINGS] Collected ${vendorTimings.length} vendor timing entries:`, JSON.stringify(vendorTimings, null, 2));
