@@ -198,13 +198,19 @@ class Gig_gulfAdapter(VendorAdapter):
         email = standard_lead.get('email', 'test@gmail.com')
         
         # Salary range mapping
+        # Available options in GIG Gulf portal:
+        # - <=4000 AED/month
+        # - >4000 and <=12000 AED/month
+        # - >12000 AED/month
+        # - No Salary
+        # - No salary-Commission only
         salary_range_raw = lob_data.get('salaryRange', '')
         salary_range_mapping = {
             'Less than 5000': '<=4000 AED/month',
             '5000-10000': '>4000 and <=12000 AED/month',
-            '10000-20000': '>12000 and <=20000 AED/month',
-            '20000-50000': '>20000 AED/month',
-            'Above 50000': '>20000 AED/month'
+            '10000-20000': '>12000 AED/month',  # Fixed: portal only has ">12000 AED/month", not ">12000 and <=20000"
+            '20000-50000': '>12000 AED/month',  # Maps to same option
+            'Above 50000': '>12000 AED/month'  # Maps to same option
         }
         salary_range = salary_range_mapping.get(salary_range_raw, '>4000 and <=12000 AED/month')
         

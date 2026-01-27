@@ -191,47 +191,139 @@ class AlsagrBot(InsuranceBot):
             if self.config.get('enable_screenshots'):
                 await save_screenshot(self.page, "alsagr_form_filled")
             
-            # Handle dependents (multi-member support)
-            if len(dependents) > 0:
+            # Handle "Single Member Policy" field BEFORE filling dependents
+            # This is critical - the form won't submit if this isn't set correctly
+            # Based on the page text, it shows "Single Member Policy? Yes No" as buttons
+            has_dependents = len(dependents) > 0
+            self.logger.debug(f"Single Member Policy? Has dependents: {has_dependents}")
+            
+            # Set "Single Member Policy" - try buttons first (most common), then radio buttons
+            if has_dependents:
+                # Has dependents - select "No" to reveal dependent fields
+                try:
+                    self.logger.info("Selecting 'No' for Single Member Policy (has dependents)...")
+                    # Try button first (most common in this portal)
+                    await self.page.get_by_role("button", name="No").click(timeout=10000)
+                    self.logger.debug("✓ Clicked 'No' button")
+                    await asyncio.sleep(1)  # Wait for dependent fields to appear
+                    
+                    # Wait for dependent fields to be visible
+                    try:
+                        await self.page.locator("#memberFirstName1").wait_for(state="visible", timeout=5000)
+                        self.logger.debug("✓ Dependent fields are visible")
+                    except:
+                        self.logger.warning("⚠️ Dependent fields not visible after clicking 'No'")
+                        
+                except Exception as e:
+                    self.logger.warning(f"Could not click 'No' button: {e}, trying radio...")
+                    try:
+                        # Try radio button
+                        await self.page.get_by_role("radio", name="No").click(timeout=10000)
+                        self.logger.debug("✓ Clicked 'No' radio")
+                        await asyncio.sleep(1)
+                        try:
+                            await self.page.locator("#memberFirstName1").wait_for(state="visible", timeout=5000)
+                            self.logger.debug("✓ Dependent fields are visible")
+                        except:
+                            self.logger.warning("⚠️ Dependent fields not visible")
+                    except Exception as e2:
+                        self.logger.warning(f"Could not click 'No' radio: {e2}, trying input selector...")
+                        try:
+                            # Try input selector
+                            await self.page.locator('input[type="radio"][value="No"]').click(timeout=10000)
+                            self.logger.debug("✓ Clicked 'No' input")
+                            await asyncio.sleep(1)
+                            try:
+                                await self.page.locator("#memberFirstName1").wait_for(state="visible", timeout=5000)
+                                self.logger.debug("✓ Dependent fields are visible")
+                            except:
+                                self.logger.warning("⚠️ Dependent fields not visible")
+                        except Exception as e3:
+                            self.logger.error(f"All 'No' selectors failed. Last error: {e3}")
+                            # Continue anyway - might work without it
+            else:
+                # No dependents - select "Yes"
+                try:
+                    self.logger.debug("Selecting 'Yes' for Single Member Policy (no dependents)...")
+                    # Try button first
+                    await self.page.get_by_role("button", name="Yes").click(timeout=10000)
+                    await asyncio.sleep(0.5)
+                except Exception as e:
+                    self.logger.warning(f"Could not click 'Yes' button: {e}, trying radio...")
+                    try:
+                        await self.page.get_by_role("radio", name="Yes").click(timeout=10000)
+                        await asyncio.sleep(0.5)
+                    except Exception as e2:
+                        self.logger.warning(f"Could not click 'Yes' radio: {e2}, trying input selector...")
+                        try:
+                            await self.page.locator('input[type="radio"][value="Yes"]').click(timeout=10000)
+                            await asyncio.sleep(0.5)
+                        except Exception as e3:
+                            self.logger.error(f"All 'Yes' selectors failed. Last error: {e3}")
+                            # Continue anyway
+            
+            # NOW handle dependents (if any) - AFTER setting Single Member Policy
+            if has_dependents:
                 self.logger.info(f"Adding {len(dependents)} dependent(s)...")
                 
-                # Click "No" to reveal additional member fields
-                self.logger.debug("Clicking 'No' button to reveal dependent fields...")
-                await self.page.get_by_role("button", name="No").click()
+                # Wait a bit for dependent fields to appear (if they were hidden)
                 await asyncio.sleep(1)
                 
                 for idx, dependent in enumerate(dependents, start=1):
-                    self.logger.debug(f"Filling dependent #{idx}: {dependent.get('firstName', 'Unknown')}")
+                    dep_name = f"{dependent.get('firstName', 'Unknown')} {dependent.get('lastName', '')}"
+                    self.logger.info(f"Filling dependent #{idx}: {dep_name.strip()}")
                     
                     # Fill dependent fields using indexed pattern
-                    await self.page.locator(f"#memberFirstName{idx}").fill(dependent.get('firstName', ''))
-                    await asyncio.sleep(0.2)
+                    try:
+                        await self.page.locator(f"#memberFirstName{idx}").fill(dependent.get('firstName', ''))
+                        self.logger.debug(f"  ✓ Filled First Name: {dependent.get('firstName', '')}")
+                        await asyncio.sleep(0.2)
+                    except Exception as e:
+                        self.logger.error(f"  ❌ Failed to fill First Name: {e}")
                     
-                    await self.page.locator(f"#memberLastName{idx}").fill(dependent.get('lastName', ''))
-                    await asyncio.sleep(0.2)
+                    try:
+                        await self.page.locator(f"#memberLastName{idx}").fill(dependent.get('lastName', ''))
+                        self.logger.debug(f"  ✓ Filled Last Name: {dependent.get('lastName', '')}")
+                        await asyncio.sleep(0.2)
+                    except Exception as e:
+                        self.logger.error(f"  ❌ Failed to fill Last Name: {e}")
                     
-                    await self.page.locator(f"#memberDateOfBirth{idx}").fill(dependent.get('dateOfBirth', ''))
-                    await asyncio.sleep(0.3)
+                    try:
+                        await self.page.locator(f"#memberDateOfBirth{idx}").fill(dependent.get('dateOfBirth', ''))
+                        self.logger.debug(f"  ✓ Filled Date of Birth: {dependent.get('dateOfBirth', '')}")
+                        await asyncio.sleep(0.3)
+                    except Exception as e:
+                        self.logger.error(f"  ❌ Failed to fill Date of Birth: {e}")
                     
-                    await self.page.locator(f"#relation{idx}").select_option(dependent.get('relationshipCode', '49'))
-                    await asyncio.sleep(0.3)
+                    try:
+                        await self.page.locator(f"#relation{idx}").select_option(dependent.get('relationshipCode', '49'))
+                        self.logger.debug(f"  ✓ Selected Relation: {dependent.get('relationshipCode', '49')}")
+                        await asyncio.sleep(0.3)
+                    except Exception as e:
+                        self.logger.error(f"  ❌ Failed to select Relation: {e}")
                     
-                    await self.page.locator(f"#memberGender{idx}").select_option(dependent.get('genderCode', '190'))
-                    await asyncio.sleep(0.3)
+                    try:
+                        await self.page.locator(f"#memberGender{idx}").select_option(dependent.get('genderCode', '190'))
+                        self.logger.debug(f"  ✓ Selected Gender: {dependent.get('genderCode', '190')}")
+                        await asyncio.sleep(0.3)
+                    except Exception as e:
+                        self.logger.error(f"  ❌ Failed to select Gender: {e}")
                     
-                    await self.page.locator(f"#memberMaritalStatus{idx}").select_option(dependent.get('maritalStatusCode', '21'))
-                    await asyncio.sleep(0.3)
+                    try:
+                        await self.page.locator(f"#memberMaritalStatus{idx}").select_option(dependent.get('maritalStatusCode', '21'))
+                        self.logger.debug(f"  ✓ Selected Marital Status: {dependent.get('maritalStatusCode', '21')}")
+                        await asyncio.sleep(0.3)
+                    except Exception as e:
+                        self.logger.error(f"  ❌ Failed to select Marital Status: {e}")
                     
                     # If not the last dependent, click "Add New Member"
                     if idx < len(dependents):
                         self.logger.debug(f"Clicking 'Add New Member' for next dependent...")
-                        await self.page.get_by_title("Add New Member").click()
-                        await asyncio.sleep(1)
-            else:
-                # Single member - click "Yes"
-                self.logger.debug("Single member - clicking 'Yes' button...")
-                await self.page.get_by_role("button", name="Yes").click()
-                await asyncio.sleep(0.5)
+                        try:
+                            await self.page.get_by_title("Add New Member").click()
+                            await asyncio.sleep(1)
+                        except Exception as e:
+                            self.logger.error(f"Failed to click 'Add New Member': {e}")
             
             # Click "Show Plans" button
             self.logger.info("🔘 Clicking Show Plans button...")

@@ -19,10 +19,9 @@ app.post('/scrape', async (req, res) => {
   const startTime = Date.now();
   
   try {
-    // Spawn Python bot using venv
+    // Spawn Python bot
     const botPath = path.join(__dirname, '../../vendors/gig_gulf/cli.py');
-    const venvPython = path.join(__dirname, '../venv/bin/python3');
-    const python = spawn(venvPython, [
+    const python = spawn('python3', [
       botPath,
       '--lead-data', JSON.stringify(leadData)
     ], {
@@ -54,20 +53,47 @@ app.post('/scrape', async (req, res) => {
       
       if (code === 0) {
         try {
-          const plans = JSON.parse(output);
-          console.log(`[GIG-Gulf] Success: ${plans.length} plans in ${duration}s`);
-          res.json({ 
-            success: true, 
-            vendorId: 'vendor-gig-gulf', 
-            plans,
-            executionTime: `${duration}s`
-          });
+          // Trim whitespace and extract JSON (handle any extra output)
+          const trimmedOutput = output.trim();
+          // Try to find JSON array/object in output (in case there's extra text)
+          let jsonStart = trimmedOutput.indexOf('[');
+          if (jsonStart === -1) jsonStart = trimmedOutput.indexOf('{');
+          const jsonEnd = trimmedOutput.lastIndexOf(']') + 1;
+          if (jsonEnd === 0) {
+            const objEnd = trimmedOutput.lastIndexOf('}') + 1;
+            if (objEnd > 0) {
+              const jsonStr = trimmedOutput.substring(jsonStart, objEnd);
+              const plans = JSON.parse(jsonStr);
+              console.log(`[GIG-Gulf] Success: ${plans.length} plans in ${duration}s`);
+              res.json({ 
+                success: true, 
+                vendorId: 'vendor-gig-gulf', 
+                plans: Array.isArray(plans) ? plans : [plans],
+                executionTime: `${duration}s`
+              });
+            } else {
+              throw new Error('No valid JSON found in output');
+            }
+          } else {
+            const jsonStr = trimmedOutput.substring(jsonStart, jsonEnd);
+            const plans = JSON.parse(jsonStr);
+            console.log(`[GIG-Gulf] Success: ${plans.length} plans in ${duration}s`);
+            res.json({ 
+              success: true, 
+              vendorId: 'vendor-gig-gulf', 
+              plans,
+              executionTime: `${duration}s`
+            });
+          }
         } catch (parseError) {
           console.error('[GIG-Gulf] Failed to parse output:', parseError);
+          console.error('[GIG-Gulf] Output length:', output.length);
+          console.error('[GIG-Gulf] Output preview (first 500 chars):', output.substring(0, 500));
           res.status(500).json({ 
             success: false, 
             error: 'Failed to parse bot output',
-            details: parseError.message
+            details: parseError.message,
+            outputPreview: output.substring(0, 500)
           });
         }
       } else {
@@ -80,16 +106,19 @@ app.post('/scrape', async (req, res) => {
       }
     });
     
-    // Timeout after 5 minutes
+    // Timeout after 15 minutes (bot extraction can take up to 900 seconds)
     setTimeout(() => {
       if (responseCompleted) return;
       responseCompleted = true;
-      python.kill();
+      if (python.pid) {
+        console.log('[GIG-Gulf] ⏱️ 15-minute timeout reached, force killing bot...');
+        python.kill('SIGKILL');
+      }
       res.status(408).json({ 
         success: false, 
-        error: 'Bot execution timeout after 5 minutes' 
+        error: 'Bot execution timeout after 15 minutes' 
       });
-    }, 300000);
+    }, 900000); // 15 minutes
     
   } catch (error) {
     console.error('[GIG-Gulf] Spawn error:', error);

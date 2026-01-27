@@ -15,7 +15,7 @@ class RpaVmService {
 
   constructor() {
     this.vmBaseUrl = process.env.RPA_VM_URL || '';
-    this.timeout = parseInt(process.env.RPA_VM_TIMEOUT || '600000'); // 10 min default
+    this.timeout = parseInt(process.env.RPA_VM_TIMEOUT || '900000'); // 15 min default (bots can take up to 15 minutes)
     
     if (!this.vmBaseUrl) {
       console.warn('⚠️ RPA_VM_URL not configured - RPA via VM will not work');
@@ -146,16 +146,33 @@ class RpaVmService {
     const container = database.container('plans');
     
     for (const plan of plans) {
-      const planDoc = {
-        id: `${leadId}_${vendorId}_${plan.planCode || plan.id}`,
-        type: 'plan',
-        leadId,
-        vendorId,
-        fetchedAt: new Date().toISOString(),
-        ...plan
-      };
-      
-      await container.items.upsert(planDoc);
+      try {
+        // Ensure planCode or id exists for document ID
+        const planIdentifier = plan.planCode || plan.id || `plan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const docId = `${leadId}_${vendorId}_${planIdentifier}`;
+        
+        const planDoc = {
+          id: docId,
+          type: 'plan',
+          leadId,
+          vendorId,
+          fetchedAt: new Date().toISOString(),
+          ...plan
+        };
+        
+        // Validate required fields
+        if (!planDoc.leadId || !planDoc.vendorId) {
+          console.error(`[RPA VM] Plan missing required fields: leadId=${planDoc.leadId}, vendorId=${planDoc.vendorId}`);
+          continue;
+        }
+        
+        await container.items.upsert(planDoc);
+        console.log(`[RPA VM] Saved plan: ${docId} (${planDoc.planName || planDoc.planCode || 'Unknown'})`);
+      } catch (planError: any) {
+        console.error(`[RPA VM] Failed to save individual plan:`, planError);
+        console.error(`[RPA VM] Plan data:`, JSON.stringify(plan, null, 2).substring(0, 500));
+        // Continue with next plan instead of failing entire batch
+      }
     }
   }
 

@@ -48,7 +48,7 @@ app.post('/api/:vendor/scrape', async (req, res) => {
       `http://localhost:${port}/scrape`,
       req.body,
       {
-        timeout: 300000, // 5 minutes
+        timeout: 900000, // 15 minutes (bots can take up to 15 minutes for extraction)
         headers: { 'Content-Type': 'application/json' }
       }
     );
@@ -71,7 +71,7 @@ app.post('/api/:vendor/scrape', async (req, res) => {
     if (error.code === 'ECONNABORTED') {
       return res.status(408).json({
         success: false,
-        error: `${vendor} bot timed out after 5 minutes`
+        error: `${vendor} bot timed out after 15 minutes`
       });
     }
     

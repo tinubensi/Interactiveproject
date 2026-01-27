@@ -15,6 +15,11 @@
   "extensions": {
     "http": {
       "routePrefix": "api"
+    },
+    "eventGrid": {
+      "maxBatchSize": 1,
+      "maxDequeueCount": 5,
+      "batchTimeout": "00:00:30"
     }
   },
   "functionTimeout": "00:10:00",

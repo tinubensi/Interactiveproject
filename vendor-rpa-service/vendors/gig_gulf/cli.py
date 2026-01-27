@@ -89,7 +89,7 @@ async def main():
         
         # Bot configuration
         bot_config = {
-            'headless': False,
+            'headless': True,
             'browser_type': 'chromium',
             'enable_screenshots': False,
             'default_timeout': 60000,
@@ -136,8 +136,10 @@ async def main():
                 except Exception as e:
                     print(f"Warning: Cosmos save failed but continuing: {str(e)}", file=sys.stderr)
             
-            # Step 8: Return plans as JSON to stdout
-            print(json.dumps(standard_plans))
+            # Step 8: Return plans as JSON to stdout (ensure clean output)
+            sys.stdout.flush()  # Flush any buffered output
+            print(json.dumps(standard_plans), flush=True)
+            sys.stdout.flush()  # Ensure JSON is written
             sys.exit(0)
     
     except Exception as e:

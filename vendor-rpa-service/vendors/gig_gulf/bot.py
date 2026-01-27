@@ -164,22 +164,109 @@ class Gig_gulfBot(InsuranceBot):
             page1 = None
             
             # If we're not on the broker quotation index page, navigate there
-            if "BrokerIndividualQuotation/Index" not in current_url:
+            # Use case-insensitive check
+            if "brokerindividualquotation/index" not in current_url.lower():
                 broker_index_url = "https://health.gig-gulf.com/broker-quotation/BrokerIndividualQuotation/Index"
                 self.logger.info(f"Navigating to broker index: {broker_index_url}")
-                await self.page.goto(broker_index_url, wait_until='domcontentloaded')
-                await asyncio.sleep(2)
+                await self.page.goto(broker_index_url, wait_until='networkidle', timeout=60000)
+                await asyncio.sleep(3)  # Give extra time for dynamic content to load
+                
+                # Verify we're on the correct page
+                current_url = self.page.url
+                self.logger.info(f"Current URL after navigation: {current_url}")
             
             # Look for "Add Broker Quotation" link/button
             self.logger.debug("Looking for Add Broker Quotation link...")
             
+            # Wait for page to be fully loaded
+            await self.page.wait_for_load_state("networkidle", timeout=30000)
+            await asyncio.sleep(2)  # Additional wait for dynamic content
             
             try:
-                # Wait for the Add Broker Quotation link to be available
-                await self.page.wait_for_selector('a:has-text("Add Broker Quotation"), a:has-text("Broker Quotation")' , timeout=10000)
+                # Try multiple strategies to find the link
+                add_quote_link = None
                 
-                # Try to find the Add Broker Quotation link
-                add_quote_link = self.page.get_by_role("link", name=" Add Broker Quotation")
+                # Strategy 1: Try by role with exact name (as per recorded actions)
+                try:
+                    add_quote_link = self.page.get_by_role("link", name=" Add Broker Quotation")
+                    if await add_quote_link.count() > 0:
+                        self.logger.debug("Found link using role with exact name")
+                except:
+                    pass
+                
+                # Strategy 2: Try by role without leading space
+                if not add_quote_link or await add_quote_link.count() == 0:
+                    try:
+                        add_quote_link = self.page.get_by_role("link", name="Add Broker Quotation")
+                        if await add_quote_link.count() > 0:
+                            self.logger.debug("Found link using role without leading space")
+                    except:
+                        pass
+                
+                # Strategy 3: Try text selector
+                if not add_quote_link or await add_quote_link.count() == 0:
+                    try:
+                        await self.page.wait_for_selector('a:has-text("Add Broker Quotation")', timeout=5000, state='visible')
+                        add_quote_link = self.page.locator('a:has-text("Add Broker Quotation")').first
+                        self.logger.debug("Found link using text selector")
+                    except:
+                        pass
+                
+                # Strategy 4: Try partial text match
+                if not add_quote_link or await add_quote_link.count() == 0:
+                    try:
+                        await self.page.wait_for_selector('a:has-text("Broker Quotation")', timeout=5000, state='visible')
+                        # Find the one that contains "Add"
+                        links = await self.page.locator('a:has-text("Broker Quotation")').all()
+                        for link in links:
+                            text = await link.inner_text()
+                            if "Add" in text:
+                                add_quote_link = link
+                                self.logger.debug(f"Found link using partial text: {text}")
+                                break
+                    except:
+                        pass
+                
+                # Strategy 5: Try finding any link with "Add" and "Broker" in text
+                if not add_quote_link or await add_quote_link.count() == 0:
+                    try:
+                        all_links = await self.page.locator('a').all()
+                        for link in all_links:
+                            try:
+                                text = await link.inner_text()
+                                if "Add" in text and "Broker" in text and "Quotation" in text:
+                                    add_quote_link = link
+                                    self.logger.debug(f"Found link by searching all links: {text}")
+                                    break
+                            except:
+                                continue
+                    except:
+                        pass
+                
+                if not add_quote_link or await add_quote_link.count() == 0:
+                    # Log page state for debugging
+                    self.logger.error("Could not find Add Broker Quotation link. Page state:")
+                    self.logger.error(f"Current URL: {self.page.url}")
+                    try:
+                        page_title = await self.page.title()
+                        self.logger.error(f"Page title: {page_title}")
+                    except:
+                        pass
+                    try:
+                        # Count links on page
+                        link_count = await self.page.locator('a').count()
+                        self.logger.error(f"Total links on page: {link_count}")
+                        # Log first few links
+                        links = await self.page.locator('a').all()
+                        for i, link in enumerate(links[:10]):
+                            try:
+                                text = await link.inner_text()
+                                self.logger.error(f"Link {i+1}: {text[:50]}")
+                            except:
+                                pass
+                    except:
+                        pass
+                    raise Exception("Add Broker Quotation link not found on page")
                 
                 self.logger.debug("Found Add Broker Quotation link, clicking...")
                 
@@ -433,12 +520,90 @@ class Gig_gulfBot(InsuranceBot):
             await asyncio.sleep(0.3)
             self.logger.info(f"✓ Email filled: {email}")
             
-            # Select Salary Range - use more specific selector
+
+            # Select Salary Range
             salary_range = form_data.get('salary_range', '>4000 and <=12000 AED/month')
-            await page1.locator('button[data-id="salaryrangeid"]').click()
-            await asyncio.sleep(0.3)
-            await page1.get_by_role("listbox").get_by_role("option", name=salary_range).click()
+            self.logger.debug(f"Selecting Salary Range: {salary_range}")
+            
+            # Click the salary range button using the data-id selector
+            salary_button = page1.locator('button[data-id="salaryrangeid"]')
+            await salary_button.click()
+            await asyncio.sleep(0.5)  # Wait for dropdown to open
+            
+            # Wait for the dropdown menu to be visible
+            # The structure is: div#salaryrangeDiv > div.dropdown-menu.open > ul[role="listbox"]
+            await page1.locator('#salaryrangeDiv div.dropdown-menu.open ul[role="listbox"]').wait_for(state='visible', timeout=5000)
+            await asyncio.sleep(0.3)  # Give it time to fully render
+            
+            # Find the option by matching text content
+            # Options are: li > a[role="option"] > span.text
+            # Scope to the salary range div to avoid other dropdowns
+            salary_div = page1.locator('#salaryrangeDiv')
+            options = await salary_div.locator('ul[role="listbox"] a[role="option"]').all()
+            
+            self.logger.debug(f"Found {len(options)} salary range options")
+            
+            option_found = False
+            for opt in options:
+                try:
+                    # Get the text from the span.text element inside the option
+                    text_span = opt.locator('span.text')
+                    if await text_span.count() > 0:
+                        opt_text = await text_span.inner_text()
+                        opt_text = opt_text.strip()
+                        
+                        self.logger.debug(f"Checking option text: '{opt_text}' against '{salary_range}'")
+                        
+                        # Try exact match (Playwright handles HTML entities automatically)
+                        if opt_text == salary_range:
+                            await opt.click()
+                            option_found = True
+                            self.logger.info(f"✓ Salary Range selected (exact match): {opt_text}")
+                            break
+                        # Try matching by normalizing the comparison symbols
+                        # The HTML has &gt; and &lt; but we compare with > and <
+                        normalized_opt = opt_text.replace('&gt;', '>').replace('&lt;', '<')
+                        normalized_range = salary_range.replace('&gt;', '>').replace('&lt;', '<')
+                        if normalized_opt == normalized_range:
+                            await opt.click()
+                            option_found = True
+                            self.logger.info(f"✓ Salary Range selected (normalized match): {opt_text}")
+                            break
+                        # Try partial match - check if key parts match
+                        elif 'AED/month' in opt_text and 'AED/month' in salary_range:
+                            # Extract the numeric ranges for comparison
+                            opt_nums = opt_text.replace('>', '').replace('<', '').replace('=', '').replace('AED/month', '').strip()
+                            range_nums = salary_range.replace('>', '').replace('<', '').replace('=', '').replace('AED/month', '').strip()
+                            if range_nums in opt_nums or opt_nums in range_nums:
+                                await opt.click()
+                                option_found = True
+                                self.logger.info(f"✓ Salary Range selected (partial match): {opt_text}")
+                                break
+                except Exception as e:
+                    self.logger.debug(f"Error checking option: {e}")
+                    continue
+            
+            if not option_found:
+                # Fallback: try using get_by_role scoped to salary div
+                try:
+                    await salary_div.get_by_role("listbox").get_by_role("option", name=salary_range).click()
+                    option_found = True
+                    self.logger.info(f"✓ Salary Range selected (role-based fallback): {salary_range}")
+                except Exception as e:
+                    self.logger.error(f"Could not find salary range option '{salary_range}': {e}")
+                    # Log all available options for debugging
+                    all_options = await salary_div.locator('ul[role="listbox"] a[role="option"] span.text').all()
+                    available_texts = []
+                    for opt_span in all_options:
+                        try:
+                            available_texts.append(await opt_span.inner_text())
+                        except:
+                            pass
+                    self.logger.error(f"Available options: {available_texts}")
+                    raise Exception(f"Failed to select salary range: {salary_range}. Available: {available_texts}")
+            
             await asyncio.sleep(0.5)
+            self.logger.info(f"✓ Salary Range selection complete")
             
             # Fill number of dependents (if spinbutton exists)
             num_dependents = len(form_data.get('dependents', []))
@@ -454,18 +619,211 @@ class Gig_gulfBot(InsuranceBot):
             # Click "All" button (important step from script)
             self.logger.debug("Clicking 'All' button...")
             try:
-                await page1.get_by_role("button", name="All   ").click()
-                await asyncio.sleep(0.3)
-                await page1.get_by_role("listbox").get_by_role("option", name="All").click()
+                all_button = page1.get_by_role("button", name="All   ")
+                await all_button.click()
+                await asyncio.sleep(0.5)  # Wait for dropdown to open
+                
+                # Wait for the dropdown to be visible - try multiple selector strategies
+                # The dropdown might not have "open" class immediately, or structure might be different
+                try:
+                    await page1.wait_for_selector('div.dropdown-menu.open ul[role="listbox"]', state='visible', timeout=3000)
+                except:
+                    # Fallback: wait for any listbox to be visible
+                    try:
+                        await page1.wait_for_selector('ul[role="listbox"]', state='visible', timeout=3000)
+                    except:
+                        # If still not found, just proceed - dropdown might already be open
+                        self.logger.debug("Dropdown might already be open, proceeding...")
+                
+                # Find all visible listboxes and try to find "All" option
+                # Try both with and without "open" class
+                listboxes = []
+                try:
+                    listboxes = await page1.locator('div.dropdown-menu.open ul[role="listbox"]').all()
+                except:
+                    pass
+                
+                if len(listboxes) == 0:
+                    # Fallback: get all visible listboxes
+                    listboxes = await page1.locator('ul[role="listbox"]').all()
+                option_found = False
+                
+                for listbox in listboxes:
+                    try:
+                        options = await listbox.locator('a[role="option"]').all()
+                        for opt in options:
+                            # Get text from span.text if available, otherwise inner_text
+                            try:
+                                text_span = opt.locator('span.text')
+                                if await text_span.count() > 0:
+                                    opt_text = await text_span.inner_text()
+                                else:
+                                    opt_text = await opt.inner_text()
+                            except:
+                                opt_text = await opt.inner_text()
+                            
+                            opt_text = opt_text.strip()
+                            if opt_text == "All":
+                                await opt.click()
+                                option_found = True
+                                self.logger.info("✓ 'All' option selected")
+                                break
+                        if option_found:
+                            break
+                    except Exception as e:
+                        self.logger.debug(f"Error checking listbox for 'All' option: {e}")
+                        continue
+                
+                if not option_found:
+                    # Fallback to original method
+                    await page1.get_by_role("listbox").get_by_role("option", name="All").click()
+                
                 await asyncio.sleep(0.5)
+                # Ensure dropdown closes by clicking outside or pressing Escape
+                await page1.keyboard.press('Escape')
+                await asyncio.sleep(0.5)  # Give it more time to close
+                
+                # Verify dropdown is closed by checking if no open dropdowns exist
+                try:
+                    open_dropdowns = await page1.locator('div.dropdown-menu.open').count()
+                    if open_dropdowns > 0:
+                        self.logger.debug(f"Still {open_dropdowns} open dropdown(s), pressing Escape again...")
+                        await page1.keyboard.press('Escape')
+                        await asyncio.sleep(0.3)
+                except:
+                    pass
             except Exception as e:
                 self.logger.warning(f"Could not click 'All' button: {e}")
+                # Ensure any open dropdowns are closed before proceeding
+                try:
+                    await page1.keyboard.press('Escape')
+                    await asyncio.sleep(0.3)
+                except:
+                    pass
             
             # Select Visa Type - use more specific selector
             visa_type = form_data.get('visa_type', 'Resident visa')
-            await page1.get_by_role("button", name="Select Visa Type   ").click()
+            self.logger.debug(f"Selecting Visa Type: {visa_type}")
+            
+            # Ensure no dropdowns are open before clicking visa type button
+            try:
+                open_dropdowns = await page1.locator('div.dropdown-menu.open').count()
+                if open_dropdowns > 0:
+                    self.logger.debug("Closing any open dropdowns before opening visa type...")
+                    await page1.keyboard.press('Escape')
+                    await asyncio.sleep(0.5)
+            except:
+                pass
+            
+            visa_type_button = page1.get_by_role("button", name="Select Visa Type   ")
+            await visa_type_button.click()
+            await asyncio.sleep(0.5)  # Wait for dropdown to open
+            
+            # Wait for the visa type dropdown to be visible
+            # Use a more specific approach: wait for the dropdown that appears after clicking the button
+            try:
+                # Wait for a new dropdown to open (one that wasn't there before)
+                await page1.wait_for_selector('div.dropdown-menu.open ul[role="listbox"]', state='visible', timeout=5000)
+            except:
+                # Fallback: wait for any listbox
+                try:
+                    await page1.wait_for_selector('ul[role="listbox"]', state='visible', timeout=3000)
+                except:
+                    self.logger.debug("Dropdown might already be visible, proceeding...")
+            
             await asyncio.sleep(0.3)
-            await page1.get_by_role("listbox").get_by_role("option", name=visa_type).click()
+            
+            # Find the visa type option - search through all listboxes but prioritize ones with visa type options
+            listboxes = []
+            try:
+                listboxes = await page1.locator('div.dropdown-menu.open ul[role="listbox"]').all()
+            except:
+                pass
+            
+            if len(listboxes) == 0:
+                # Fallback: get all visible listboxes
+                listboxes = await page1.locator('ul[role="listbox"]').all()
+            
+            option_found = False
+            
+            # Search through listboxes to find the one with visa type option
+            for listbox in listboxes:
+                try:
+                    options = await listbox.locator('a[role="option"]').all()
+                    if len(options) == 0:
+                        continue
+                    
+                    # Check if this listbox contains the visa type option
+                    for opt in options:
+                        # Get text from span.text if available, otherwise inner_text
+                        try:
+                            text_span = opt.locator('span.text')
+                            if await text_span.count() > 0:
+                                opt_text = await text_span.inner_text()
+                            else:
+                                opt_text = await opt.inner_text()
+                        except:
+                            opt_text = await opt.inner_text()
+                        
+                        opt_text = opt_text.strip()
+                        
+                        # Try exact match
+                        if opt_text == visa_type:
+                            await opt.click()
+                            option_found = True
+                            self.logger.info(f"✓ Visa Type selected (exact match): {opt_text}")
+                            break
+                        # Try partial match
+                        elif visa_type in opt_text or opt_text in visa_type:
+                            await opt.click()
+                            option_found = True
+                            self.logger.info(f"✓ Visa Type selected (partial match): {opt_text}")
+                            break
+                    
+                    if option_found:
+                        break
+                except Exception as e:
+                    self.logger.debug(f"Error checking listbox for visa type: {e}")
+                    continue
+            
+            if not option_found:
+                # Last resort: try to find the visa type button's parent container and search within it
+                try:
+                    # Get the button's parent container to scope the search
+                    visa_button_parent = visa_type_button.locator('xpath=ancestor::div[contains(@class, "btn-group") or contains(@class, "form-group")]')
+                    if await visa_button_parent.count() > 0:
+                        # Search within the parent container
+                        parent_listbox = visa_button_parent.locator('ul[role="listbox"]')
+                        if await parent_listbox.count() > 0:
+                            await parent_listbox.get_by_role("option").filter(lambda opt: visa_type in opt.inner_text() or opt.inner_text() in visa_type).first.click()
+                            option_found = True
+                            self.logger.info(f"✓ Visa Type selected (scoped search): {visa_type}")
+                except Exception as e:
+                    self.logger.debug(f"Scoped search failed: {e}")
+                
+                if not option_found:
+                    self.logger.error(f"Could not find visa type option '{visa_type}' in any listbox")
+                    # Log available options for debugging
+                    try:
+                        all_listboxes = await page1.locator('ul[role="listbox"]').all()
+                        for idx, lb in enumerate(all_listboxes):
+                            try:
+                                opts = await lb.locator('a[role="option"]').all()
+                                opt_texts = []
+                                for o in opts[:5]:  # Limit to first 5 for logging
+                                    try:
+                                        txt = await o.locator('span.text').inner_text() if await o.locator('span.text').count() > 0 else await o.inner_text()
+                                        opt_texts.append(txt.strip())
+                                    except:
+                                        pass
+                                if opt_texts:
+                                    self.logger.error(f"Listbox {idx} options: {opt_texts}")
+                            except:
+                                pass
+                    except:
+                        pass
+                    raise Exception(f"Failed to select visa type: {visa_type}. No matching option found in any visible listbox.")
+            
             await asyncio.sleep(0.5)
             
             # Verify all required fields before submission
