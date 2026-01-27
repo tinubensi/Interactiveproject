@@ -93,9 +93,10 @@ class AlsagrScraper:
             self.logger.error("❌ NO PLANS FOUND!")
             return []
 
-        # Limit PDF downloads to first 10 plans (download event is fast, but still limit for efficiency)
-        max_pdf_downloads = min(10, num_plans)
-        self.logger.info(f"📥 Will download PDFs for first {max_pdf_downloads} plans using download events (fast, no tabs)")
+        # Download PDFs for ALL plans to ensure Alternative Medicine and Claims Settlement Basis are extracted
+        # (These fields are only available in PDFs, not in JSON API)
+        max_pdf_downloads = num_plans
+        self.logger.info(f"📥 Will download PDFs for all {max_pdf_downloads} plans using download events (fast, no tabs)")
         
         # Process each plan row
         for index in range(num_plans):

@@ -2,9 +2,14 @@
 GIG Gulf Insurance Adapter
 Handles data transformation for GIG Gulf Insurance portal
 """
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 from vendors.base.vendor_adapter import VendorAdapter
+from vendors.gig_gulf.field_mappings import (
+    COVERAGE_FIELD_MAPPINGS,
+    BENEFIT_CATEGORY_KEYWORDS,
+    CATEGORY_NAMES,
+)
 
 
 class Gig_gulfAdapter(VendorAdapter):
@@ -280,16 +285,213 @@ class Gig_gulfAdapter(VendorAdapter):
             'numberOfDependents': num_dependents  # Count of dependents
         }
     
+    def _normalize_coverage_details(self, coverage_details: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Normalize coverage details by mapping vendor-specific field names to standard names.
+        
+        Args:
+            coverage_details: Original coverage details with GIG Gulf field names
+            
+        Returns:
+            Normalized coverage details with standard field names
+        """
+        normalized = {}
+        
+        for vendor_key, value in coverage_details.items():
+            # Map to standard field name if mapping exists
+            standard_key = COVERAGE_FIELD_MAPPINGS.get(vendor_key, vendor_key)
+            normalized[standard_key] = value
+        
+        return normalized
+    
+    def _map_coverage_fields(self, field_name: str) -> str:
+        """
+        Map a single GIG Gulf field name to its standard equivalent.
+        
+        Args:
+            field_name: GIG Gulf field name
+            
+        Returns:
+            Standard field name
+        """
+        return COVERAGE_FIELD_MAPPINGS.get(field_name, field_name)
+    
+    def _categorize_benefits(self, coverage_details: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Categorize benefits semantically based on field names.
+        
+        Similar to Sukoon's categorization approach, groups benefits into
+        semantic categories (outpatient, inpatient, maternity, etc.)
+        Network information is extracted separately into a "network" category.
+        
+        Args:
+            coverage_details: Coverage details dictionary (with GIG Gulf field names)
+            
+        Returns:
+            List of benefit categories with categorized benefits
+        """
+        # Initialize categories dict
+        categorized = {cat_id: [] for cat_id in BENEFIT_CATEGORY_KEYWORDS.keys()}
+        
+        # Extract network information separately
+        inpatient_network = None
+        outpatient_network = None
+        
+        # Process each coverage detail
+        for vendor_key, value in coverage_details.items():
+            # Extract network information
+            if vendor_key == 'inpatientDirectBillingNetwork' and value:
+                inpatient_network = str(value).strip()
+            elif vendor_key == 'outpatientDirectBillingNetwork' and value:
+                outpatient_network = str(value).strip()
+            
+            # Skip if value is empty or not a string
+            if not value or not isinstance(value, str):
+                continue
+            
+            # Skip if value indicates no benefit
+            value_str = str(value).strip()
+            if value_str in ['No Benefit', 'No benefit', 'N/A', 'X', '✘', 'x', '']:
+                continue
+            
+            # Skip network fields - they'll be handled separately
+            if vendor_key in ['inpatientDirectBillingNetwork', 'outpatientDirectBillingNetwork']:
+                continue
+            
+            # Find which category this field belongs to
+            matched_category = None
+            for cat_id, keywords in BENEFIT_CATEGORY_KEYWORDS.items():
+                if vendor_key in keywords:
+                    matched_category = cat_id
+                    break
+            
+            # If no match, put in other-coverage
+            if matched_category is None:
+                matched_category = 'other-coverage'
+            
+            # Get standard field name for display
+            standard_field_name = self._map_coverage_fields(vendor_key)
+            
+            # Determine if covered (not "No Benefit", etc.)
+            is_covered = value_str not in ['X', '✘', 'x', 'Not Covered', 'Nil']
+            
+            # Create benefit entry
+            benefit_entry = {
+                'name': standard_field_name,
+                'value': value_str,
+                'covered': is_covered,
+                'description': value_str,
+                'limit': value_str
+            }
+            
+            categorized[matched_category].append(benefit_entry)
+        
+        # Build final structure - only include non-empty categories
+        result = []
+        
+        # Add network category if network information exists
+        if inpatient_network or outpatient_network:
+            network_parts = []
+            if outpatient_network:
+                network_parts.append(f"OP@ {outpatient_network}")
+            if inpatient_network:
+                network_parts.append(f"IP@ {inpatient_network}")
+            
+            network_description = " / ".join(network_parts) if network_parts else "Network information not available"
+            
+            result.append({
+                'categoryId': 'network',
+                'categoryName': 'Network',
+                'benefits': [{
+                    'name': 'Network',
+                    'description': network_description,
+                    'covered': True,
+                    'limit': network_description,
+                    'benefitId': '1'
+                }]
+            })
+        
+        # Add other categories
+        for cat_id, benefits_list in categorized.items():
+            if len(benefits_list) > 0:
+                result.append({
+                    'categoryId': cat_id,
+                    'categoryName': CATEGORY_NAMES.get(cat_id, cat_id.replace('-', ' ').title()),
+                    'benefits': benefits_list
+                })
+        
+        # If no categories found, return default
+        if len(result) == 0:
+            result = [{
+                'categoryId': 'standard',
+                'categoryName': 'Standard Benefits',
+                'benefits': [{
+                    'name': 'Basic Health Coverage',
+                    'value': 'Basic health coverage as per policy terms',
+                    'covered': True,
+                    'description': 'Basic health coverage as per policy terms',
+                    'limit': 'As per policy'
+                }]
+            }]
+        
+        return result
+    
     def normalize_response(self, raw_vendor_data: Any, lead_id: str) -> List[Dict[str, Any]]:
         """
-        Transform raw GIG Gulf data into StandardPlan format.
+        Transform raw GIG Gulf data into StandardPlan format with normalized field names.
         
-        The GigGulfParser already outputs plans in StandardPlan format,
-        so this method just validates and passes through.
+        This method:
+        1. Applies field mappings to transform vendor-specific field names to standard names
+        2. Categorizes benefits into semantic categories
+        3. Normalizes coverage_details to use standard field names
+        4. Preserves raw vendor data in rawPlanData for reference
         """
-        # If raw_vendor_data is already a list (from parser), return it
-        if isinstance(raw_vendor_data, list):
-            return raw_vendor_data
+        if not isinstance(raw_vendor_data, list):
+            return []
         
-        # Otherwise, return empty list
-        return []
+        normalized_plans = []
+        
+        for plan in raw_vendor_data:
+            try:
+                # Create a copy to avoid modifying the original
+                normalized_plan = plan.copy()
+                
+                # Preserve enriched details field (contains static benefits from enricher)
+                # This field is added by benefits_enricher and should be preserved
+                enriched_details = normalized_plan.get('details', {})
+                
+                # Get raw coverage details (with vendor-specific field names)
+                raw_plan_data = normalized_plan.get('rawPlanData', {})
+                original_coverage_details = raw_plan_data.get('coverage_details', {})
+                
+                # Normalize coverage details (map field names to standard names)
+                normalized_coverage_details = self._normalize_coverage_details(original_coverage_details)
+                
+                # Categorize benefits (using original vendor field names for categorization)
+                categorized_benefits = self._categorize_benefits(original_coverage_details)
+                
+                # Update the plan with normalized data
+                normalized_plan['benefits'] = categorized_benefits
+                
+                # Preserve enriched details if they exist (static benefits from enricher)
+                if enriched_details:
+                    normalized_plan['details'] = enriched_details
+                
+                # Update rawPlanData with normalized coverage_details
+                # Keep original in a separate key for reference
+                if 'rawPlanData' not in normalized_plan:
+                    normalized_plan['rawPlanData'] = {}
+                
+                normalized_plan['rawPlanData']['coverage_details'] = normalized_coverage_details
+                normalized_plan['rawPlanData']['original_coverage_details'] = original_coverage_details
+                
+                normalized_plans.append(normalized_plan)
+            
+            except Exception as e:
+                # Log error but continue processing other plans
+                print(f"Error normalizing GIG Gulf plan: {e}")
+                # Return original plan if normalization fails
+                normalized_plans.append(plan)
+                continue
+        
+        return normalized_plans

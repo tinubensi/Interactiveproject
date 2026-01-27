@@ -1,0 +1,31 @@
+{
+  "id": "test-gig-gulf-001",
+  "leadId": "test-gig-gulf-001",
+  "firstName": "Kane",
+  "lastName": "Williamson",
+  "email": "kanetest@gmail.com",
+  "phone": {
+    "countryCode": "+971",
+    "number": "501234567"
+  },
+  "dob": "1998-04-18",
+  "gender": "Male",
+  "nationality": "Indian",
+  "emirate": "Abu Dhabi",
+  "occupation": "Accountant",
+  "lineOfBusiness": "medical",
+  "lobData": {
+    "dateOfBirth": "1998-04-18",
+    "effectiveDate": "31/01/2026",
+    "gender": "Male",
+    "maritalStatus": "Single",
+    "nationality": "Indian",
+    "state": "Abu Dhabi",
+    "visaLocation": "Abu Dhabi",
+    "passportCountry": "India",
+    "workLocation": "AL KARAMA",
+    "occupation": "Accountant",
+    "salaryRange": "5000-10000",
+    "visaType": "Resident visa"
+  }
+}

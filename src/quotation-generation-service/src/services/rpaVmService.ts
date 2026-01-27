@@ -43,6 +43,21 @@ class RpaVmService {
     
     console.log(`[RPA VM] Calling ${vendorName} at ${endpoint}`);
     
+    // 🔍 DEBUG: Log leadData structure to verify formData is included
+    console.log(`[RPA VM] Lead data structure check:`);
+    console.log(`  - Has formData: ${!!leadData?.formData}`);
+    console.log(`  - Has lobData: ${!!leadData?.lobData}`);
+    console.log(`  - Has id: ${!!leadData?.id}`);
+    console.log(`  - Has leadId: ${!!leadData?.leadId}`);
+    if (leadData?.formData) {
+      const sectionKeys = Object.keys(leadData.formData).filter((k: string) => k.startsWith('section-'));
+      console.log(`  - formData section-* keys: ${sectionKeys.join(', ')}`);
+      if (sectionKeys.length > 0) {
+        const firstSection = leadData.formData[sectionKeys[0]];
+        console.log(`  - ${sectionKeys[0]}: ${Array.isArray(firstSection) ? firstSection.length : 0} items`);
+      }
+    }
+    
     try {
       const response = await axios.post(
         endpoint,

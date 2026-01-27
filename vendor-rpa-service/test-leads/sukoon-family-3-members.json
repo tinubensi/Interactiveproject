@@ -1,0 +1,32 @@
+{
+  "id": "test-sukoon-family-003",
+  "leadId": "test-sukoon-family-003",
+  "firstName": "Mohammed",
+  "lastName": "Ali",
+  "lineOfBusiness": "medical",
+  "lobData": {
+    "dateOfBirth": "1998-04-13",
+    "gender": "Male",
+    "nationality": "United Arab Emirates",
+    "maritalStatus": "Married",
+    "visaType": "resident",
+    "coverageType": "Family",
+    "numberOfDependents": 2,
+    "dependents": [
+      {
+        "name": "Fatima Ali",
+        "relationship": "Spouse",
+        "dateOfBirth": "1998-08-26",
+        "gender": "Female",
+        "nationality": "United Arab Emirates"
+      },
+      {
+        "name": "Sara Ali",
+        "relationship": "Child",
+        "dateOfBirth": "2020-06-15",
+        "gender": "Female",
+        "nationality": "United Arab Emirates"
+      }
+    ]
+  }
+}
