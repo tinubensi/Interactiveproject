@@ -10,6 +10,7 @@ from typing import List, Dict, Any, Optional
 from playwright.async_api import Page
 from vendors.base.utils import setup_logging
 from vendors.gig_gulf.parser import Gig_gulfParser
+from vendors.gig_gulf.benefits_enricher import enrich_multiple_plans
 
 
 class Gig_gulfScraper:
@@ -138,7 +139,10 @@ class Gig_gulfScraper:
                     self.logger.info("Found JSON data in page, parsing...")
                     structured_plans = self.parser.parse_plans_from_json(json_data, self.form_data)
                     if structured_plans:
-                        return structured_plans
+                        # Enrich plans with static benefits data before returning
+                        self.logger.info("Enriching plans with static benefits data...")
+                        enriched_plans = enrich_multiple_plans(structured_plans)
+                        return enriched_plans
                 
                 # Strategy 2: Try JavaScript extraction - look for React/Angular data
                 js_plans = await self._extract_plans_via_javascript()
@@ -148,12 +152,18 @@ class Gig_gulfScraper:
                         parsed_plan = self.parser.parse_plan_data(plan, self.form_data)
                         structured_plans.append(parsed_plan)
                     if structured_plans:
-                        return structured_plans
+                        # Enrich plans with static benefits data before returning
+                        self.logger.info("Enriching plans with static benefits data...")
+                        enriched_plans = enrich_multiple_plans(structured_plans)
+                        return enriched_plans
                 
                 # If still no data, extract from HTML tables
                 structured_plans = await self._extract_from_tables()
                 if structured_plans:
-                    return structured_plans
+                    # Enrich plans with static benefits data before returning
+                    self.logger.info("Enriching plans with static benefits data...")
+                    enriched_plans = enrich_multiple_plans(structured_plans)
+                    return enriched_plans
                 
                 self.logger.error("❌ NO PLANS FOUND!")
                 return []
@@ -202,7 +212,12 @@ class Gig_gulfScraper:
                     continue
             
             self.logger.info(f"\n✅ Successfully extracted {len(structured_plans)} plans")
-            return structured_plans
+            
+            # Enrich plans with static benefits data before returning
+            self.logger.info("Enriching plans with static benefits data...")
+            enriched_plans = enrich_multiple_plans(structured_plans)
+            
+            return enriched_plans
         
         except Exception as e:
             self.logger.error(f"Error extracting plans: {e}")
