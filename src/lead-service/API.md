@@ -102,14 +102,35 @@ POST /leads/list
   "search": "ahmed",
   "filters": {
     "lineOfBusiness": ["medical"],
+    "businessType": ["individual"],
     "stageId": [1, 2, 3],
+    "currentStage": ["Lead Created", "Plans Fetching", "Plans Available", "Revision Requested"],
     "assignedTo": ["agent-456"],
     "createdFrom": "2024-11-01T00:00:00Z",
     "createdTo": "2024-11-30T23:59:59Z",
-    "isHotLead": false
+    "isHotLead": false,
+    "excludeWithQuotation": true
   }
 }
 ```
+
+**Filter Parameters:**
+- `lineOfBusiness`: Array of LOB values (medical, motor, general, marine)
+- `businessType`: Array of business types (individual, group, corporate)
+- `stageId`: Array of numeric stage IDs
+- `currentStage`: Array of stage names (string-based filtering)
+  - Common values: "Lead Created", "Plans Fetching", "Plans Available", "Revision Requested"
+  - **Note:** Leads with stages like "Quotation Created", "Quotation Sent", "Approved", "Policy Issued" typically appear in the Quotations listing
+- `excludeWithQuotation`: Boolean (default: true)
+  - When true (default), excludes leads that have a `quotationId` defined
+  - Set to false to include leads that have moved to quotations
+- `assignedTo`: Array of agent IDs
+- `createdFrom`, `createdTo`: Date range filters (ISO 8601 format)
+- `isHotLead`: Boolean to filter hot leads
+
+**Default Behavior:**
+- If `excludeWithQuotation` is not specified, it defaults to `true`, excluding leads with quotations
+- This ensures leads that have progressed to quotations don't appear in the leads listing
 
 **Response (200):**
 ```json

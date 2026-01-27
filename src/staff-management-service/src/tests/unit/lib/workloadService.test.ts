@@ -70,20 +70,23 @@ describe('workloadService', () => {
   describe('calculateLeadUtilization', () => {
     it('should calculate correct utilization', () => {
       const staff = createMockStaff({ activeLeads: 10, maxLeads: 20 });
-      const utilization = calculateLeadUtilization(staff.workload);
+      const defaultWorkload = { activeLeads: 0, activeCustomers: 0, activePolicies: 0, pendingApprovals: 0 };
+      const utilization = calculateLeadUtilization(staff.workload || defaultWorkload);
       assert.strictEqual(utilization, 0.5);
     });
 
     it('should use default max when maxLeads is not set', () => {
       // When maxLeads is 0 or undefined, it falls back to default (20)
       const staff = createMockStaff({ activeLeads: 5, maxLeads: undefined });
-      const utilization = calculateLeadUtilization(staff.workload);
+      const defaultWorkload = { activeLeads: 0, activeCustomers: 0, activePolicies: 0, pendingApprovals: 0 };
+      const utilization = calculateLeadUtilization(staff.workload || defaultWorkload);
       assert.strictEqual(utilization, 0.25); // 5/20 = 0.25
     });
 
     it('should handle full capacity', () => {
       const staff = createMockStaff({ activeLeads: 20, maxLeads: 20 });
-      const utilization = calculateLeadUtilization(staff.workload);
+      const defaultWorkload = { activeLeads: 0, activeCustomers: 0, activePolicies: 0, pendingApprovals: 0 };
+      const utilization = calculateLeadUtilization(staff.workload || defaultWorkload);
       assert.strictEqual(utilization, 1);
     });
   });
@@ -91,7 +94,8 @@ describe('workloadService', () => {
   describe('calculateCustomerUtilization', () => {
     it('should calculate correct utilization', () => {
       const staff = createMockStaff({ activeCustomers: 30, maxCustomers: 60 });
-      const utilization = calculateCustomerUtilization(staff.workload);
+      const defaultWorkload = { activeLeads: 0, activeCustomers: 0, activePolicies: 0, pendingApprovals: 0 };
+      const utilization = calculateCustomerUtilization(staff.workload || defaultWorkload);
       assert.strictEqual(utilization, 0.5);
     });
   });
@@ -104,7 +108,8 @@ describe('workloadService', () => {
         activeCustomers: 30,
         maxCustomers: 60,
       });
-      const utilization = calculateOverallUtilization(staff.workload);
+      const defaultWorkload = { activeLeads: 0, activeCustomers: 0, activePolicies: 0, pendingApprovals: 0 };
+      const utilization = calculateOverallUtilization(staff.workload || defaultWorkload);
       assert.strictEqual(utilization, 0.5);
     });
   });

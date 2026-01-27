@@ -92,47 +92,43 @@ class RpaVmService {
 
     console.log(`[RPA VM] Fetching plans from ${vendorIds.length} vendors in parallel`);
     
-    // Call all vendors in parallel
-    const promises = vendorIds.map(vendorId =>
-      this.fetchPlansFromVendor(vendorId, leadData)
-    );
-    
-    const results = await Promise.allSettled(promises);
-    
-    // Extract results
+    // Track results as they arrive
     const vmResults: VmRpaResult[] = [];
-    for (const result of results) {
-      if (result.status === 'fulfilled') {
-        vmResults.push(result.value);
-      } else {
-        console.error('[RPA VM] Promise rejected:', result.reason);
-        vmResults.push({
-          vendorId: 'unknown',
+    
+    // Call all vendors in parallel and save results IMMEDIATELY when each completes
+    const promises = vendorIds.map(async (vendorId) => {
+      try {
+        const result = await this.fetchPlansFromVendor(vendorId, leadData);
+        
+        // IMMEDIATE SAVE: Save plans to Cosmos DB as soon as vendor completes
+        if (result.success && result.plans.length > 0) {
+          try {
+            await this.savePlansToCosmosDB(leadId, result.vendorId, result.plans);
+            console.log(`[RPA VM] ✅ IMMEDIATELY saved ${result.plans.length} plans from ${result.vendorId}`);
+          } catch (saveError) {
+            console.error(`[RPA VM] Failed to save plans from ${result.vendorId}:`, saveError);
+            // Mark as failed if save fails
+            result.success = false;
+            result.error = `Save failed: ${saveError}`;
+          }
+        }
+        
+        vmResults.push(result);
+        return result;
+      } catch (error: any) {
+        const failedResult: VmRpaResult = {
+          vendorId,
           plans: [],
           success: false,
-          error: result.reason?.message || 'Promise rejected'
-        });
+          error: error?.message || 'Unknown error'
+        };
+        vmResults.push(failedResult);
+        return failedResult;
       }
-    }
+    });
     
-    // Save successful plans to Cosmos DB
-    for (const result of vmResults) {
-      if (result.success && result.plans.length > 0) {
-        try {
-          await this.savePlansToCosmosDB(leadId, result.vendorId, result.plans);
-          console.log(`[RPA VM] Saved ${result.plans.length} plans from ${result.vendorId}`);
-        } catch (saveError) {
-          console.error(`[RPA VM] Failed to save plans from ${result.vendorId}:`, saveError);
-        }
-      }
-    }
-    
-    // Wait for Cosmos DB eventual consistency
-    // This ensures plans are queryable before we return
-    if (vmResults.some(r => r.success && r.plans.length > 0)) {
-      console.log(`[RPA VM] Waiting 3 seconds for Cosmos DB to commit changes...`);
-      await new Promise(resolve => setTimeout(resolve, 3000));
-    }
+    // Wait for all vendors to complete
+    await Promise.allSettled(promises);
     
     return vmResults;
   }

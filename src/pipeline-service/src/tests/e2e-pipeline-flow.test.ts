@@ -527,4 +527,161 @@ describe('E2E Pipeline Flow - Performance Metrics', () => {
   });
 });
 
+// =============================================================================
+// Test Suite: Customer Rejection Flow
+// =============================================================================
+
+describe('E2E Pipeline Flow - Customer Rejection', () => {
+  let testCustomerId: string;
+  let testLeadId: string;
+  let testQuotationId: string;
+  
+  // ===========================================================================
+  // Setup: Create Lead and Generate Quotation
+  // ===========================================================================
+  
+  before(async () => {
+    console.log('\n=== Setting up Customer Rejection Test ===\n');
+    
+    // Create customer
+    console.log('[SETUP] Creating test customer...');
+    const customerData = {
+      firstName: 'Rejection',
+      lastName: 'Test',
+      email: `rejection-test-${Date.now()}@example.com`,
+      phone: '+1-555-0199',
+      dateOfBirth: '1985-03-15',
+    };
+    
+    const customer = await apiCall(
+      `${TEST_CONFIG.leadServiceUrl}/api/customers`,
+      {
+        method: 'POST',
+        body: JSON.stringify(customerData),
+      }
+    );
+    
+    testCustomerId = customer.id;
+    console.log(`  Customer created: ${testCustomerId}`);
+    
+    // Create lead
+    console.log('[SETUP] Creating test lead...');
+    const leadData = {
+      ...TEST_CONFIG.testLead,
+      customerId: testCustomerId,
+    };
+    
+    const lead = await apiCall(
+      `${TEST_CONFIG.leadServiceUrl}/api/leads`,
+      {
+        method: 'POST',
+        body: JSON.stringify(leadData),
+      }
+    );
+    
+    testLeadId = lead.id;
+    console.log(`  Lead created: ${testLeadId}`);
+    
+    // Wait for plans to be fetched
+    console.log('[SETUP] Waiting for plans to be fetched...');
+    await waitForStage(testLeadId, 'Plans Available', TEST_CONFIG.planFetchTimeout);
+    console.log(`  Plans available`);
+    
+    // Create quotation
+    console.log('[SETUP] Creating quotation...');
+    const quotationData = {
+      leadId: testLeadId,
+      planIds: ['plan-1', 'plan-2'],
+      customMessage: 'Test quotation for rejection',
+    };
+    
+    const quotationResponse = await apiCall(
+      `${TEST_CONFIG.quotationServiceUrl}/api/quotations`,
+      {
+        method: 'POST',
+        body: JSON.stringify(quotationData),
+      }
+    );
+    
+    testQuotationId = quotationResponse.quotation.id;
+    console.log(`  Quotation created: ${testQuotationId}`);
+    
+    // Wait for quotation sent
+    console.log('[SETUP] Sending quotation...');
+    await apiCall(
+      `${TEST_CONFIG.quotationServiceUrl}/api/quotations/${testQuotationId}/send`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          recipientEmail: customerData.email,
+          recipientName: `${customerData.firstName} ${customerData.lastName}`,
+        }),
+      }
+    );
+    
+    await waitForStage(testLeadId, 'Quotation Sent', TEST_CONFIG.quotationSendTimeout);
+    console.log(`  Quotation sent`);
+    console.log('\n=== Setup Complete ===\n');
+  });
+  
+  // ===========================================================================
+  // Test: Customer Rejects All Plans
+  // ===========================================================================
+  
+  it('should route to Lost stage when customer rejects all plans', async () => {
+    console.log('\n[TEST] Customer rejecting all plans...');
+    
+    // Simulate customer rejection via Event Grid HTTP fallback
+    await apiCall(
+      `${TEST_CONFIG.pipelineServiceUrl}/api/pipeline/process-event`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          eventType: 'customer.responded',
+          leadId: testLeadId,
+          lineOfBusiness: 'medical',
+          data: {
+            responseType: 'reject_plans',
+            quotationId: testQuotationId,
+            rejectionReason: 'Plans not suitable for my needs',
+          },
+        }),
+      }
+    );
+    
+    console.log('  Event published: customer.responded (reject_plans)');
+    
+    // Wait for Lost stage
+    console.log('  Waiting for Lost stage...');
+    const instance = await waitForStage(testLeadId, 'Lost', 30000);
+    
+    assert.strictEqual(instance.currentStageName, 'Lost', 'Should be at Lost stage');
+    assert.strictEqual(instance.status, 'completed', 'Pipeline should be completed');
+    assert.strictEqual(instance.progressPercent, 100, 'Progress should be 100%');
+    console.log(`✓ Pipeline routed to Lost stage`);
+    console.log(`  Progress: ${instance.progressPercent}%`);
+    
+    // Verify quotation status
+    console.log('  Verifying quotation status...');
+    const quotation = await apiCall(
+      `${TEST_CONFIG.quotationServiceUrl}/api/quotations/${testQuotationId}?leadId=${testLeadId}`
+    );
+    
+    assert.strictEqual(quotation.status, 'rejected', 'Quotation status should be rejected');
+    assert.ok(quotation.rejectedAt, 'Quotation should have rejectedAt timestamp');
+    assert.ok(quotation.rejectionReason, 'Quotation should have rejection reason');
+    console.log(`✓ Quotation status: ${quotation.status}`);
+    
+    // Verify lead status
+    console.log('  Verifying lead status...');
+    const lead = await apiCall(
+      `${TEST_CONFIG.leadServiceUrl}/api/leads/${testLeadId}`
+    );
+    
+    assert.strictEqual(lead.currentStage, 'Lost', 'Lead stage should be Lost');
+    console.log(`✓ Lead stage: ${lead.currentStage}`);
+  });
+});
+
+
 

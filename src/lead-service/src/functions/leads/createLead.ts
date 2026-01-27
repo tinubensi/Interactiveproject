@@ -14,7 +14,60 @@ import { Lead, CreateLeadRequest } from '../../models/lead';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
 import { ensureAuthorized, requirePermission, LEAD_PERMISSIONS } from '../../lib/auth';
 import { isLeadManagedByPipeline, notifyLeadCreated } from '../../services/pipelineServiceClient';
+import { customerServiceClient, SignupRequest } from '../../services/customerServiceClient';
 import axios from 'axios';
+
+/**
+ * Helper function to create customer from lead data
+ */
+async function createCustomerFromLead(
+  leadData: CreateLeadRequest,
+  leadId: string,
+  context: InvocationContext
+): Promise<string> {
+  try {
+    // Determine customer type based on businessType
+    const customerType = leadData.businessType === 'individual' ? 'INDIVIDUAL' : 'COMPANY';
+    
+    // Extract gender from lobData if available
+    const gender = leadData.lobData?.gender || 'Male';
+    
+    // Prepare customer data
+    const customerData: SignupRequest = {
+      customerType,
+      agent: 'default-agent',
+      currency: 'AED',
+    };
+    
+    if (customerType === 'INDIVIDUAL') {
+      customerData.firstName = leadData.firstName;
+      customerData.lastName = leadData.lastName;
+      customerData.name = `${leadData.firstName} ${leadData.lastName}`;
+      customerData.email = leadData.email;
+      customerData.phoneNumber = leadData.phone.number;
+      customerData.gender = gender;
+    } else {
+      // For group/company
+      customerData.companyName = `${leadData.firstName} ${leadData.lastName}`;
+      customerData.email1 = leadData.email;
+      customerData.phoneNumber1 = leadData.phone.number;
+    }
+    
+    context.log('Creating new customer:', { customerType, email: leadData.email });
+    
+    const customer = await customerServiceClient.createCustomer(customerData);
+    
+    context.log(`✅ Customer created successfully: ${customer.id}`);
+    return customer.id;
+    
+  } catch (error: any) {
+    context.error('❌ Failed to create customer in Customer Service:', error.message);
+    context.error('Falling back to temporary customer ID');
+    
+    // Fallback to temporary customer ID if creation fails
+    return `customer-${leadId}`;
+  }
+}
 
 export async function createLead(
   request: HttpRequest,
@@ -94,8 +147,38 @@ export async function createLead(
     // Generate lead ID
     const leadId = uuidv4();
     
-    // Generate customerId if not provided (use lead ID as base)
-    const customerId = body.customerId || `customer-${leadId}`;
+    // Handle customer ID: use provided, check existing, or create new
+    let customerId = body.customerId;
+    let customerAutoCreated = false;
+    let customerLinkedByEmail = false;
+    
+    if (!customerId) {
+      context.log('No customerId provided, checking if customer exists by email...');
+      
+      try {
+        // Check if customer already exists by email
+        const existingCustomer = await customerServiceClient.checkCustomerByEmail(body.email);
+        
+        if (existingCustomer) {
+          // Customer found - link to existing customer
+          customerId = existingCustomer.id;
+          customerLinkedByEmail = true;
+          context.log(`✅ Customer found by email: ${customerId}`);
+        } else {
+          // Customer not found - create new customer
+          context.log('Customer not found, creating new customer...');
+          customerId = await createCustomerFromLead(body, leadId, context);
+          customerAutoCreated = true;
+        }
+      } catch (error: any) {
+        context.error('Error during customer check/creation:', error.message);
+        // Fallback to temporary customer ID
+        customerId = `customer-${leadId}`;
+        context.log(`⚠️ Using fallback customer ID: ${customerId}`);
+      }
+    } else {
+      context.log(`Using provided customerId: ${customerId}`);
+    }
 
     // Create lead object
     const lead: any = {
@@ -249,7 +332,9 @@ export async function createLead(
             isPhoneRepeated,
             rpaTriggerStatus: eventPublished ? 'event_grid' : (httpFallbackTriggered ? 'http_fallback' : 'failed'),
             eventPublished,
-            httpFallbackTriggered
+            httpFallbackTriggered,
+            customerAutoCreated,
+            customerLinkedByEmail
           }
         }
       }

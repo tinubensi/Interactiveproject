@@ -147,6 +147,14 @@ export async function fetchPlans(
     const vendorIds = rpaVendors.map(v => v.id);
     let totalPlans = 0;
     let successfulVendors = 0;
+    let vendorTimings: Array<{
+      vendorId: string;
+      vendorName: string;
+      success: boolean;
+      executionTime: string;
+      plansCount: number;
+      error?: string;
+    }> = [];
     
     if (vendorIds.length === 0) {
       context.log('No RPA-enabled vendors found, skipping RPA');
@@ -184,7 +192,18 @@ export async function fetchPlans(
         }
       }
       
+      // Collect vendor timing data for timeline (FIX: use let vendorTimings, not const)
+      vendorTimings = vmResults.map(result => ({
+        vendorId: result.vendorId,
+        vendorName: result.vendorId.replace('vendor-', ''),
+        success: result.success,
+        executionTime: result.executionTime || 'N/A',
+        plansCount: result.plans.length,
+        error: result.error  // For backend logging only
+      }));
+      
       context.log(`VM execution complete: ${successfulVendors}/${vendorIds.length} vendors successful, ${totalPlans} plans fetched`);
+      context.log(`[VENDOR TIMINGS] Collected ${vendorTimings.length} vendor timing entries:`, JSON.stringify(vendorTimings, null, 2));
     }
 
     // Update fetch request status
@@ -202,14 +221,23 @@ export async function fetchPlans(
 
     // Publish completion event (for pipeline service)
     try {
+      const eventMetadata = vendorTimings.length > 0 ? {
+        vendorTimings: vendorTimings.map(({ error, ...rest }) => rest)  // Exclude error from event
+      } : undefined;
+      
+      context.log(`[EVENT PUBLISH] Publishing plans.fetch_completed with metadata:`, JSON.stringify(eventMetadata, null, 2));
+      
       await eventGridService.publishPlansFetchCompleted({
         leadId: body.leadId,
         fetchRequestId: fetchRequest.id,
         totalPlans: totalPlans,
         successfulVendors: vendorIds, // Array of vendor IDs
         failedVendors: [], // Track failures if needed
-        plans: [] // Plans already saved to Cosmos
+        plans: [], // Plans already saved to Cosmos
+        metadata: eventMetadata
       });
+      
+      context.log(`[EVENT PUBLISH] ✓ plans.fetch_completed event published successfully`);
     } catch (eventError) {
       context.warn('Failed to publish completion event:', eventError);
     }

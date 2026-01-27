@@ -61,7 +61,7 @@ export async function createTeam(
   // Add team to leader's teamIds
   await updateStaffTeams(
     request.leaderId,
-    [...leader.teamIds, teamId],
+    [...(leader.teamIds || []), teamId],
     createdBy
   );
 
@@ -259,7 +259,7 @@ export async function addTeamMember(
   }
 
   // Update staff's teamIds
-  await updateStaffTeams(staffId, [...staff.teamIds, teamId], updatedBy);
+  await updateStaffTeams(staffId, [...(staff.teamIds || []), teamId], updatedBy);
 
   return resource;
 }
@@ -295,7 +295,7 @@ export async function removeTeamMember(
   }
 
   // Check if staff would have no teams left
-  if (staff.teamIds.length <= 1) {
+  if ((staff.teamIds || []).length <= 1) {
     throw new Error('Staff member must belong to at least one team');
   }
 
@@ -317,7 +317,7 @@ export async function removeTeamMember(
   // Update staff's teamIds
   await updateStaffTeams(
     staffId,
-    staff.teamIds.filter((id) => id !== teamId),
+    (staff.teamIds || []).filter((id) => id !== teamId),
     updatedBy
   );
 

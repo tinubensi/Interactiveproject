@@ -78,7 +78,7 @@ export const ASSIGNMENT_WEIGHTS = {
  * Check if staff has territory match
  */
 export function hasTerritoryMatch(staff: StaffMemberDocument, territory: string): boolean {
-  return staff.territories.includes(territory);
+  return (staff.territories || []).includes(territory);
 }
 
 /**
@@ -94,7 +94,7 @@ export function hasSpecializationMatch(
   }
 
   // Check team specializations
-  const staffTeams = teams.filter((t) => staff.teamIds.includes(t.teamId));
+  const staffTeams = teams.filter((t) => (staff.teamIds || []).includes(t.teamId));
   for (const team of staffTeams) {
     if (team.specializations?.includes(specialization)) {
       return true;
@@ -102,7 +102,7 @@ export function hasSpecializationMatch(
   }
 
   // Check license types for brokers
-  if (staff.licenses) {
+  if (staff.licenses && staff.licenses.length > 0) {
     for (const license of staff.licenses) {
       if (license.licenseType.toLowerCase().includes(specialization.toLowerCase())) {
         return true;
@@ -117,7 +117,8 @@ export function hasSpecializationMatch(
  * Calculate workload capacity score (1 = empty, 0 = full)
  */
 export function calculateWorkloadCapacity(staff: StaffMemberDocument): number {
-  const utilization = calculateLeadUtilization(staff.workload);
+  const defaultWorkload = { activeLeads: 0, activeCustomers: 0, activePolicies: 0, pendingApprovals: 0 };
+  const utilization = calculateLeadUtilization(staff.workload || defaultWorkload);
   return Math.max(0, 1 - utilization);
 }
 
@@ -152,7 +153,7 @@ export function isAvailableForAssignment(
   }
 
   // Check availability
-  if (!staff.availability.isAvailable) {
+  if (staff.availability && !staff.availability.isAvailable) {
     return false;
   }
 
@@ -239,7 +240,7 @@ export function filterEligibleStaff(
     }
 
     // Filter by preferred team if specified
-    if (criteria.preferredTeamId && !staff.teamIds.includes(criteria.preferredTeamId)) {
+    if (criteria.preferredTeamId && !(staff.teamIds || []).includes(criteria.preferredTeamId)) {
       return false;
     }
 
@@ -285,7 +286,7 @@ export function findBestStaffForAssignment(
     const managers = staffList.filter(
       (s) =>
         s.staffType === 'broker_manager' &&
-        s.territories.includes(criteria.territory) &&
+        (s.territories || []).includes(criteria.territory) &&
         canAcceptAssignments(s.status)
     );
 

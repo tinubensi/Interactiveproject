@@ -43,10 +43,9 @@ export async function GetStaffPerformanceHandler(
     // Calculate performance metrics
     const performanceScore = calculatePerformanceScore(staff);
 
-    // Get performance data or defaults
+    // Get performance data or defaults (performance is now optional)
     const performance = staff.performance || {
       period: new Date().toISOString().slice(0, 7),
-      leadsReceived: 0,
       leadsConverted: 0,
       policiesIssued: 0,
       premiumGenerated: 0,

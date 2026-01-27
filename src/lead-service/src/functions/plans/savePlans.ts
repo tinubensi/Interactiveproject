@@ -100,6 +100,26 @@ export async function savePlans(
     // No pipeline active - fallback to direct stage update (for legacy leads without pipelines)
     context.log(`Lead ${leadId} has no active pipeline - updating stage directly as fallback`);
     
+    // Check if already in "Plans Available" to avoid duplicate updates
+    if (lead.currentStage === 'Plans Available') {
+      context.log(`Lead ${leadId} already in "Plans Available" stage - updating plan count only`);
+      await cosmosService.updateLead(leadId, lead.lineOfBusiness, {
+        plansCount: body.plans.length,
+        updatedAt: new Date()
+      });
+      
+      return withCors(request, {
+        status: 200,
+        jsonBody: {
+          success: true,
+          message: 'Plans saved successfully. Stage already at Plans Available.',
+          data: {
+            plansCount: savedPlans.length
+          }
+        }
+      });
+    }
+    
     // Update lead status to "Plans Available"
     await cosmosService.updateLead(leadId, lead.lineOfBusiness, {
       currentStage: 'Plans Available',
@@ -109,7 +129,7 @@ export async function savePlans(
       updatedAt: new Date()
     });
 
-    // Create timeline entry
+    // Create timeline entry only when stage actually changes
     await cosmosService.createTimelineEntry({
       id: uuidv4(),
       leadId: leadId,
