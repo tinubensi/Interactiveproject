@@ -166,10 +166,8 @@ class DataPrefillService {
         }
       }
 
-      // Set default relationship if not set
-      if (!prefilled.memberDetails.relationship) {
-        prefilled.memberDetails.relationship = 'Self';
-      }
+      // Always set relationship to 'Self' when prefilling from lead data
+      prefilled.memberDetails.relationship = 'Self';
     }
 
     return prefilled;

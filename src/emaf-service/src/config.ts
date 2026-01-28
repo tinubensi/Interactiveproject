@@ -20,6 +20,7 @@ export interface EmafServiceConfig {
   services: {
     formServiceUrl: string;
     quotationServiceUrl: string;
+    leadServiceUrl: string;
   };
   queue: {
     pdfGenerationQueueName: string;
@@ -49,6 +50,7 @@ export function getConfig(): EmafServiceConfig {
     services: {
       formServiceUrl: process.env.FORM_SERVICE_URL || 'http://localhost:7073',
       quotationServiceUrl: process.env.QUOTATION_SERVICE_URL || 'http://localhost:7075',
+      leadServiceUrl: process.env.LEAD_SERVICE_URL || 'http://localhost:7071',
     },
     queue: {
       pdfGenerationQueueName: process.env.PDF_GENERATION_QUEUE_NAME || 'pdf-generation-queue',
