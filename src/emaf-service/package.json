@@ -9,7 +9,8 @@
     "prestart": "npm run build",
     "start": "NODE_TLS_REJECT_UNAUTHORIZED=0 npx func start --port 7078",
     "test": "node test-html-pdf-generation.js",
-    "seed:alsagr": "npm run build && node dist/src/scripts/seed-alsagr-template.js"
+    "seed:alsagr": "npm run build && node dist/src/scripts/seed-alsagr-template.js",
+    "seed:sukoon": "npm run build && node dist/src/scripts/seed-sukoon-template.js"
   },
   "dependencies": {
     "@azure/cosmos": "^4.0.0",

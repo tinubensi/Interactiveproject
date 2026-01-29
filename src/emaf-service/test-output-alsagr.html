@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Medical Application Form - Al Sagr Insurance</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 10pt;
+      line-height: 1.4;
+      color: #333;
+    }
+    
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 15mm;
+      page-break-after: always;
+      position: relative;
+      background: white;
+    }
+    
+    /* Al Sagr Colors */
+    .primary-color { color: #008B69; }
+    .bg-primary { background-color: #008B69; color: white; }
+    .bg-light { background-color: #f5f5f5; }
+    
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10mm;
+      padding-bottom: 5mm;
+      border-bottom: 2px solid #008B69;
+    }
+    
+    .logo-text {
+      font-size: 14pt;
+      font-weight: bold;
+      color: #008B69;
+    }
+    
+    .logo-arabic {
+      font-size: 12pt;
+      color: #008B69;
+      direction: rtl;
+    }
+    
+    /* Cover Page */
+    .cover-page {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      min-height: 260mm;
+    }
+    
+    .cover-title {
+      font-size: 32pt;
+      font-weight: bold;
+      color: #008B69;
+      margin: 20mm 0;
+    }
+    
+    .cover-subtitle {
+      font-size: 24pt;
+      color: #555;
+      margin-bottom: 10mm;
+    }
+    
+    .cover-arabic {
+      font-size: 28pt;
+      font-weight: bold;
+      direction: rtl;
+      color: #008B69;
+      margin: 10mm 0;
+    }
+    
+    /* Section Titles */
+    .section-title {
+      background-color: #008B69;
+      color: white;
+      padding: 8px 12px;
+      font-size: 11pt;
+      font-weight: bold;
+      margin: 8mm 0 3mm 0;
+      text-align: center;
+    }
+    
+    .section-subtitle {
+      direction: rtl;
+      font-size: 10pt;
+      text-align: center;
+      margin-bottom: 3mm;
+    }
+    
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 3mm 0;
+    }
+    
+    th, td {
+      border: 1px solid #008B69;
+      padding: 4px 6px;
+      text-align: left;
+      vertical-align: middle;
+    }
+    
+    th {
+      background-color: #008B69;
+      color: white;
+      font-weight: bold;
+      font-size: 9pt;
+    }
+    
+    .field-label {
+      font-weight: bold;
+      font-size: 9pt;
+      width: 30%;
+      background-color: #f0f0f0;
+    }
+    
+    .field-value {
+      font-size: 10pt;
+    }
+    
+    .arabic-text {
+      direction: rtl;
+      font-size: 9pt;
+      color: #666;
+    }
+    
+    /* Instructions */
+    .instructions {
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      padding: 8px;
+      margin: 5mm 0;
+      font-size: 9pt;
+      line-height: 1.5;
+    }
+    
+    .instructions ul {
+      margin: 5px 0 5px 20px;
+    }
+    
+    /* Footer */
+    .page-footer {
+      position: absolute;
+      bottom: 10mm;
+      left: 15mm;
+      right: 15mm;
+      text-align: center;
+      font-size: 9pt;
+      color: #666;
+    }
+    
+    /* Checkbox */
+    .checkbox-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      margin: 0 8px;
+    }
+    
+    .checkbox {
+      width: 12px;
+      height: 12px;
+      border: 1px solid #333;
+      display: inline-block;
+    }
+    
+    .checkbox.checked::after {
+      content: '✓';
+      font-size: 10pt;
+      font-weight: bold;
+    }
+    
+    @media print {
+      body { margin: 0; }
+      .page { page-break-after: always; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- PAGE 1: COVER -->
+<div class="page cover-page">
+  <div class="logo-text">AL SAGR INSURANCE</div>
+  <div class="logo-arabic">الصقـــــر للتــــأميـــن</div>
+  
+  <div class="cover-title">Health Insurance</div>
+  <div class="cover-subtitle">Individual and Families</div>
+  
+  <div class="cover-arabic">التأمين الصحي</div>
+  <div class="cover-arabic" style="font-size: 22pt;">للأفراد والعائلات</div>
+  
+  <div style="margin-top: 30mm; font-size: 18pt; font-weight: bold;">
+    Declaration Form - Health Insurance
+  </div>
+  <div class="cover-arabic" style="font-size: 16pt; margin-top: 5mm;">
+    استمـــــارة الإقــــــــرار - للتــــــــــأميــــــن الصحـــــــــــــي
+  </div>
+</div>
+
+<!-- PAGE 2: POLICY HOLDER & INSURED MEMBERS -->
+<div class="page">
+  <div class="header">
+    <div>
+      <div class="logo-text">AL SAGR INSURANCE</div>
+      <div class="logo-arabic">الصقـــــر للتــــأميـــن</div>
+    </div>
+  </div>
+  
+  <div class="section-title">MEDICAL APPLICATION FORM</div>
+  <div class="section-subtitle">نموذج طلب تأمين طبي</div>
+  
+  <div class="instructions">
+    <strong>Please use Block Letter to complete this form.</strong> Proposal form once accepted becomes part of the policy documents.
+    <br><br>
+    <strong>Please note that:</strong>
+    <ul>
+      <li>The application should accompany the following documents:
+        <ul>
+          <li>Copy of passport with valid visa page</li>
+          <li>Copy of Emirates Identification card</li>
+        </ul>
+      </li>
+      <li>Any alteration/overwriting in the application must be signed by the applicant.</li>
+      <li>False declaration shall render the insurance coverage invalid from the effective date, with no refund of premium.</li>
+      <li>Insurance company reserves the right to request medical evidence of insurability or reject any application as per the company's underwriting guidelines.</li>
+    </ul>
+  </div>
+  
+  <div class="section-title">Policy Holder Information (Company/Individual)</div>
+  <div class="section-subtitle">معلومات صاحب الوثيقة (شركة/فرد)</div>
+  
+  <table>
+    <tr>
+      <td class="field-label">Full Name<br><span class="arabic-text">الأسم بالكامل</span></td>
+      <td class="field-value" colspan="3">Ahmed Mohammed Ali</td>
+    </tr>
+    <tr>
+      <td class="field-label">Employer<br><span class="arabic-text">صاحب العمل</span></td>
+      <td class="field-value" colspan="3">ABC Technology LLC</td>
+    </tr>
+    <tr>
+      <td class="field-label">Nationality<br><span class="arabic-text">الجنسية</span></td>
+      <td class="field-value">United Arab Emirates</td>
+      <td class="field-label">Emirates ID<br><span class="arabic-text">رقم الهوية الإماراتية</span></td>
+      <td class="field-value">784-1234-5678901-2</td>
+    </tr>
+    <tr>
+      <td class="field-label">Emirate<br><span class="arabic-text">الإمارة</span></td>
+      <td class="field-value">Dubai</td>
+      <td class="field-label">Marital Status<br><span class="arabic-text">الحالة الإجتماعية</span></td>
+      <td class="field-value">Married</td>
+    </tr>
+    <tr>
+      <td class="field-label">Gender<br><span class="arabic-text">الجنس</span></td>
+      <td class="field-value">Male</td>
+      <td class="field-label">Date of Birth<br><span class="arabic-text">تاريخ الميلاد</span></td>
+      <td class="field-value">15/05/1985</td>
+    </tr>
+    <tr>
+      <td class="field-label">Height (cm)<br><span class="arabic-text">الطول (سم)</span></td>
+      <td class="field-value">175</td>
+      <td class="field-label">Weight (kg)<br><span class="arabic-text">الوزن (كجم)</span></td>
+      <td class="field-value">75</td>
+    </tr>
+    <tr>
+      <td class="field-label">Occupation<br><span class="arabic-text">الوظيفة</span></td>
+      <td class="field-value" colspan="3">Software Engineer</td>
+    </tr>
+    <tr>
+      <td class="field-label">Mobile Number<br><span class="arabic-text">رقم الجوال</span></td>
+      <td class="field-value"></td>
+      <td class="field-label">Contact Number<br><span class="arabic-text">رقم الإتصال</span></td>
+      <td class="field-value"></td>
+    </tr>
+    <tr>
+      <td class="field-label">Email Address<br><span class="arabic-text">البريد الإلكتروني</span></td>
+      <td class="field-value" colspan="3">ahmed.ali@example.com</td>
+    </tr>
+    <tr>
+      <td class="field-label">Location<br><span class="arabic-text">العنوان</span></td>
+      <td class="field-value" colspan="3">Dubai Marina, Dubai, UAE</td>
+    </tr>
+  </table>
+  
+  <div class="section-title" style="margin-top: 8mm;">Insured Member's Information (Main Applicant as Principal)</div>
+  <div class="section-subtitle">معلومات صاحب الوثيقة (على أن يتم تعبئة تفاصيل مقدم الرئيسي أولاً)</div>
+  
+  <table style="font-size: 8pt;">
+    <thead>
+      <tr>
+        <th>Personal Information<br><span style="font-weight: normal;">المعلومات الشخصية</span></th>
+        <th>Name<br><span style="font-weight: normal;">الأسم</span></th>
+        <th>Gender<br><span style="font-weight: normal;">الجنس</span></th>
+        <th>Marital Status<br><span style="font-weight: normal;">الحالة الإجتماعية</span></th>
+        <th>Relation to Policy holder<br><span style="font-weight: normal;">العلاقة بصاحب الوثيقة</span></th>
+        <th>DOB<br><span style="font-weight: normal;">تاريخ الميلاد</span></th>
+        <th>Height (cm)<br><span style="font-weight: normal;">الطول (سم)</span></th>
+        <th>Weight (kg)<br><span style="font-weight: normal;">الوزن (كجم)</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="bg-primary" style="text-align: center;">Principal<br><span style="font-weight: normal;"></span></td>
+        <td>Ahmed Mohammed Ali</td>
+        <td>Male</td>
+        <td>Married</td>
+        <td>Self</td>
+        <td>15/05/1985</td>
+        <td>175</td>
+        <td>75</td>
+      </tr>
+      <tr>
+        <td class="bg-primary" style="text-align: center;">Spouse<br><span style="font-weight: normal;"></span></td>
+        <td>Fatima Hassan</td>
+        <td>Female</td>
+        <td>Married</td>
+        <td>Wife</td>
+        <td>20/08/1988</td>
+        <td>165</td>
+        <td>60</td>
+      </tr>
+      <tr>
+        <td class="bg-primary" style="text-align: center;">Dependent 1<br><span style="font-weight: normal;"></span></td>
+        <td>Mohammed Ahmed Ali</td>
+        <td>Male</td>
+        <td>Single</td>
+        <td>Son</td>
+        <td>10/03/2010</td>
+        <td>150</td>
+        <td>45</td>
+      </tr>
+    </tbody>
+  </table>
+  
+  <div style="margin-top: 5mm; padding: 6px; border: 1px solid #008B69; background-color: #f9f9f9;">
+    <strong>Salary for Dubai Visa Holder</strong> <span class="arabic-text">راتب لحاملي تأشيرة دبي</span>
+    <div style="margin-top: 4px;">
+      <span class="checkbox-group">
+        <span class="checkbox "></span>
+        <span>AED 4000 and Below (4000 درهم إماراتي وأقل)</span>
+      </span>
+      <span class="checkbox-group">
+        <span class="checkbox "></span>
+        <span>AED 4001 and Above (4001 درهم إماراتي وأقل)</span>
+      </span>
+    </div>
+  </div>
+  
+  <div class="page-footer">Page 1 of 7</div>
+</div>
+
+<!-- PAGE 3: PREVIOUS INSURANCE & MEDICAL HISTORY -->
+<div class="page">
+  <div class="header">
+    <div>
+      <div class="logo-text">AL SAGR INSURANCE</div>
+      <div class="logo-arabic">الصقـــــر للتــــأميـــن</div>
+    </div>
+  </div>
+  
+  <div class="section-title">MEDICAL APPLICATION FORM</div>
+  <div class="section-subtitle">نموذج طلب تأمين طبي</div>
+  
+  <div style="margin: 5mm 0; padding: 6px; background-color: #f9f9f9; border: 1px solid #ddd; font-size: 9pt;">
+    <strong>In case of Previous Insurance for proposed eligible persons</strong> (Please provide the insurance company name and policy expiry date)
+    <br>
+    <span class="arabic-text">في حالة التأمين السابق لألشخاص المؤهلين المقترحين (يرجى تقديم اسم شركة التأمين وتاريخ انتهاء وثيقة التأمين)</span>
+  </div>
+  
+  <table style="font-size: 8pt;">
+    <thead>
+      <tr>
+        <th>Principal<br><span style="font-weight: normal;">الشخص الأساسي</span></th>
+        <th>Spouse<br><span style="font-weight: normal;">الزوج/الزوجة</span></th>
+        <th>Dependent 1<br><span style="font-weight: normal;">المعال 1</span></th>
+        <th>Dependent 2<br><span style="font-weight: normal;">المعال 2</span></th>
+        <th>Dependent 3<br><span style="font-weight: normal;">المعال 3</span></th>
+        <th>Dependent 4<br><span style="font-weight: normal;">المعال 4</span></th>
+        <th>Dependent 5<br><span style="font-weight: normal;">المعال 5</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="min-height: 15mm;"></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  <div style="margin: 5mm 0; padding: 6px; background-color: #f9f9f9; border: 1px solid #ddd; font-size: 9pt;">
+    <strong>Any family member for whom insurance is not applied in this application</strong>
+    <span class="checkbox-group"><span class="checkbox"></span> YES</span>
+    <span class="checkbox-group"><span class="checkbox"></span> NO</span>
+    <br>
+    <span class="arabic-text">(إذا كانت الإجابة "نعم"، يرجى تقديم تفاصيل ترتيبات التأمين الحالية)</span>
+  </div>
+  
+  <div style="margin: 5mm 0; padding: 8px; background-color: #fff8dc; border: 1px solid #008B69; font-size: 9pt; line-height: 1.6;">
+    <strong>Medical Application Form MUST be answered completely.</strong> Please answer the following questions which apply to all named applicants. Have you ever been diagnosed or received any treatment in the past (including outpatient or surgery) or currently undergoing any treatment or experiencing symptoms or pain (please tick the relevant box). If any of the below question is missed to be answered/ left unanswered, it will be assumed that the answer is "No". False declaration will result in non-coverage and cancellation of the insurance policy under consideration in this application as from the effective date, with no premium refund.
+  </div>
+  
+  <div class="section-title">Medical History Declaration</div>
+  <div class="section-subtitle">إقرار التاريخ الطبي</div>
+  
+  <table style="font-size: 7pt;">
+    <thead>
+      <tr>
+        <th style="width: 35%;">Medical History<br><span style="font-weight: normal;">التاريخ الطبي</span></th>
+        <th>Principal<br><span style="font-weight: normal;">العضو الرئيسي</span></th>
+        <th>Dependent 1<br><span style="font-weight: normal;">المعال 1</span></th>
+        <th>Dependent 2<br><span style="font-weight: normal;">المعال 2</span></th>
+        <th>Dependent 3<br><span style="font-weight: normal;">المعال 3</span></th>
+        <th>Dependent 4<br><span style="font-weight: normal;">المعال 4</span></th>
+        <th>Dependent 5<br><span style="font-weight: normal;">المعال 5</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align: left; padding: 6px;">
+          <strong>1.</strong> Have you ever been diagnosed with diabetes?
+          <br>
+          <span class="arabic-text" style="font-size: 7pt;">هل تم تشخيصك بمرض السكري؟</span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: left; padding: 6px;">
+          <strong>2.</strong> Do you have high blood pressure?
+          <br>
+          <span class="arabic-text" style="font-size: 7pt;">هل تعاني من ارتفاع ضغط الدم؟</span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: left; padding: 6px;">
+          <strong>3.</strong> Have you had any surgeries in the past 5 years?
+          <br>
+          <span class="arabic-text" style="font-size: 7pt;">هل أجريت أي عمليات جراحية في السنوات الخمس الماضية؟</span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+        <td style="text-align: center;">
+          <span class="checkbox-group">
+            <span class="checkbox "></span> YES
+          </span>
+          <span class="checkbox-group">
+            <span class="checkbox "></span> NO
+          </span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  
+  <div class="page-footer">Page 2 of 7</div>
+</div>
+
+<!-- PAGES 4-7: Additional sections as needed -->
+<!-- For brevity, continuing with signature page -->
+
+<!-- PAGE 8: DECLARATIONS AND SIGNATURE -->
+<div class="page">
+  <div class="header">
+    <div>
+      <div class="logo-text">AL SAGR INSURANCE</div>
+      <div class="logo-arabic">الصقـــــر للتــــأميـــن</div>
+    </div>
+  </div>
+  
+  <div class="section-title">DECLARATIONS AND SIGNATURE</div>
+  <div class="section-subtitle">الإقرارات والتوقيع</div>
+  
+  <div style="margin: 5mm 0; padding: 10px; background-color: #f9f9f9; border: 1px solid #008B69; font-size: 9pt; line-height: 1.7;">
+    <p><strong>I/We hereby declare that:</strong></p>
+    <ul style="margin-left: 20px;">
+      <li>The statements and answers given above are true, complete and accurate to the best of my/our knowledge and belief.</li>
+      <li>I/We have not withheld any material information that may affect the acceptance or assessment of this application.</li>
+      <li>I/We agree that this declaration shall form the basis of the contract between me/us and AL SAGR INSURANCE.</li>
+      <li>I/We understand that any false declaration may result in the invalidation of the insurance coverage.</li>
+      <li>I/We authorize AL SAGR INSURANCE to obtain any medical information from any hospital, clinic, or medical practitioner for the purpose of assessing this application.</li>
+    </ul>
+    <br>
+    <div class="arabic-text" style="text-align: right; padding: 10px;">
+      <p><strong>أقر/نقر بموجب هذا:</strong></p>
+      <p>أن البيانات والإجابات المذكورة أعلاه صحيحة وكاملة ودقيقة على حد علمي/علمنا واعتقادي/اعتقادنا.</p>
+    </div>
+  </div>
+  
+  <table style="margin-top: 10mm;">
+    <tr>
+      <td class="field-label" style="width: 40%;">Applicant Name<br><span class="arabic-text">اسم المتقدم</span></td>
+      <td class="field-value">Ahmed Mohammed Ali</td>
+    </tr>
+    <tr>
+      <td class="field-label">Signature<br><span class="arabic-text">التوقيع</span></td>
+      <td class="field-value" style="min-height: 20mm;"></td>
+    </tr>
+    <tr>
+      <td class="field-label">Date<br><span class="arabic-text">التاريخ</span></td>
+      <td class="field-value">27/01/2026</td>
+    </tr>
+  </table>
+  
+  <div style="margin-top: 15mm; padding: 10px; background-color: #e8f5f1; border: 2px solid #008B69; text-align: center;">
+    <strong style="color: #008B69; font-size: 12pt;">FOR OFFICE USE ONLY</strong>
+    <br><br>
+    <table>
+      <tr>
+        <td class="field-label">Policy Number</td>
+        <td class="field-value"></td>
+        <td class="field-label">Received Date</td>
+        <td class="field-value"></td>
+      </tr>
+      <tr>
+        <td class="field-label">Processed By</td>
+        <td class="field-value"></td>
+        <td class="field-label">Approved By</td>
+        <td class="field-value"></td>
+      </tr>
+    </table>
+  </div>
+  
+  <div class="page-footer">Page 7 of 7</div>
+</div>
+
+</body>
+</html>

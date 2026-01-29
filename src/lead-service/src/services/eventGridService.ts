@@ -135,6 +135,12 @@ class EventGridService {
     lobData: any;
     assignedTo?: string;
     createdAt: Date;
+    // 🔧 Contact fields for RPA bots
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: any;
+    emirate?: string;
   }): Promise<void> {
     console.log('===========================================');
     console.log('[DEBUG] publishLeadCreated called');

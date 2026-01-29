@@ -20,6 +20,8 @@ import './functions/customer/saveEmafData';
 import './functions/customer/requestPdfGeneration';
 import './functions/customer/generatePdfDirect'; // Direct PDF generation (no queue)
 import './functions/customer/getPdfStatus';
+import './functions/customer/renderEmafHtml'; // Render HTML template for client-side PDF generation
+import './functions/customer/uploadGeneratedPdf'; // Upload client-generated PDF to blob storage
 import './functions/customer/downloadOriginalPdf'; // Download original vendor PDF (NEW)
 import './functions/customer/getDocumentUploadUrl'; // Get SAS URL for document upload (NEW)
 import './functions/customer/confirmDocumentUpload'; // Confirm upload and save metadata (NEW)

@@ -101,6 +101,73 @@ class TemplateRenderer {
       console.log('Debug:', JSON.stringify(value, null, 2));
       return '';
     });
+    
+    // Split date into individual digit boxes for DD/MM/YYYY format
+    // Usage: {{splitDate date "DD/MM/YYYY"}}
+    Handlebars.registerHelper('splitDate', function(date: any, format: string = 'DD/MM/YYYY') {
+      if (!date) {
+        // Return placeholder boxes
+        if (format === 'DD/MM/YYYY') {
+          return '<span class="date-box placeholder">d</span><span class="date-box placeholder">d</span><span class="date-box placeholder">m</span><span class="date-box placeholder">m</span><span class="date-box placeholder">y</span><span class="date-box placeholder">y</span><span class="date-box placeholder">y</span><span class="date-box placeholder">y</span>';
+        } else if (format === 'DD/MM/YY') {
+          return '<span class="date-box placeholder">d</span><span class="date-box placeholder">d</span><span class="date-box placeholder">m</span><span class="date-box placeholder">m</span><span class="date-box placeholder">y</span><span class="date-box placeholder">y</span>';
+        }
+        return '';
+      }
+      
+      try {
+        let dateStr: string;
+        if (typeof date === 'string') {
+          // Parse DD/MM/YYYY or DD/MM/YY format
+          if (date.includes('/')) {
+            dateStr = date;
+          } else {
+            // Assume ISO format, convert to DD/MM/YYYY
+            const d = new Date(date);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            dateStr = `${day}/${month}/${year}`;
+          }
+        } else if (date instanceof Date) {
+          const day = String(date.getDate()).padStart(2, '0');
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const year = date.getFullYear();
+          dateStr = `${day}/${month}/${year}`;
+        } else {
+          return '';
+        }
+        
+        // Extract digits from date string
+        const digits = dateStr.replace(/\//g, '').split('');
+        
+        if (format === 'DD/MM/YYYY') {
+          // Return 8 digit boxes: DD MM YYYY
+          return digits.slice(0, 8).map(digit => 
+            `<span class="date-box">${digit}</span>`
+          ).join('');
+        } else if (format === 'DD/MM/YY') {
+          // Return 6 digit boxes: DD MM YY
+          return digits.slice(0, 6).map(digit => 
+            `<span class="date-box">${digit}</span>`
+          ).join('');
+        }
+        
+        return '';
+      } catch (error) {
+        console.error('Error splitting date:', error);
+        return '';
+      }
+    });
+    
+    // Helper to render checkbox with conditional checked state
+    // Usage: {{checkbox value true}} or {{checkbox value "yes"}}
+    Handlebars.registerHelper('checkbox', function(value: any, expectedValue: any) {
+      const isChecked = value === expectedValue || value === true || 
+                       (typeof value === 'string' && value.toLowerCase() === 'yes') ||
+                       (typeof expectedValue === 'string' && expectedValue.toLowerCase() === 'yes' && value === true);
+      return isChecked ? 'checkbox--checked' : '';
+    });
   }
   
   /**
