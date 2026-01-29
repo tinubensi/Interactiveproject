@@ -8,6 +8,7 @@ from typing import Optional, Dict, Any
 from playwright.async_api import Page
 from vendors.base.vendor_bot import InsuranceBot
 from vendors.base.utils import setup_logging, save_screenshot
+from vendors.alsagr.adapter import map_emirate
 
 
 class AlsagrBot(InsuranceBot):
@@ -138,10 +139,74 @@ class AlsagrBot(InsuranceBot):
             self.logger.debug("Filling form fields...")
             
             # Visa Emirate dropdown
-            await self.page.locator("#visaEmirate").select_option(form_data.get('visaEmirate', '13'))
-            await asyncio.sleep(0.3)
+            # Wait for dropdown to be ready
+            self.logger.info("Waiting for Visa Emirate dropdown to be ready...")
+            emirate_dropdown = self.page.locator("#visaEmirate")
+            await emirate_dropdown.wait_for(state="visible", timeout=10000)
+            await asyncio.sleep(0.5)  # Extra wait for dropdown to be fully loaded
+            
+            # Extract and log all available emirate options for debugging
+            try:
+                emirate_options = await emirate_dropdown.locator("option").all()
+                self.logger.info("📋 Available Emirate Options in Portal:")
+                for opt in emirate_options:
+                    try:
+                        value = await opt.get_attribute('value')
+                        text = await opt.inner_text()
+                        if value and value.strip() and text and text.strip() and text.strip() != '-Visa Emirate-':
+                            self.logger.info(f"  {text.strip()} = {value.strip()}")
+                    except:
+                        continue
+            except Exception as e:
+                self.logger.warning(f"Could not extract emirate options: {e}")
+            
+            # Get emirate code from form data
+            visa_emirate_code = form_data.get('visaEmirate', '13')  # Default to Dubai
+            
+            # If not a code, try to get emirate name and map it
+            if not str(visa_emirate_code).isdigit():
+                emirate_name = None
+                if form_data.get('lobData', {}).get('emirate'):
+                    emirate_name = form_data.get('lobData', {}).get('emirate')
+                elif form_data.get('emirate'):
+                    emirate_name = form_data.get('emirate')
+                
+                if emirate_name:
+                    visa_emirate_code = map_emirate(emirate_name)
+                    self.logger.info(f"Mapped emirate '{emirate_name}' to code: {visa_emirate_code}")
+            
+            self.logger.info(f"Selecting visa emirate: code={visa_emirate_code}")
+            
+            # Use direct select_option (as shown in Playwright recording - this works)
+            await emirate_dropdown.select_option(visa_emirate_code, timeout=5000)
+            
+            # Verify selection
+            selected_value = await emirate_dropdown.input_value()
+            if selected_value == str(visa_emirate_code):
+                self.logger.info(f"✅ Successfully selected emirate: code={visa_emirate_code}")
+            else:
+                self.logger.warning(f"⚠️ Selection verification: expected {visa_emirate_code}, got {selected_value}")
+            
+            await asyncio.sleep(0.3)  # Wait after selection
+            
+            # Visa Type dropdown (ONLY for Abu Dhabi and Al Ain)
+            # IMPORTANT: Visa Type field only appears for emirates 11 (Abu Dhabi) and 313 (Al Ain)
+            if visa_emirate_code in ['11', '313']:
+                visa_type = form_data.get('visaType', '141')  # Default to Employee (141)
+                self.logger.info(f"Selecting visa type: {visa_type} (required for emirate {visa_emirate_code})")
+                try:
+                    visa_type_dropdown = self.page.locator("#visaType")
+                    await visa_type_dropdown.wait_for(state="visible", timeout=5000)
+                    await visa_type_dropdown.select_option(visa_type, timeout=5000)
+                    self.logger.info(f"✅ Successfully selected visa type: {visa_type}")
+                except Exception as e:
+                    self.logger.warning(f"Could not select visa type (may not be visible for this emirate): {e}")
+                await asyncio.sleep(0.3)
+            else:
+                self.logger.info(f"Visa type not required for emirate {visa_emirate_code} (only needed for Abu Dhabi and Al Ain)")
             
             # Salary Band dropdown
+            self.logger.info("Selecting salary band...")
             await self.page.locator("#salaryBandTypeId").select_option(form_data.get('salaryBand', '23'))
             await asyncio.sleep(0.3)
             

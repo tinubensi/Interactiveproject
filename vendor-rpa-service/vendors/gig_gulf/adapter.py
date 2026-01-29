@@ -436,6 +436,133 @@ class Gig_gulfAdapter(VendorAdapter):
         
         return result
     
+    def _merge_static_benefits(self, categorized_benefits: List[Dict[str, Any]], enriched_details: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Merge static benefits from enriched_details into categorized benefits.
+        
+        Static benefits are stored in details with sections like:
+        - outPatient: array of benefit objects
+        - inPatient: array of benefit objects
+        - maternity: array of benefit objects
+        - preExistingMedicalCondition: array of benefit objects
+        - otherBenefits: array of benefit objects
+        - basisClaim: array of benefit objects
+        
+        Args:
+            categorized_benefits: List of categorized benefit categories from portal data
+            enriched_details: Static benefits data from benefits_enricher
+            
+        Returns:
+            Updated list of categorized benefits with static benefits merged in
+        """
+        if not enriched_details or not isinstance(enriched_details, dict):
+            return categorized_benefits
+        
+        # Create a map of categoryId -> category index for quick lookup
+        category_map = {cat['categoryId']: idx for idx, cat in enumerate(categorized_benefits)}
+        
+        # Mapping from static benefit section names to category IDs
+        section_to_category = {
+            'outPatient': 'outpatient',
+            'inPatient': 'inpatient',
+            'maternity': 'maternity',
+            'preExistingMedicalCondition': 'other-coverage',
+            'basisClaim': 'other-coverage',
+            'otherBenefits': None  # Special handling - contains multiple categories
+        }
+        
+        # Process each static benefit section
+        for section_name, category_id in section_to_category.items():
+            if section_name not in enriched_details:
+                continue
+            
+            static_benefits = enriched_details[section_name]
+            if not isinstance(static_benefits, list):
+                continue
+            
+            # Convert static benefit format to benefit entry format
+            benefit_entries = []
+            for static_benefit in static_benefits:
+                if not isinstance(static_benefit, dict):
+                    continue
+                
+                # Static benefits have structure: {key: value, heading: "Heading"}
+                # Extract all non-heading keys as benefit items
+                for key, value in static_benefit.items():
+                    if key == 'heading':
+                        continue
+                    
+                    if value and str(value).strip() and str(value).strip() not in ['No Benefit', 'N/A', '']:
+                        benefit_entries.append({
+                            'name': static_benefit.get('heading', key.replace('_', ' ').title()),
+                            'description': str(value),
+                            'covered': str(value).strip() not in ['No Benefit', 'Not Covered', 'Nil'],
+                            'limit': str(value),
+                            'value': str(value)
+                        })
+            
+            # Merge into appropriate category
+            if category_id and benefit_entries:
+                if category_id in category_map:
+                    # Category exists, append benefits
+                    categorized_benefits[category_map[category_id]]['benefits'].extend(benefit_entries)
+                else:
+                    # Category doesn't exist, create it
+                    new_category = {
+                        'categoryId': category_id,
+                        'categoryName': CATEGORY_NAMES.get(category_id, category_id.replace('-', ' ').title()),
+                        'benefits': benefit_entries
+                    }
+                    categorized_benefits.append(new_category)
+                    category_map[category_id] = len(categorized_benefits) - 1
+        
+        # Handle otherBenefits separately (contains dental, optical, alternative)
+        if 'otherBenefits' in enriched_details:
+            other_benefits = enriched_details['otherBenefits']
+            if isinstance(other_benefits, list):
+                for static_benefit in other_benefits:
+                    if not isinstance(static_benefit, dict):
+                        continue
+                    
+                    # Map specific benefit types to categories
+                    benefit_type_mapping = {
+                        'dental': 'dental',
+                        'optical': 'optical',
+                        'alternative': 'alternative'
+                    }
+                    
+                    for key, value in static_benefit.items():
+                        if key == 'heading':
+                            continue
+                        
+                        # Determine category based on key
+                        target_category = benefit_type_mapping.get(key.lower())
+                        if not target_category:
+                            target_category = 'other-coverage'
+                        
+                        if value and str(value).strip() and str(value).strip() not in ['No Benefit', 'N/A', '']:
+                            benefit_entry = {
+                                'name': static_benefit.get('heading', key.replace('_', ' ').title()),
+                                'description': str(value),
+                                'covered': str(value).strip() not in ['No Benefit', 'Not Covered', 'Nil'],
+                                'limit': str(value),
+                                'value': str(value)
+                            }
+                            
+                            # Add to appropriate category
+                            if target_category in category_map:
+                                categorized_benefits[category_map[target_category]]['benefits'].append(benefit_entry)
+                            else:
+                                new_category = {
+                                    'categoryId': target_category,
+                                    'categoryName': CATEGORY_NAMES.get(target_category, target_category.replace('-', ' ').title()),
+                                    'benefits': [benefit_entry]
+                                }
+                                categorized_benefits.append(new_category)
+                                category_map[target_category] = len(categorized_benefits) - 1
+        
+        return categorized_benefits
+    
     def normalize_response(self, raw_vendor_data: Any, lead_id: str) -> List[Dict[str, Any]]:
         """
         Transform raw GIG Gulf data into StandardPlan format with normalized field names.
@@ -470,12 +597,13 @@ class Gig_gulfAdapter(VendorAdapter):
                 # Categorize benefits (using original vendor field names for categorization)
                 categorized_benefits = self._categorize_benefits(original_coverage_details)
                 
-                # Update the plan with normalized data
-                normalized_plan['benefits'] = categorized_benefits
-                
-                # Preserve enriched details if they exist (static benefits from enricher)
+                # Merge static benefits from enriched_details into categorized benefits
                 if enriched_details:
+                    categorized_benefits = self._merge_static_benefits(categorized_benefits, enriched_details)
                     normalized_plan['details'] = enriched_details
+                
+                # Update the plan with normalized data (now includes static benefits)
+                normalized_plan['benefits'] = categorized_benefits
                 
                 # Update rawPlanData with normalized coverage_details
                 # Keep original in a separate key for reference

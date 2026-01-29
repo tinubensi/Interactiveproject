@@ -85,7 +85,7 @@ async def main():
         
         # Bot configuration
         bot_config = {
-            'headless': False,
+            'headless': True,  # Production mode - headless for VM without display server
             'browser_type': 'chromium',
             'enable_screenshots': False,
             'default_timeout': 60000,

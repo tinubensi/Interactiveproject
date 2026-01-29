@@ -19,16 +19,26 @@ app.post('/scrape', async (req, res) => {
   const startTime = Date.now();
   
   try {
-    // Spawn Python bot
+    // Spawn Python bot - use venv python if available
     const botPath = path.join(__dirname, '../../vendors/sukoon/cli.py');
-    const python = spawn('python3', [
+    const venvPython = path.resolve(__dirname, '../../venv/bin/python');
+    const pythonExec = require('fs').existsSync(venvPython) ? venvPython : 'python3';
+    console.error(`[Sukoon] Using Python: ${pythonExec}`);
+    console.error(`[Sukoon] Venv Python exists: ${require('fs').existsSync(venvPython)}`);
+    console.error(`[Sukoon] Bot path: ${botPath}`);
+    
+    // Set PYTHONPATH to include vendor-rpa-service directory
+    const vendorRpaPath = path.resolve(__dirname, '../..');
+    const python = spawn(pythonExec, [
       botPath,
       '--lead-data', JSON.stringify(leadData)
     ], {
       env: {
         ...process.env,
-        PYTHONUNBUFFERED: '1'
-      }
+        PYTHONUNBUFFERED: '1',
+        PYTHONPATH: vendorRpaPath + (process.env.PYTHONPATH ? ':' + process.env.PYTHONPATH : '')
+      },
+      cwd: vendorRpaPath  // Set working directory to vendor-rpa-service
     });
     
     let output = '';

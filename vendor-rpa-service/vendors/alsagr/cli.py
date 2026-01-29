@@ -149,7 +149,7 @@ async def main():
         # Bot configuration
         # Use headless=True for production (faster, PDF downloads work better)
         bot_config = {
-            'headless': True,  # Production mode - faster execution
+            'headless': False,  # DEBUG mode - visible browser
             'browser_type': 'chromium',
             'enable_screenshots': False,
             'default_timeout': 60000,
