@@ -26,7 +26,9 @@ class AlsagrAdapter:
         # #region agent log - Hypothesis A: Check input to adapter
         import json
         from datetime import datetime
-        log_path = '/home/janees/Desktop/crm/.cursor/debug.log'
+        import os
+        log_dir = os.environ.get('LOG_DIR', '/tmp')
+        log_path = os.path.join(log_dir, 'alsagr_debug.log')
         try:
             lob_data = lead_data.get('lobData', {})
             raw_deps = lob_data.get('dependents', [])
@@ -144,7 +146,9 @@ def transform_lead_to_alsagr_format(lead_data: Dict[str, Any]) -> Dict[str, Any]
     # #region agent log - Hypothesis A: Check input to adapter
     import json
     from datetime import datetime
-    log_path = '/home/janees/Desktop/crm/.cursor/debug.log'
+    import os
+    log_dir = os.environ.get('LOG_DIR', '/tmp')
+    log_path = os.path.join(log_dir, 'alsagr_debug.log')
     try:
         with open(log_path, 'a') as f:
             f.write(json.dumps({"sessionId":"debug-session","runId":"initial","hypothesisId":"A","location":"adapter.py:91","message":"Adapter received lead","data":{"hasLobData":"lobData" in lead_data,"hasFormData":"formData" in lead_data,"formDataKeys":list(form_data.keys())[:5]},"timestamp":int(datetime.utcnow().timestamp()*1000)}) + '\n')
