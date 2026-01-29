@@ -4,13 +4,14 @@
   "description": "Quotation Service - Manages insurance quotations",
   "main": "dist/src/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && (cp -r assets dist/ 2>/dev/null || true)",
     "watch": "tsc --watch",
     "start": "npx func start --port 7073",
     "prestart": "npm run build",
     "clean": "rimraf dist",
     "setup": "npm run build && node dist/scripts/setup-database.js",
-    "test": "npm run build && node --test dist/src/services/pdfService.test.js",
+    "test": "npm run build && node --test dist/src/services/pdfService.test.js dist/src/utils/comparisonUtils.test.js",
+    "test:comparison-pdf": "npm run build && COSMOS_DB_ENDPOINT=https://localhost COSMOS_DB_KEY=dummy node --test dist/src/functions/quotations/getComparisonPdf.test.js",
     "test:api": "bash scripts/test-api.sh"
   },
   "dependencies": {
