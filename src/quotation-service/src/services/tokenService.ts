@@ -1,37 +1,39 @@
+import { v4 as uuidv4 } from 'uuid';
+import * as crypto from 'crypto';
+
 /**
- * Token Service for Quotation Service
- * Handles generation and validation of quotation selection tokens
+ * Token Service
+ * Generates and validates secure tokens for customer quotation review links
  */
-
-import { randomBytes } from 'crypto';
-
 class TokenService {
   /**
-   * Generate a secure random token for quotation selection
-   * Format: 32-character hex string
+   * Generate a secure unique token for quotation review
+   * Combines UUID with random bytes for extra security
    */
   generateSelectionToken(): string {
-    return randomBytes(16).toString('hex');
+    const uuid = uuidv4().replace(/-/g, '');
+    const randomBytes = crypto.randomBytes(8).toString('hex');
+    return `${uuid}${randomBytes}`;
   }
 
   /**
    * Validate token format
-   * Tokens should be 32-character hex strings
+   * Token should be 48 characters (32 from UUID + 16 from random bytes)
    */
   isValidTokenFormat(token: string): boolean {
     if (!token || typeof token !== 'string') {
       return false;
     }
-    // Check if it's a 32-character hex string
-    return /^[0-9a-f]{32}$/i.test(token);
+    // Token should be alphanumeric and 48 characters long
+    return /^[a-f0-9]{48}$/.test(token);
   }
 
   /**
-   * Check if a token has already been used
-   * A token is considered used if tokenUsedAt is set
+   * Check if token has been used
+   * Returns true if tokenUsedAt is set
    */
-  isTokenUsed(tokenUsedAt: Date | null | undefined): boolean {
-    return tokenUsedAt !== null && tokenUsedAt !== undefined;
+  isTokenUsed(tokenUsedAt?: Date): boolean {
+    return tokenUsedAt !== undefined && tokenUsedAt !== null;
   }
 }
 
