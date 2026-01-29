@@ -15,5 +15,15 @@
     "declaration": true
   },
   "include": ["src/**/*", "scripts/**/*"],
-  "exclude": ["node_modules", "dist", "src/**/*.test.ts"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/functions/customer/rejectPlans.test.ts",
+    "src/functions/customer/requestRevision.test.ts",
+    "src/functions/quotations/getQuotationHistory.test.ts",
+    "src/tests/handlePipelineAction.test.ts",
+    "src/tests/listQuotations-filtering.test.ts",
+    "src/tests/selectPlan.test.ts",
+    "src/utils/urlHelper.test.ts"
+  ]
 }

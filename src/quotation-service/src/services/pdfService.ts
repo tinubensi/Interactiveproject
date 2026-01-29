@@ -1,7 +1,60 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import PDFDocument from 'pdfkit';
-import { QuotationPlan } from '../models/quotation';
+import { Quotation, QuotationPlan } from '../models/quotation';
+import {
+  formatLimitValue,
+  extractNetworkProvider,
+  extractGeographicalScope,
+  extractCopayConsultation,
+  extractOutpatientSummary,
+  extractInpatientSummary,
+  extractMaternitySummary,
+  extractOtherBenefitsSummary,
+  extractAlternativeMedicineSummary,
+  extractBasisOfClaimSummary,
+  extractPreExistingSummary,
+} from '../utils/comparisonUtils';
 
 type PDFDocumentType = InstanceType<typeof PDFDocument>;
+
+/**
+ * Split text into lines that fit within widthPt (word wrap). Used for comparison table row splitting.
+ */
+export function getWrappedLines(
+  doc: PDFDocumentType,
+  text: string,
+  widthPt: number,
+  fontSize: number
+): string[] {
+  const t = (text || '').trim();
+  if (t === '') return [];
+  doc.fontSize(fontSize).font('Helvetica');
+  const words = t.split(/\s+/);
+  const lines: string[] = [];
+  let currentLine = '';
+  for (const word of words) {
+    const candidate = currentLine ? currentLine + ' ' + word : word;
+    if (doc.widthOfString(candidate) <= widthPt) {
+      currentLine = candidate;
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  return lines;
+}
+
+const COMPARISON_TITLE = 'Individual Medical Insurance Proposal';
+const MARGIN_PT = 36;
+const LABEL_COL_WIDTH_PT = 142;
+const ROW_LABEL_FONT_SIZE = 7;
+const CELL_FONT_SIZE = 6;
+const HEADER_FONT_SIZE = 8;
+const TITLE_FONT_SIZE = 10;
+const CELL_PAD = 3;
+const MIN_ROW_HEIGHT_PT = 14;
 
 export interface QuotationPDFData {
   referenceId: string;
@@ -363,6 +416,139 @@ class PDFService {
        .fillColor('#475569')
        .text(`Generated on ${this.formatDate(new Date())}`, 64, startY + 70, { align: 'center' })
        .text(`Document Reference: ${data.referenceId}`, 64, startY + 85, { align: 'center' });
+  }
+
+  /**
+   * Generate comparison table PDF (landscape A4, same rows as frontend comparison table)
+   */
+  async generateComparisonPDF(quotation: Quotation, plans: QuotationPlan[]): Promise<Buffer> {
+    const plansSlice = plans.slice(0, 5);
+    const numCols = 1 + plansSlice.length;
+    const contentWidth = (doc: PDFDocumentType) => doc.page.width - MARGIN_PT * 2;
+    const planColWidthPt = (doc: PDFDocumentType) =>
+      (contentWidth(doc) - LABEL_COL_WIDTH_PT) / plansSlice.length;
+
+    type RowDef = { label: string; getValue: (plan: QuotationPlan) => string };
+    const rows: RowDef[] = [
+      { label: 'Insurer Name', getValue: (p) => p.vendorName || 'N/A' },
+      { label: 'Network Provider', getValue: (p) => extractNetworkProvider(p) },
+      { label: 'Annual Limit', getValue: (p) => formatLimitValue(p.annualLimit, p.currency || 'AED') },
+      { label: 'Geographical Scope', getValue: (p) => extractGeographicalScope(p) },
+      { label: 'Deductible for Out-Patient Consultation', getValue: (p) => extractCopayConsultation(p) },
+      { label: 'Out Patient', getValue: (p) => extractOutpatientSummary(p) },
+      { label: 'Inpatient', getValue: (p) => extractInpatientSummary(p) },
+      { label: 'Maternity', getValue: (p) => extractMaternitySummary(p) },
+      { label: 'Other Benefits', getValue: (p) => extractOtherBenefitsSummary(p) },
+      { label: 'Alternative Medicine', getValue: (p) => extractAlternativeMedicineSummary(p) },
+      { label: 'Basis of Claim Settlement', getValue: (p) => extractBasisOfClaimSummary(p) },
+      { label: 'Pre-Existing Medical Condition', getValue: (p) => extractPreExistingSummary(p) },
+      { label: 'Comment', getValue: (p) => (p.comment != null && p.comment !== '' ? p.comment : 'N/A') },
+    ];
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        layout: 'landscape',
+        margins: { top: MARGIN_PT, bottom: MARGIN_PT, left: MARGIN_PT, right: MARGIN_PT },
+      });
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      const pageHeight = doc.page.height;
+      const planColW = planColWidthPt(doc);
+      const labelW = LABEL_COL_WIDTH_PT - CELL_PAD * 2;
+      const cellW = planColW - CELL_PAD * 2;
+      let y = MARGIN_PT;
+
+      const logoWidthPt = 120;
+      const logoGapPt = 12;
+      const logoPath = path.join(__dirname, '../../assets/logo.png');
+      if (fs.existsSync(logoPath)) {
+        doc.image(logoPath, MARGIN_PT, y, { width: logoWidthPt });
+        y += 60 + logoGapPt;
+      }
+
+      const drawHeader = () => {
+        doc.fontSize(HEADER_FONT_SIZE).font('Helvetica-Bold').fillColor('#000000');
+        doc.rect(MARGIN_PT, y, LABEL_COL_WIDTH_PT, MIN_ROW_HEIGHT_PT).fillColor('#e0e7ff').fill().fillColor('#000000');
+        doc.text('Plan', MARGIN_PT + CELL_PAD, y + CELL_PAD, { width: LABEL_COL_WIDTH_PT - CELL_PAD * 2, height: MIN_ROW_HEIGHT_PT - CELL_PAD * 2 });
+        let x = MARGIN_PT + LABEL_COL_WIDTH_PT;
+        for (const plan of plansSlice) {
+          doc.rect(x, y, planColW, MIN_ROW_HEIGHT_PT).fillColor('#e0e7ff').fill().fillColor('#000000');
+          doc.text(plan.planName || 'N/A', x + CELL_PAD, y + CELL_PAD, { width: planColW - CELL_PAD * 2, height: MIN_ROW_HEIGHT_PT - CELL_PAD * 2 });
+          x += planColW;
+        }
+        y += MIN_ROW_HEIGHT_PT;
+      };
+
+      doc.fontSize(TITLE_FONT_SIZE).font('Helvetica-Bold').text(COMPARISON_TITLE, MARGIN_PT, y);
+      y += 18;
+      doc.fontSize(HEADER_FONT_SIZE).font('Helvetica').fillColor('#64748b').text(`Reference: ${quotation.referenceId}`, MARGIN_PT, y);
+      y += 14;
+
+      drawHeader();
+
+      const pageBottom = pageHeight - MARGIN_PT;
+      const addNewPage = () => {
+        doc.addPage({ size: 'A4', layout: 'landscape', margins: { top: MARGIN_PT, bottom: MARGIN_PT, left: MARGIN_PT, right: MARGIN_PT } });
+        y = MARGIN_PT;
+        drawHeader();
+      };
+
+      for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+        const row = rows[rowIndex];
+        const cellTexts: string[] = [row.label, ...plansSlice.map((p) => row.getValue(p))];
+        doc.fontSize(ROW_LABEL_FONT_SIZE).font('Helvetica');
+        const cellLines: string[][] = [];
+        cellLines[0] = getWrappedLines(doc, row.label, labelW, ROW_LABEL_FONT_SIZE);
+        for (let c = 1; c < cellTexts.length; c++) {
+          doc.fontSize(CELL_FONT_SIZE).font('Helvetica');
+          cellLines[c] = getWrappedLines(doc, cellTexts[c], cellW, CELL_FONT_SIZE);
+        }
+        const numLines = Math.max(1, ...cellLines.map((arr) => arr.length));
+        const fill = rowIndex % 2 === 0 ? '#f8fafc' : '#ffffff';
+
+        for (let i = 0; i < numLines; i++) {
+          doc.fontSize(ROW_LABEL_FONT_SIZE).font('Helvetica');
+          let segmentH = MIN_ROW_HEIGHT_PT;
+          for (let c = 0; c < cellLines.length; c++) {
+            const w = c === 0 ? labelW : cellW;
+            const lineText = cellLines[c][i] ?? ' ';
+            const h = doc.heightOfString(lineText, { width: w });
+            segmentH = Math.max(segmentH, Math.ceil(h) + CELL_PAD * 2);
+          }
+          const lineHeight = Math.max(MIN_ROW_HEIGHT_PT, segmentH);
+
+          if (y + lineHeight > pageBottom) {
+            addNewPage();
+            doc.rect(MARGIN_PT, y, LABEL_COL_WIDTH_PT, lineHeight).fillColor(fill).fill().strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+            doc.fillColor('#000000').font('Helvetica-Bold').fontSize(ROW_LABEL_FONT_SIZE).text(row.label, MARGIN_PT + CELL_PAD, y + CELL_PAD, { width: labelW, height: lineHeight - CELL_PAD * 2 });
+            let x = MARGIN_PT + LABEL_COL_WIDTH_PT;
+            for (let c = 1; c < cellLines.length; c++) {
+              doc.rect(x, y, planColW, lineHeight).fillColor(fill).fill().strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+              doc.font('Helvetica').fontSize(CELL_FONT_SIZE).fillColor('#334155').text(cellLines[c][i] ?? '', x + CELL_PAD, y + CELL_PAD, { width: cellW, height: lineHeight - CELL_PAD * 2 });
+              x += planColW;
+            }
+            y += lineHeight;
+            continue;
+          }
+
+          doc.rect(MARGIN_PT, y, LABEL_COL_WIDTH_PT, lineHeight).fillColor(fill).fill().strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+          doc.fillColor('#000000').font('Helvetica-Bold').fontSize(ROW_LABEL_FONT_SIZE).text(cellLines[0][i] ?? '', MARGIN_PT + CELL_PAD, y + CELL_PAD, { width: labelW, height: lineHeight - CELL_PAD * 2 });
+          let x = MARGIN_PT + LABEL_COL_WIDTH_PT;
+          for (let c = 1; c < cellLines.length; c++) {
+            doc.rect(x, y, planColW, lineHeight).fillColor(fill).fill().strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+            doc.font('Helvetica').fontSize(CELL_FONT_SIZE).fillColor('#334155').text(cellLines[c][i] ?? '', x + CELL_PAD, y + CELL_PAD, { width: cellW, height: lineHeight - CELL_PAD * 2 });
+            x += planColW;
+          }
+          y += lineHeight;
+        }
+      }
+
+      doc.end();
+    });
   }
 }
 
