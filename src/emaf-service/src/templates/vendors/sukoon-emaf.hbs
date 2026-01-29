@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Declaration of Health - Medical Application Form</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #000000;
+            background-color: #cbcbcb;
+        }
+
+        /* Main page container - A4 size, no min-height for dynamic breaks */
+        .page {
+            width: 820px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            position: relative;
+        }
+
+        /* Content wrapper with padding */
+        .content {
+            padding: 40px 40px 40px 40px;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        /* ============ UTILITIES ============ */
+        .w-full {
+            width: 100%;
+        }
+
+        .italic {
+            font-style: italic;
+        }
+
+        /* ============ LOGO ============ */
+        .logo-table {
+            margin-bottom: 20px;
+        }
+
+        .logo-table td {
+            text-align: right;
+            vertical-align: top;
+        }
+
+        .logo-table img {
+            width: 270px;
+            height: auto;
+        }
+
+        /* ============ TITLE BANNER ============ */
+
+        .title-banner {
+            background-color: #FF5E00;
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: 400;
+            padding: 4px 5px;
+            display: inline-block;
+            text-transform: uppercase;
+            line-height: 1;
+            letter-spacing: 0.4px;
+        }
+
+        /* ============ SUBTITLE ============ */
+
+        .subtitle {
+            color: #671E75;
+            font-size: 20px;
+            font-weight: 400;
+            padding: 7px 5px 27px 5px;
+            text-transform: uppercase;
+        }
+
+        /* ============ INSTRUCTIONS ============ */
+
+        .instructions-table td {
+            color: #3e3e3e;
+            font-size: 11.8px;
+            line-height: 1.1;
+            padding: 0 0 2px;
+            vertical-align: top;
+        }
+
+        .instructions-table .bullet {
+            width: 25px;
+            font-size: 14px;
+            vertical-align: top;
+            text-align: left;
+            padding-left: 5px;
+        }
+
+        /* ============ PLEASE NOTE ============ */
+        .note-table {
+            margin-bottom: 18px;
+        }
+
+        .note-table td {
+            color: #000000;
+            font-size: 10pt;
+            line-height: 1.5;
+            padding: 3px 0;
+            vertical-align: top;
+        }
+
+        .note-title {
+            font-weight: bold;
+            font-style: italic;
+            padding-top: 2px !important;
+            padding-bottom: 3px !important;
+            font-size: 11.5px !important;
+        }
+
+        .note-item td {
+            font-style: italic;
+        }
+
+        .note-item .bullet {
+            width: 25px;
+            font-size: 10pt;
+            vertical-align: top;
+            text-align: center;
+        }
+
+        /* ============ SECTION HEADER ============ */
+        .section-header-table {
+            margin-top: 8px;
+        }
+
+        .section-header {
+            background-color: #671E75;
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 6px 12px;
+        }
+
+        /* ============ SECTION WRAPPER (Base) ============ */
+        .section-wrapper {
+            background-color: #D9C1D9;
+            border: 2px solid #987A9C;
+        }
+
+        .section-wrapper--form {
+            padding: 10px 8px 0px 8px;
+        }
+
+        .section-wrapper--content {
+            padding: 12px 15px;
+        }
+
+        .section-wrapper--flush {
+            padding: 0;
+        }
+
+        /* ============ FORM TABLE ============ */
+
+        .form-table {
+            border-collapse: collapse;
+        }
+
+        .form-table tr td {
+            padding: 10px 5px;
+            font-size: 11px;
+            vertical-align: middle;
+            border-bottom: 1px solid #D9C1D9;
+        }
+
+        .form-label {
+            background-color: #D9C1D9;
+            color: #1c0d2b;
+            border-right: 2px solid #D9C1D9;
+            width: 130px;
+        }
+
+        .form-label--sm {
+            width: 100px;
+        }
+
+        .form-field-purple {
+            background-color: #D9C1D9;
+        }
+
+        .form-field-white {
+            background-color: #ffffff;
+        }
+
+        /* ============ CHECKBOX ============ */
+        .checkbox {
+            display: inline-block;
+            width: 13px;
+            height: 13px;
+            border: 1px solid #5B3B62;
+            vertical-align: middle;
+            background-color: #ffffff;
+            margin: 0 3px;
+            position: relative;
+        }
+
+        .checkbox--checked {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23671E75' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6L9 17L4 12'/%3E%3C/svg%3E");
+            background-size: 11px 11px;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        /* ============ SECTION 2 ============ */
+
+        .question-table td {
+            border: 1px solid #c0c0c0;
+            padding: 10px 12px;
+            font-size: 9pt;
+            vertical-align: middle;
+            background-color: #ffffff;
+        }
+
+        .question-answer {
+            text-align: right;
+            white-space: nowrap;
+            width: 95px;
+        }
+
+        /* ============ MEMBERS TABLE (Section 3) ============ */
+        .members-table {
+            border-collapse: collapse;
+        }
+
+        .members-table td {
+            border: 1px solid #D9C1D9;
+            padding: 8px 5px;
+            font-size: 10px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .members-header td {
+            color: #1c0d2b;
+            font-weight: 500;
+            padding: 5px;
+            line-height: 1.3;
+        }
+
+        .members-row td {
+            background-color: #ffffff;
+            height: 28px;
+        }
+
+        /* ============ MEDICAL HISTORY (Section 4) ============ */
+
+        .medical-history-table {
+            border-collapse: collapse;
+        }
+
+        .medical-history-table td {
+            padding: 6px 0;
+            font-size: 11px;
+            vertical-align: top;
+            color: #1c0d2b;
+        }
+
+        .list-index {
+            width: 25px;
+            vertical-align: top;
+            padding-top: 6px;
+        }
+
+        .list-index--number {
+            font-weight: 500;
+        }
+
+        .list-index--letter {
+            padding-left: 15px;
+        }
+
+        .list-index--roman {
+            padding-left: 30px;
+            font-style: italic;
+        }
+
+        .mh-question {
+            padding-right: 10px;
+            line-height: 1.4;
+        }
+
+        .mh-answer {
+            text-align: right;
+            white-space: nowrap;
+            vertical-align: top;
+            padding-top: 6px;
+            width: 120px;
+        }
+
+        .mh-answer--wide {
+            width: 180px;
+        }
+
+        /* Date input boxes */
+        .date-box {
+            display: inline-block;
+            width: 16px;
+            height: 18px;
+            border: 1px solid #987A9C;
+            background-color: #ffffff;
+            text-align: center;
+            font-size: 9px;
+            color: #1c0d2b;
+            vertical-align: middle;
+            line-height: 18px;
+        }
+
+        .date-box.placeholder {
+            color: #999;
+            margin: 0 1px;
+        }
+
+        .date-separator {
+            display: inline-block;
+            margin: 0 1px;
+            color: #666;
+            font-size: 10px;
+        }
+
+        .date-group {
+            display: inline-block;
+            white-space: nowrap;
+        }
+
+        /* ============ SPECIFIC MEDICAL HISTORY (Section 5) ============ */
+
+        .specific-mh-intro {
+            font-weight: bold;
+            font-style: italic;
+            color: #671E75;
+            font-size: 11px;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        .specific-mh-table {
+            border-collapse: collapse;
+        }
+
+        .specific-mh-table td {
+            padding: 4px 0;
+            font-size: 11px;
+            vertical-align: top;
+            color: #1c0d2b;
+        }
+
+        .list-index--smh {
+            padding-top: 5px;
+            font-weight: 400;
+        }
+
+        .smh-condition {
+            padding-right: 10px;
+            line-height: 1.4;
+            vertical-align: top;
+            padding-top: 5px;
+        }
+
+        .smh-checkbox {
+            width: 30px;
+            text-align: center;
+            vertical-align: top;
+            padding-top: 5px;
+        }
+
+        .smh-spacer {
+            width: 30px;
+        }
+
+        /* ============ DETAILS TABLE (Section 6) ============ */
+
+        .details-table {
+            border-collapse: collapse;
+        }
+
+        .details-table th {
+            background-color: #E8D5E8;
+            color: #1c0d2b;
+            font-weight: 500;
+            font-size: 10px;
+            padding: 8px 5px;
+            text-align: center;
+            border: 1px solid #D9C1D9;
+            vertical-align: middle;
+        }
+
+        .details-table td {
+            background-color: #ffffff;
+            border: 1px solid #D9C1D9;
+            padding: 12px 5px;
+            font-size: 10px;
+            vertical-align: middle;
+        }
+
+        /* ============ BODY TEXT (Privacy & Declaration) ============ */
+        .body-text {
+            font-size: 10px;
+            color: #1c0d2b;
+            line-height: 1.5;
+            text-align: justify;
+        }
+
+        .body-text a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+
+        .body-text--spaced {
+            margin-bottom: 10px;
+        }
+
+        .body-text--spaced:last-of-type {
+            margin-bottom: 15px;
+        }
+
+        .signature-table {
+            border-collapse: collapse;
+        }
+
+        .signature-table td {
+            padding: 0;
+            vertical-align: top;
+        }
+
+        .signature-label {
+            color: #671E75;
+            font-size: 11px;
+            font-weight: 600;
+            padding-bottom: 5px;
+        }
+
+        .signature-field {
+            background-color: #ffffff;
+            border: none;
+            height: 45px;
+            margin-bottom: 10px;
+            padding: 0 5px;
+        }
+
+        .signature-field--tall {
+            height: 70px;
+            padding: 0;
+        }
+
+        /* Footer table styles handled via w-full utility */
+
+        .footer-table td {
+            font-size: 9px;
+            color: #333333;
+            text-align: center;
+            padding: 2px 0;
+            line-height: 1.2;
+        }
+
+        .page-number {
+            text-align: right;
+            width: 100%;
+            display: block;
+            padding: 20px 40px 0 !important;
+            color: #333;
+            font-size: 12px;
+        }
+
+        .footer-wrapper {
+            padding-top: 20px;
+        }
+
+        .pdf-pooter {
+            position: absolute;
+            bottom: 40px;
+            left: 0;
+            right: 0;
+            width: 100%;
+        }
+
+        @media print {
+            body {
+                background-color: #ffffff;
+            }
+
+            .page {
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ==================== PAGE 1 ==================== -->
+    <table class="page" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="content" valign="top">
+                <!-- Logo -->
+                <table class="logo-table w-full" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td><img src="data:image/png;base64,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" alt="Sukoon Insurance"></td>
+                    </tr>
+                </table>
+
+                <!-- Title Banner -->
+                <table class="w-full" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td class="title-banner">DECLARATION OF HEALTH</td>
+                    </tr>
+                </table>
+
+                <!-- Subtitle -->
+                <table class="w-full" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td class="subtitle">MEDICAL APPLICATION FORM</td>
+                    </tr>
+                </table>
+
+                <!-- Instructions -->
+                <table class="instructions-table w-full" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td class="bullet">•</td>
+                        <td>This application form shall become an integral part of your insurance contract (policy)
+                            therefore, it is important to complete the application form in clearly legible hand –
+                            writing. The application form must be completed by the principal member/ applicant who
+                            intends to hold the policy in his/ her name (the Principal Member /Applicant must be above
+                            18 years of age).</td>
+                    </tr>
+                    <tr>
+                        <td class="bullet">•</td>
+                        <td>Please use <strong>CAPITAL LETTERS</strong> while filling – in this application for and tick
+                            the appropriate answer box.</td>
+                    </tr>
+                    <tr>
+                        <td class="bullet">•</td>
+                        <td>The application form once duly complete, must be received by us within 30 days from date of
+                            signing the application form. If signing date exceeds 30 days, the application form shall
+                            require revalidation by countersignature in current date.</td>
+                    </tr>
+                    <tr>
+                        <td class="bullet">•</td>
+                        <td>Please countersign next to each alteration/ correction in the application form</td>
+                    </tr>
+                </table>
+
+                <!-- Please Note -->
+                <table class="instructions-table w-full" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td colspan="2" class="note-title">Please Note:</td>
+                    </tr>
+                    <tr class="note-item">
+                        <td class="bullet">•</td>
+                        <td>If a pre-existing medical condition and/or existing pregnancy is <strong>NOT FULLY
+                                DISCLOSED</strong>, we may decline the claim relating to it (or its consequences).
+                            Therefore, it is in your best interest to disclose your medical history completely.</td>
+                    </tr>
+                    <tr class="note-item">
+                        <td class="bullet">•</td>
+                        <td>In case where your application is approved for medical insurance, your cover shall start on,
+                            or after, the date on which your application is approved/risk is underwritten.</td>
+                    </tr>
+                    <tr class="note-item">
+                        <td class="bullet">•</td>
+                        <td>A 'pre-existing medical condition' means any disease, illness and/or injury diagnosed by a
+                            physician (even if no treatment was advised) or brought into a person's awareness at any
+                            time prior to applying for medical insurance due to which the individual experiences
+                            symptoms, receives treatment and/or incurs expense related to it.</td>
+                    </tr>
+                </table>
+
+                <!-- Section 1: Member Details -->
+                <table class="section-header-table w-full" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td class="section-header">1. &nbsp; Member Details
+                            <small style="font-weight: 300;">(Principal Member/Applicant who
+                                intends to hold the policy as 'Policyholder')</small>
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="section-wrapper section-wrapper--form">
+                    <table class="form-table w-full" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td class="form-label">Applicant's Name</td><td class="form-field-white" colspan="3">{{memberDetails.applicantName}}</td>
+                        </tr>
+                        <tr>
+                            <td class="form-label">Relationship with the<br>proposed insured</td><td class="form-field-white" colspan="3">{{memberDetails.relationship}}</td>
+                        </tr>
+                        <tr>
+                            <td class="form-label">Address</td><td class="form-field-white" colspan="3">{{memberDetails.address}}</td>
+                        </tr>
+                        <tr>
+                            <td class="form-label">P.O. Box</td><td class="form-field-white" width="200">{{memberDetails.poBox}}</td><td class="form-label form-label--sm">Email address</td><td class="form-field-white">{{memberDetails.email}}</td>
+                        </tr>
+                        <tr>
+                            <td class="form-label">Contact Number</td><td class="form-field-white" width="200">{{memberDetails.contactNumber}}</td><td class="form-label form-label--sm">Emirates ID</td><td class="form-field-white">{{memberDetails.emiratesId}}</td>
+                        </tr>
+                        <tr>
+                            <td class="form-label">Occupation</td><td class="form-field-white" width="200">{{memberDetails.occupation}}</td><td class="form-label form-label--sm">Sponsor's Name</td><td class="form-field-white">{{memberDetails.sponsorName}}</td>
+                        </tr>
+                        <tr>
+                            <td class="form-label">Salary (AED)</td>
+                            <td class="form-field-purple" colspan="3" style="padding: 7px 12px 7px 0px;">
+                                Up to 4,000 &nbsp;<span class="checkbox {{#if (eq memberDetails.salary "up_to_4000")}}checkbox--checked{{/if}}"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Above 4,000 &nbsp;<span class="checkbox {{#if (eq memberDetails.salary "above_4000")}}checkbox--checked{{/if}}"></span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Section 2: Details of Existing or Previous Insurance -->
+                <table class="section-header-table w-full" cellpadding="0" cellspacing="0" style="margin-top: 10px;">
+                    <tr>
+                        <td class="section-header">2. &nbsp; Details of Existing or Previous Insurance</td>
+                    </tr>
+                </table>
+                <div class="section-wrapper section-wrapper--form" style="padding-top: 0;">
+                    <table class="form-table w-full" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td class="form-label" style="width: auto;">Do you have existing or previous health
+                                insurance with Sukoon
+                                Insurance
+                                PJSC
+                                (hereinafter
+                                referred to as "Sukoon") or existing valid health insurance with any other insurer in
+                                the
+                                UAE?</td>
+                            <td class="question-answer" width="100px;">
+                                <span class="checkbox {{#if previousInsurance.hasInsurance}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;
+                                <span class="checkbox {{#unless previousInsurance.hasInsurance}}checkbox--checked{{/unless}}"></span>&nbsp;No
+                            </td>
+                        </tr>
+                    </table>
+                    <table class="form-table w-full" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td class="form-label" style="vertical-align: top; padding-top: 10px;">If yes, please
+                                provide<br>details ( Policy number),<br>expiry date</td>
+                            <td class="form-field-purple">
+                                <div class="form-field-white" style="padding: 10px 5px;">{{#if previousInsurance.hasInsurance}}{{previousInsurance.policyNumber}}{{#if previousInsurance.expiryDate}}, Expiry: {{previousInsurance.expiryDate}}{{/if}}{{/if}}</div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+
+
+
+                <footer class="pdf-pooter">
+                    <!-- Footer -->
+                    <div class="footer-wrapper">
+                        <table class="footer-table w-full" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td><strong>SUKOON.COM</strong> | +971 4 233 7777 | P.O. Box 5209 | Dubai, United Arab
+                                    Emirates<br />
+                                    سكون للتأمين ش.م.ع. رأس المال المدفوع ١٢٥,٨٧٢,٤٦١ درهم إماراتي،
+                                    رقم ر.ت. ٢٠٣٩٧٠، مرخصة من قبل المصرف المركزي لدولة الإمارات العربية المتحدة بموجب
+                                    رقم
+                                    قيد 9 بتاريخ 1984/12/24، رقم التسجيل الضريبي ١٠٠٢٥٨٥٩٤٩٠٠٠٠٣
+                                    <br />
+                                    Sukoon Insurance PJSC, Paid up Capital AED 461,872,125, C.L. No. 203970, Regulated
+                                    by
+                                    the Central Bank of the UAE No. 9 dated 24/12/1984, TRN 100258594900003
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <span class="page-number">1</span>
+                </footer>
+
+            </td>
+        </tr>
+    </table>
+
+    <!-- ==================== PAGE 2 ==================== -->
+    <table class="page" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="content" valign="top">
+                <!-- Logo -->
+                <table class="logo-table w-full" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td><img src="data:image/png;base64,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" style="width: 70px;" alt="Sukoon Insurance"></td>
+                    </tr>
+                </table>
+
+                <!-- Section 3: Details of Members to be insured -->
+                <table class="section-header-table w-full" cellpadding="0" cellspacing="0" style="margin-top: 10px;">
+                    <tr>
+                        <td class="section-header">3. &nbsp; Details of Members to be insured (Self, Spouse & Children)
+                        </td>
+                    </tr>
+                </table>
+                <div class="section-wrapper section-wrapper--form" style="padding-top: 0px;padding-bottom: 10px;">
+                    <table class="members-table w-full" cellpadding="0" cellspacing="0">
+                        <tr class="members-header">
+                            <td>Name</td>
+                            <td>Nationality</td>
+                            <td>Passport/Emirates<br>ID Number</td>
+                            <td>Relationship</td>
+                            <td>Marital<br>Status</td>
+                            <td>Date of<br>Birth</td>
+                            <td>Gender</td>
+                            <td>Height</td>
+                            <td>Weight</td>
+                            <td>Visa<br>Emirate</td>
+                        </tr>
+                        {{#each members}}
+                        <tr class="members-row">
+                            <td>{{name}}</td>
+                            <td>{{nationality}}</td>
+                            <td>{{passportOrEmiratesId}}</td>
+                            <td>{{relationship}}</td>
+                            <td>{{maritalStatus}}</td>
+                            <td>{{dateOfBirth}}</td>
+                            <td>{{gender}}</td>
+                            <td>{{height}}</td>
+                            <td>{{weight}}</td>
+                            <td>{{visaEmirate}}</td>
+                        </tr>
+                        {{/each}}</table>
+                <div class="section-wrapper section-wrapper--content">
+                    <table class="medical-history-table w-full" cellpadding="0" cellspacing="0">
+                        <!-- Question 1 -->
+                        <tr>
+                            <td class="list-index list-index--number">1.</td>
+                            <td class="mh-question" colspan="2">Have you ever been diagnosed or investigated for a
+                                medical condition requiring regular outpatient treatment, follow – ups or specialized
+                                investigations (Ultrasound/MRI/CT scan) or inpatient treatment/hospitalization? If yes,
+                                please specify condition/s and attach applicable test results:</td>
+                            <td class="mh-answer"><span class="checkbox {{#if medicalHistory.question1.hasCondition}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question1.hasCondition}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- 1.a -->
+                        <tr>
+                            <td></td>
+                            <td class="list-index list-index--letter">a.</td>
+                            <td class="mh-question">Have you been diagnosed for High blood sugar (Diabetes mellitus)?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question1.diabetes.has}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question1.diabetes.has}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- 1.a.i -->
+                        <tr>
+                            <td></td>
+                            <td class="list-index list-index--roman">i.</td>
+                            <td class="mh-question italic">Are you taking Insulin (Diabetes Mellitus type 1)?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question1.diabetes.takingInsulin}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question1.diabetes.takingInsulin}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- 1.a.ii -->
+                        <tr>
+                            <td></td>
+                            <td class="list-index list-index--roman">ii.</td>
+                            <td class="mh-question italic">Have you been diagnosed or investigated for diminished vision (retinopathy), kidney impairment (nephropathy) or numbness of limbs (neuropathy) or advised for hospitalization?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question1.diabetes.hasComplications}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question1.diabetes.hasComplications}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- 1.b -->
+                        <tr>
+                            <td></td>
+                            <td class="list-index list-index--letter">b.</td>
+                            <td class="mh-question">Have you been diagnosed with High blood pressure (Hypertension) and/ or abnormal lipid profile (Dyslipidemia/ Hyperlipidemia)?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question1.hypertension.has}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question1.hypertension.has}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- 1.b.i -->
+                        <tr>
+                            <td></td>
+                            <td class="list-index list-index--roman">i.</td>
+                            <td class="mh-question italic">Have you been investigated or diagnosed for chest pain (angina pectoris) or any heart disease (coronary artery/ ischemic heart disease, cardiomyopathy, or heart valve incompetence)?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question1.hypertension.heartDiseaseInvestigated}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question1.hypertension.heartDiseaseInvestigated}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- 1.c -->
+                        <tr>
+                            <td></td>
+                            <td class="list-index list-index--letter">c.</td>
+                            <td class="mh-question">Have you been diagnosed with disease or disorder of Thyroid Gland with or without abnormal thyroid function tests (Hypothyroidism, Hyperthyroidism)?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question1.thyroid.has}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question1.thyroid.has}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- 1.c.i -->
+                        <tr>
+                            <td></td>
+                            <td class="list-index list-index--roman">i.</td>
+                            <td class="mh-question italic">Do you have Enlarge thyroid (Thyroid nodule, Multinodular Goiter) with or without past history of surgical treatment or Needle Biopsy?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question1.thyroid.enlargedThyroid}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question1.thyroid.enlargedThyroid}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- 1.c.ii -->
+                        <tr>
+                            <td></td>
+                            <td class="list-index list-index--roman">ii.</td>
+                            <td class="mh-question italic">Have you been diagnosed with Hyperthyroidism, Thyroiditis or Graves' disease with or without past history of surgical treatment or Needle Biopsy?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question1.thyroid.hyperthyroidism}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question1.thyroid.hyperthyroidism}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- 1.d -->
+                        <tr>
+                            <td></td>
+                            <td class="list-index list-index--letter">d.</td>
+                            <td class="mh-question">Have you been diagnosed for Breathlessness or experienced whistling sound on breathing (Asthma)?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question1.asthma.has}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question1.asthma.has}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- 1.d.i -->
+                        <tr>
+                            <td></td>
+                            <td class="list-index list-index--roman">i.</td>
+                            <td class="mh-question italic">Have you visited to an emergency room or hospitalized for treatment of Asthma?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question1.asthma.emergencyVisit}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question1.asthma.emergencyVisit}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- 1.e -->
+                        <tr>
+                            <td></td>
+                            <td class="list-index list-index--letter">e.</td>
+                            <td class="mh-question">Do you have any other medical conditions, Physical or mental disorder/disability not listed above?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question1.otherConditions}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question1.otherConditions}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- Question 2 -->
+                        <tr>
+                            <td class="list-index list-index--number">2.</td>
+                            <td class="mh-question" colspan="2">Are you currently Pregnant?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question2.isPregnant}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question2.isPregnant}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- 2.a -->
+                        <tr>
+                            <td></td>
+                            <td class="list-index list-index--letter">a.</td>
+                            <td class="mh-question italic">Is your pregnancy single or multiple (twin, triplet etc.)</td><td class="mh-answer"><span class="checkbox {{#if (eq medicalHistory.question2.pregnancyType "single")}}checkbox--checked{{/if}}"></span>&nbsp;Single &nbsp;&nbsp;<span class="checkbox {{#if (eq medicalHistory.question2.pregnancyType "multiple")}}checkbox--checked{{/if}}"></span>&nbsp;Multiple</td>
+                        </tr>
+                        <!-- 2.b -->
+                        <tr>
+                            <td></td>
+                            <td class="list-index list-index--letter">b.</td>
+                            <td class="mh-question italic">Are there any pregnancy complications (Fetal Growth Retardation or Congenital anomaly etc.)?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question2.hasComplications}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question2.hasComplications}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <footer class="pdf-pooter">
+                    <!-- Footer -->
+                    <div class="footer-wrapper">
+                        <table class="footer-table w-full" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td><strong>SUKOON.COM</strong> | +971 4 233 7777 | P.O. Box 5209 | Dubai, United Arab
+                                    Emirates<br />
+                                    سكون للتأمين ش.م.ع. رأس المال المدفوع ١٢٥,٨٧٢,٤٦١ درهم إماراتي،
+                                    رقم ر.ت. ٢٠٣٩٧٠، مرخصة من قبل المصرف المركزي لدولة الإمارات العربية المتحدة بموجب
+                                    رقم
+                                    قيد 9 بتاريخ 1984/12/24، رقم التسجيل الضريبي ١٠٠٢٥٨٥٩٤٩٠٠٠٠٣
+                                    <br />
+                                    Sukoon Insurance PJSC, Paid up Capital AED 461,872,125, C.L. No. 203970, Regulated
+                                    by
+                                    the Central Bank of the UAE No. 9 dated 24/12/1984, TRN 100258594900003
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <span class="page-number">2</span>
+                </footer>
+
+            </td>
+        </tr>
+    </table>
+
+    <!-- ==================== PAGE 3 ==================== -->
+    <table class="page" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="content" valign="top">
+                <!-- Logo -->
+                <table class="logo-table w-full" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td><img src="data:image/png;base64,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" style="width: 70px;" alt="Sukoon Insurance"></td>
+                    </tr>
+                </table>
+
+                <!-- Section 4: Medical History (Continued) -->
+                <table class="section-header-table w-full" cellpadding="0" cellspacing="0" style="margin-top: 10px;">
+                    <tr>
+                        <td class="section-header">4. &nbsp; Medical History (Continued)</td>
+                    </tr>
+                </table>
+                <div class="section-wrapper section-wrapper--content">
+                    <table class="medical-history-table w-full" cellpadding="0" cellspacing="0">
+                        <!-- 2.c - Expected date of delivery -->
+                        <tr>
+                            <td></td>
+                            <td class="list-index list-index--letter">c.</td>
+                            <td class="mh-question italic">Expected date of delivery</td>
+                            <td class="mh-answer mh-answer--wide">
+                                <span class="date-group">{{splitDate medicalHistory.question2.expectedDeliveryDate "DD/MM/YYYY"}}</span>
+                            </td>
+                        </tr>
+
+                        <!-- remove placeholder from date boxes -->
+
+                        <!-- 2.d -->
+                        <tr>
+                            <td></td>
+                            <td class="list-index list-index--letter">d.</td>
+                            <td class="mh-question italic">Are you currently trying to get pregnant?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question2.tryingToGetPregnant}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question2.tryingToGetPregnant}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- 2.e -->
+                        <tr>
+                            <td></td>
+                            <td class="list-index list-index--letter">e.</td>
+                            <td class="mh-question italic">Are you undergoing any form of fertility treatment?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question2.fertilityTreatment}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question2.fertilityTreatment}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- 2.f - Last two Menstrual Dates -->
+                        <tr>
+                            <td></td>
+                            <td class="list-index list-index--letter">f.</td>
+                            <td class="mh-question italic">Input Last two Menstrual Dates</td>
+                            <td class="mh-answer mh-answer--wide">
+                                <span class="date-group">{{splitDate medicalHistory.question2.lastMenstrualDate1 "DD/MM/YYYY"}}</span>
+                                &nbsp;&nbsp;
+                                <span class="date-group">{{splitDate medicalHistory.question2.lastMenstrualDate2 "DD/MM/YYYY"}}</span>
+                            </td>
+                        </tr>
+                        <!-- Question 3 -->
+                        <tr>
+                            <td class="list-index list-index--number">3.</td>
+                            <td class="mh-question" colspan="2">Have you ever been treated or diagnosed with Lump/Cyst/Cancer/Tumor?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question3.hasLumpCystCancer}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question3.hasLumpCystCancer}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- Question 4 -->
+                        <tr>
+                            <td class="list-index list-index--number">4.</td>
+                            <td class="mh-question" colspan="2">Have you undergone surgery or advised a surgery or currently hospitalized or requiring daycare or inpatient treatment?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question4.hasSurgery}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question4.hasSurgery}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- Question 5 -->
+                        <tr>
+                            <td class="list-index list-index--number">5.</td>
+                            <td class="mh-question" colspan="2">Do you have any sign, symptom, sickness requiring treatment or medications or have been advised to take any medication or treatment for more than 07 days or are you currently taking any medication?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question5.hasMedications}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question5.hasMedications}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                        <!-- Question 6 -->
+                        <tr>
+                            <td class="list-index list-index--number">6.</td>
+                            <td class="mh-question" colspan="2">Have you visited clinics/ hospitals for assessment, Physiotherapy & treatment for back pain (e.g., Neck Pain, Low Back Pain, etc.)?</td><td class="mh-answer"><span class="checkbox {{#if medicalHistory.question6.hasBackPain}}checkbox--checked{{/if}}"></span>&nbsp;Yes &nbsp;&nbsp;<span class="checkbox {{#unless medicalHistory.question6.hasBackPain}}checkbox--checked{{/unless}}"></span>&nbsp;No</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Section 5: Specific Medical History -->
+                <table class="section-header-table w-full" cellpadding="0" cellspacing="0" style="margin-top: 10px;">
+                    <tr>
+                        <td class="section-header">5. &nbsp; Specific Medical History</td>
+                    </tr>
+                </table>
+                <div class="section-wrapper section-wrapper--content">
+                    <div class="specific-mh-intro">
+                        Please confirm if you have / had received treatment or been investigated for any of the
+                        following medical conditions.<br>
+                        You may select multiple answers (if you meet more than one condition).
+                    </div>
+                    <table class="specific-mh-table w-full" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td class="list-index list-index--smh">1.</td>
+                            <td class="smh-condition">Birth Malformation, congenital condition, Developmental disorder
+                            </td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition1}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">2.</td>
+                            <td class="smh-condition">Blood disease (Anemia, Leukemia, Polycythemia, Thrombocytopenia)
+                            </td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition2}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="list-index list-index--smh">3.</td>
+                            <td class="smh-condition">Chronic Obstructive Pulmonary Disease Chronic bronchitis,
+                                Bronchiectasis)</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition3}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">4.</td>
+                            <td class="smh-condition">Chronic Kidney disease, Renal impairment/ Failure</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition4}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="list-index list-index--smh">5.</td>
+                            <td class="smh-condition">Bipolar Disorder</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition5}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">6.</td>
+                            <td class="smh-condition">Chronic liver disease, Cirrhosis of liver</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition6}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="list-index list-index--smh">7.</td>
+                            <td class="smh-condition">Cerebrovascular Stroke (CVA)</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition7}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">8.</td>
+                            <td class="smh-condition">Cataract</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition8}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="list-index list-index--smh">9.</td>
+                            <td class="smh-condition">Communicable Disease</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition9}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">10.</td>
+                            <td class="smh-condition">Crohn's disease</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition10}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="list-index list-index--smh">11.</td>
+                            <td class="smh-condition">Diverticulosis of intestine</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition11}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">12.</td>
+                            <td class="smh-condition">Cystic Fibrosis</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition12}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="list-index list-index--smh">13.</td>
+                            <td class="smh-condition">Enlarge tonsils or adenoids</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition13}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">14.</td>
+                            <td class="smh-condition">Head Injury</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition14}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="list-index list-index--smh">15.</td>
+                            <td class="smh-condition">Hemorrhoids, Piles</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition15}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">16.</td>
+                            <td class="smh-condition">Heart Disease or Heart Failure</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition16}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="list-index list-index--smh">17.</td>
+                            <td class="smh-condition">Hypersplenism</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition17}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">18.</td>
+                            <td class="smh-condition">Hernia (Inguinal, umbilical, incisional)</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition18}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="list-index list-index--smh">19.</td>
+                            <td class="smh-condition">Immunodeficiency state specified</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition19}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">20.</td>
+                            <td class="smh-condition">Kidney or Gall bladder stone</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition20}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="list-index list-index--smh">21.</td>
+                            <td class="smh-condition">Myasthenia Gravis</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition21}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">22.</td>
+                            <td class="smh-condition">Motor neuron disease</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition22}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="list-index list-index--smh">23.</td>
+                            <td class="smh-condition">Optic Neuritis</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition23}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">24.</td>
+                            <td class="smh-condition">Multiple sclerosis</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition24}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="list-index list-index--smh">25.</td>
+                            <td class="smh-condition">Organ Transplant</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition25}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">26.</td>
+                            <td class="smh-condition">Osteoarthritis (Knee or Hip)</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition26}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="list-index list-index--smh">27.</td>
+                            <td class="smh-condition">Prostate Enlargement (Male)</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition27}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">28.</td>
+                            <td class="smh-condition">Pancreatitis</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition28}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="list-index list-index--smh">29.</td>
+                            <td class="smh-condition">Psoriasis</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition29}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">30.</td>
+                            <td class="smh-condition">Rheumatoid arthritis</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition30}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="list-index list-index--smh">31.</td>
+                            <td class="smh-condition">Retinal detachment</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition31}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">32.</td>
+                            <td class="smh-condition">Sinusitis, Nasal Polyp</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition32}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="list-index list-index--smh">33.</td>
+                            <td class="smh-condition">Ulcerative colitis</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition33}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">34.</td>
+                            <td class="smh-condition">Varicose veins of lower extremities</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition34}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="list-index list-index--smh">35.</td>
+                            <td class="smh-condition">Viral Hepatitis (B, C or Delta)</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition35}}checkbox--checked{{/if}}"></span></td>
+                            <td class="smh-spacer"></td>
+                            <td class="list-index list-index--smh">36.</td>
+                            <td class="smh-condition">Others</td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition36}}checkbox--checked{{/if}}"></span></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <footer class="pdf-pooter">
+                    <!-- Footer -->
+                    <div class="footer-wrapper">
+                        <table class="footer-table w-full" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td><strong>SUKOON.COM</strong> | +971 4 233 7777 | P.O. Box 5209 | Dubai, United Arab
+                                    Emirates<br />
+                                    سكون للتأمين ش.م.ع. رأس المال المدفوع ١٢٥,٨٧٢,٤٦١ درهم إماراتي،
+                                    رقم ر.ت. ٢٠٣٩٧٠، مرخصة من قبل المصرف المركزي لدولة الإمارات العربية المتحدة بموجب
+                                    رقم
+                                    قيد 9 بتاريخ 1984/12/24، رقم التسجيل الضريبي ١٠٠٢٥٨٥٩٤٩٠٠٠٠٣
+                                    <br />
+                                    Sukoon Insurance PJSC, Paid up Capital AED 461,872,125, C.L. No. 203970, Regulated
+                                    by
+                                    the Central Bank of the UAE No. 9 dated 24/12/1984, TRN 100258594900003
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <span class="page-number">3</span>
+                </footer>
+
+            </td>
+        </tr>
+    </table>
+
+    <!-- ==================== PAGE 4 ==================== -->
+    <table class="page" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="content" valign="top">
+                <!-- Logo -->
+                <table class="logo-table w-full" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td><img src="data:image/png;base64,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" style="width: 70px;" alt="Sukoon Insurance"></td>
+                    </tr>
+                </table>
+
+                <!-- Section 6: Details of YES answers -->
+                <table class="section-header-table w-full" cellpadding="0" cellspacing="0" style="margin-top: 10px;">
+                    <tr>
+                        <td class="section-header">6. &nbsp; Please provide details of ALL questions which have been
+                            answered YES for Self and Dependent (s) in the below table</td>
+                    </tr>
+                </table>
+                <div class="section-wrapper section-wrapper--flush">
+                    <table class="details-table w-full" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <th style="width: 15%;">Member's<br>Name</th>
+                            <th style="width: 10%;">Question<br>No.</th>
+                            <th style="width: 25%;">Medical Condition/ Type<br>of Disorder</th>
+                            <th style="width: 12%;">Date of<br>Onset</th>
+                            <th style="width: 20%;">Details of<br>Treatment</th>
+                            <th style="width: 18%;">Name of<br>Hospital/ Clinic</th>
+                        </tr>
+                        {{#each yesAnswerDetails}}
+                        <tr>
+                            <td>{{memberName}}</td>
+                            <td>{{questionNumber}}</td>
+                            <td>{{medicalCondition}}</td>
+                            <td>{{dateOfOnset}}</td>
+                            <td>{{treatmentDetails}}</td>
+                            <td>{{hospitalClinic}}</td>
+                        </tr>
+                        {{/each}}          </table>
+                <div class="section-wrapper section-wrapper--content">
+                    <div class="body-text">
+                        Sukoon Insurance PJSC (hereinafter referred to as "Sukoon") respects your privacy and is
+                        committed to protecting it. Sukoon abides by Federal UAE Data Protection regulations as is
+                        applicable to Sukoon within UAE. Each of the applicant(s), proposer(s), insured member(s),
+                        beneficiary(ies), insurance intermediary(ies), any person(s) contacting Sukoon for any purpose
+                        (altogether referred to as "Data Subject"/"you"/"your") hereby consents and authorises Sukoon
+                        Insurance PJSC ("Sukoon") to collect, use, store, maintain, transfer, disclose, Process, Data
+                        Subject's personal data (which includes but is not limited to personal identification data,
+                        personal sensitive data, personal heath data as provided to and/or obtained by Sukoon) in
+                        accordance with Sukoon's data privacy policy as published on <a
+                            href="https://www.sukoon.com/privacy-policy">https://www.sukoon.com/privacy-policy</a>
+                        ("Privacy Policy"), which each Data Subject confirms to have been notified and having read,
+                        consented to the same. The Data Subject confirms to have notified all other relevant Data
+                        Subject(s) about Sukoon's Privacy Policy and to have obtained their relevant consents prior to
+                        transferring any of their personal data to Sukoon.
+                    </div>
+                </div>
+
+                <footer class="pdf-pooter">
+                    <!-- Footer -->
+                    <div class="footer-wrapper">
+                        <table class="footer-table w-full" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td><strong>SUKOON.COM</strong> | +971 4 233 7777 | P.O. Box 5209 | Dubai, United Arab
+                                    Emirates<br />
+                                    سكون للتأمين ش.م.ع. رأس المال المدفوع ١٢٥,٨٧٢,٤٦١ درهم إماراتي،
+                                    رقم ر.ت. ٢٠٣٩٧٠، مرخصة من قبل المصرف المركزي لدولة الإمارات العربية المتحدة بموجب
+                                    رقم
+                                    قيد 9 بتاريخ 1984/12/24، رقم التسجيل الضريبي ١٠٠٢٥٨٥٩٤٩٠٠٠٠٣
+                                    <br />
+                                    Sukoon Insurance PJSC, Paid up Capital AED 461,872,125, C.L. No. 203970, Regulated
+                                    by
+                                    the Central Bank of the UAE No. 9 dated 24/12/1984, TRN 100258594900003
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <span class="page-number">4</span>
+                </footer>
+
+            </td>
+        </tr>
+    </table>
+
+    <!-- ==================== PAGE 5 ==================== -->
+    <table class="page" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="content" valign="top">
+                <!-- Logo -->
+                <table class="logo-table w-full" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td><img src="data:image/png;base64,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" style="width: 70px;" alt="Sukoon Insurance"></td>
+                    </tr>
+                </table>
+
+
+                <!-- Section 8: Declaration -->
+                <table class="section-header-table w-full" cellpadding="0" cellspacing="0" style="margin-top: 10px;">
+                    <tr>
+                        <td class="section-header">8. &nbsp; Declaration</td>
+                    </tr>
+                </table>
+                <div class="section-wrapper section-wrapper--content">
+                    <div class="body-text body-text--spaced">
+                        I declare that I have clearly understood the terms and conditions of the product I am applying
+                        for and have clearly understood its features and benefits including the exclusions. I further
+                        declare that I have answered all the questions in this proposal form after clearly understanding
+                        them and that I have duly signed this proposal at required places. I confirm to have fully
+                        understood the nature of the questions and the importance of disclosing all information while
+                        answering such questions. I declare that the answers given by me to all questions in the
+                        proposal form are true and complete in every respect and that I have not withheld any material
+                        information or suppressed any material fact. I undertake to notify Sukoon of any change in any
+                        information given by me in this proposal form. I confirm that I clearly understand that in case
+                        of any misstatement, misrepresentation and/or suppression of any data and/or information and/or
+                        where I do not immediately inform Sukoon of any changes in information provided in this proposal
+                        form, Sukoon has the right to repudiate any and all claim(s) under any policy if issued based on
+                        this proposal form and/or at sole discretion of Sukoon to consider any issued policy based on
+                        this proposal form as cancelled or void.
+                    </div>
+                    <div class="body-text body-text--spaced">
+                        I hereby authorize Sukoon i) to contact me anytime and through any medium (phone, email, sms,
+                        telephone etc.) for purpose of obtaining more information about this proposal form and/or for
+                        keeping me informed about their other products and/or promotion activities, ii) to collect,
+                        store, process, share and transfer your personal data (including but not limited to your
+                        personal sensitive information) to to third parties including but not limited to reinsurers,
+                        surveyors, loss adjustors, loss assessors , IT service providers, claim administrators, medical
+                        providers, emergency support/assistance providers, professional advisors, consultants,auditors,
+                        additional administrative and/or support service providers, and other entities or persons ,
+                        whether within or outside the UAE , as may be required in relation to underwriting/
+                        issuing/administering / processing/ reinsuring your policy/ claims or as may be required by
+                        Sukoon including but not limited to for further product development/statistical analysis etc.,
+                        or as may be required under law/regulatory requirements.
+                    </div>
+                    <div class="body-text body-text--spaced">
+                        I hereby also authorize my past/present employer/business associates, medical
+                        practitioner(s)/hospitals/laboratories/medical providers, insurance companies, financial
+                        institutions to release to Sukoon all details, records, facts and information (including medical
+                        details, KYC records, AML-CTF &FATCA details) as required anytime by Sukoon for assessment of
+                        risk and/or for processing of claims if subsequently an insurance policy is issued based on this
+                        proposal form. This proposal form shall be a part of the insurance policy in case of its
+                        acceptance by Sukoon. I understand that I should be having DHA compliant insurance policy if I
+                        or my dependents are holding Dubai visa and a Department of Health, Abu Dhabi compliant
+                        insurance policy if I or my dependents are holding an Abu Dhabi/Al Ain Visa. I hereby agree to
+                        notify Sukoon in case my visa changes during a policy year to be enrolled under an Insurance
+                        policy that is compliant with respective regulator.
+                    </div>
+                    <div class="body-text body-text--spaced">
+                        I understand and acknowledge any pregnancy not declared at the time of this application's
+                        coverage will be at the sole discretion of the insurer. I also acknowledge and understand any
+                        pregnancy, which arises within forty calendar days from the date of this application; coverage
+                        will also be at the discretion of the insurer. The insurer has the right not to cover (reject)
+                        any claims relating to undeclared pregnancy or if the intention to get pregnant is not declared
+                        in the application form.
+                    </div>
+                    <div class="body-text body-text--spaced">
+                        I acknowledge that no liability from the part of Sukoon shall be accepted against medical
+                        conditions existing or originating prior to the inception date of insurance policy if any
+                        issued, unless otherwise indicated on the Table of Benefits of my policy. Furthermore I
+                        understand and accept that failure on my part to notify Sukoon of any such existing medical
+                        conditions will be considered misrepresentation and will prejudice the acceptance of such claims
+                        by Sukoon.
+                    </div>
+
+                    <!-- Signature Fields -->
+                    <table class="signature-table w-full" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td>
+                                <div class="signature-label">Applicant's Name</div>
+                                <div class="signature-field" style="border-right: 1px solid #D9C1D9;">{{signature.applicantName}}</div>
+                            </td>
+                            <td style="width: 50%;">
+                                <div class="signature-label" style="padding-left: 5px;">Date (dd/mm/yy)</div><div class="signature-field">{{splitDate signature.date "DD/MM/YY"}}</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="signature-label">Emirates ID Number</div><div class="signature-field signature-field--tall" style="border-right: 1px solid #D9C1D9;">{{signature.emiratesId}}</div>
+                            </td>
+                            <td style="width: 50%;">
+                                <div class="signature-label" style="padding-left: 5px;">Applicant's Signature</div>
+                                <div class="signature-field signature-field--tall"></div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <footer class="pdf-pooter">
+                    <!-- Footer -->
+                    <div class="footer-wrapper">
+                        <table class="footer-table w-full" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td><strong>SUKOON.COM</strong> | +971 4 233 7777 | P.O. Box 5209 | Dubai, United Arab
+                                    Emirates<br />
+                                    سكون للتأمين ش.م.ع. رأس المال المدفوع ١٢٥,٨٧٢,٤٦١ درهم إماراتي،
+                                    رقم ر.ت. ٢٠٣٩٧٠، مرخصة من قبل المصرف المركزي لدولة الإمارات العربية المتحدة بموجب
+                                    رقم
+                                    قيد 9 بتاريخ 1984/12/24، رقم التسجيل الضريبي ١٠٠٢٥٨٥٩٤٩٠٠٠٠٣
+                                    <br />
+                                    Sukoon Insurance PJSC, Paid up Capital AED 461,872,125, C.L. No. 203970, Regulated
+                                    by
+                                    the Central Bank of the UAE No. 9 dated 24/12/1984, TRN 100258594900003
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <span class="page-number">5</span>
+                </footer>
+
+            </td>
+        </tr>
+    </table>
+
+</body>
+
+</html>

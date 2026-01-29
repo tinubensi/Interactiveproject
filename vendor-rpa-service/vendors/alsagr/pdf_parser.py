@@ -158,6 +158,51 @@ async def parse_plan_pdf(pdf_path: str, base_plan_data: Dict[str, Any]) -> Dict[
                 "benefits": outpatient_benefits
             })
 
+        # Extract Alternative Medicine coverage
+        alt_med_patterns = [
+            r'Alternative\s+Medicine[:\s]+(.*?)(?:\n|AED|Covered)',
+            r'Homeopathy[:\s]+(.*?)(?:\n|AED|Covered)',
+            r'alternative\s+medicine[:\s]+(.*?)(?:\n|AED|Covered)'
+        ]
+        for pattern in alt_med_patterns:
+            alt_med_match = re.search(pattern, full_text, re.IGNORECASE)
+            if alt_med_match:
+                alt_med_value = clean_text(alt_med_match.group(1))
+                if alt_med_value:
+                    if "lobSpecificData" not in base_plan_data:
+                        base_plan_data["lobSpecificData"] = {}
+                    base_plan_data["lobSpecificData"]["alternativeMedicine"] = alt_med_value
+                    if "rawPlanData" not in base_plan_data:
+                        base_plan_data["rawPlanData"] = {}
+                    base_plan_data["rawPlanData"]["alternative_medicine"] = alt_med_value
+                    break
+        
+        # Check if Alternative Medicine is mentioned in outpatient benefits
+        if not base_plan_data.get("lobSpecificData", {}).get("alternativeMedicine"):
+            if re.search(r'alternative\s+medicine', full_text, re.IGNORECASE):
+                if "lobSpecificData" not in base_plan_data:
+                    base_plan_data["lobSpecificData"] = {}
+                base_plan_data["lobSpecificData"]["alternativeMedicine"] = "Mentioned in PDF"
+        
+        # Extract Physiotherapy coverage
+        physio_patterns = [
+            r'Physiotherapy[:\s]+(.*?)(?:\n|AED|Covered|sessions)',
+            r'(\d+)\s+sessions\s+(?:per|of)\s+(?:annum|year|person).*?physiotherapy',
+            r'physiotherapy.*?(\d+)\s+sessions'
+        ]
+        for pattern in physio_patterns:
+            physio_match = re.search(pattern, full_text, re.IGNORECASE)
+            if physio_match:
+                physio_value = clean_text(physio_match.group(1) if len(physio_match.groups()) > 0 else physio_match.group(0))
+                if physio_value:
+                    if "lobSpecificData" not in base_plan_data:
+                        base_plan_data["lobSpecificData"] = {}
+                    base_plan_data["lobSpecificData"]["physiotherapy"] = physio_value
+                    if "rawPlanData" not in base_plan_data:
+                        base_plan_data["rawPlanData"] = {}
+                    base_plan_data["rawPlanData"]["physiotherapy"] = physio_value
+                    break
+        
         # Store PDF text snippet in raw data
         if "rawPlanData" not in base_plan_data:
             base_plan_data["rawPlanData"] = {}

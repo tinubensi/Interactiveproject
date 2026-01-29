@@ -140,7 +140,13 @@ export async function refetchPlans(
         formData: latestLead.formData,
         lobData: latestLead.lobData, // Use latest lobData from updated lead
         assignedTo: latestLead.assignedTo,
-        createdAt: latestLead.createdAt
+        createdAt: latestLead.createdAt,
+        // 🔧 ADD CONTACT FIELDS FOR RPA BOTS
+        firstName: latestLead.firstName,
+        lastName: latestLead.lastName,
+        email: latestLead.email,
+        phone: latestLead.phone,
+        emirate: latestLead.emirate
       });
       eventPublished = true;
       context.log('lead.created event published successfully to Event Grid');
