@@ -21,7 +21,7 @@ export async function notifyPipelineService(
   try {
     // Generate request ID for deduplication
     const requestId = uuidv4();
-    
+
     // Extract top-level properties and create data object with remaining fields
     const { leadId, lineOfBusiness, ...additionalData } = eventData;
 

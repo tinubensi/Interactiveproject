@@ -285,11 +285,40 @@ class SukoonBot(InsuranceBot):
             
             # ============ NATIONALITY ============
             nationality_guid = member_data.get('nationality', 'a275c17e-afe4-e611-80c9-005056bd7a8d')
+            nationality_name = member_data.get('nationalityName', 'UAE')
             nationality_selector = f"#ContentContainer_MainContent_ucQuickQuote_grdPremiumCalculation_ddlNationality_{member_index}"
             try:
                 await self.page.locator(nationality_selector).wait_for(state="visible", timeout=3000)
-                await self.page.locator(nationality_selector).select_option(nationality_guid)
-                self.logger.debug(f"Set nationality for member {member_index}")
+                
+                # Try selecting by value (GUID) first
+                try:
+                    await self.page.locator(nationality_selector).select_option(nationality_guid, timeout=5000)
+                    self.logger.debug(f"Set nationality (by GUID) for member {member_index}: {nationality_guid}")
+                except Exception as guid_error:
+                    # Fallback: Try selecting by label (nationality name)
+                    self.logger.warning(f"Failed to select nationality by GUID {nationality_guid}, trying by label '{nationality_name}': {guid_error}")
+                    
+                    try:
+                        await self.page.locator(nationality_selector).select_option(label=nationality_name, timeout=5000)
+                        self.logger.debug(f"Set nationality (by label) for member {member_index}: {nationality_name}")
+                    except Exception as label_error:
+                        # Last resort: Try to get available options and select the first one
+                        self.logger.warning(f"Failed to select by label '{nationality_name}', trying first available option: {label_error}")
+                        try:
+                            # Get all options and select the first non-empty one
+                            options = await self.page.locator(f"{nationality_selector} option").all()
+                            if len(options) > 1:  # Skip the first empty/default option
+                                first_option_value = await options[1].get_attribute('value')
+                                if first_option_value:
+                                    await self.page.locator(nationality_selector).select_option(first_option_value, timeout=5000)
+                                    self.logger.warning(f"Selected first available nationality option for member {member_index}: {first_option_value}")
+                                else:
+                                    raise Exception("No valid nationality options found")
+                            else:
+                                raise Exception("No nationality options available in dropdown")
+                        except Exception as fallback_error:
+                            self.logger.error(f"All nationality selection methods failed for member {member_index}: {fallback_error}")
+                            raise
             except Exception as e:
                 self.logger.error(f"Failed to set nationality for member {member_index}: {e}")
                 raise

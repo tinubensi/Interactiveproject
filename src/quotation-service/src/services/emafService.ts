@@ -71,15 +71,15 @@ class EmafService {
 
       const result: any = await response.json();
       context.log('EMAF service response:', JSON.stringify(result, null, 2));
-      
+
       // Handle response structure: { success: true, token: "...", emafUrl: "...", data: {...} }
       const token = result.token || result.data?.submissionId || result.data?.token;
       const emafUrl = result.emafUrl || (token ? `${this.getFrontendUrl()}/emaf/${token}` : undefined);
-      
+
       if (!token) {
         throw new Error('EMAF service did not return a token in response');
       }
-      
+
       context.log('EMAF submission created successfully:', { token, emafUrl });
 
       return {

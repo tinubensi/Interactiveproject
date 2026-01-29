@@ -331,7 +331,7 @@ class PDFService {
    */
   private addFooter(doc: PDFDocumentType, data: QuotationPDFData): void {
     const startY = doc.y;
-    
+
     // Light gray background
     doc.rect(54, startY, doc.page.width - 108, 80)
        .fillColor('#f8fafc')

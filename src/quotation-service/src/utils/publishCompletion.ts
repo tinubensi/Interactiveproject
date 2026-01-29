@@ -25,7 +25,7 @@ export interface CompletionParams {
  * Event format: service.{actionCompleted}.completed or service.{actionCompleted}.failed
  */
 export async function publishServiceCompletion(params: CompletionParams): Promise<void> {
-  const eventType = params.status === 'success' 
+  const eventType = params.status === 'success'
     ? `service.${params.actionCompleted}.completed`
     : `service.${params.actionCompleted}.failed`;
 
@@ -48,4 +48,3 @@ export async function publishServiceCompletion(params: CompletionParams): Promis
     '2.0'
   );
 }
-

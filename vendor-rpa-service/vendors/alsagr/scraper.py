@@ -93,9 +93,17 @@ class AlsagrScraper:
             self.logger.error("❌ NO PLANS FOUND!")
             return []
 
+        # Download PDFs for ALL plans to ensure Alternative Medicine and Claims Settlement Basis are extracted
+        # (These fields are only available in PDFs, not in JSON API)
+        max_pdf_downloads = num_plans
+        self.logger.info(f"📥 Will download PDFs for all {max_pdf_downloads} plans using download events (fast, no tabs)")
+        
         # Process each plan row
         for index in range(num_plans):
             self.logger.info(f"\nProcessing plan {index + 1}/{num_plans}...")
+            
+            # Close any extra tabs/pages before processing next plan
+            await self._close_all_extra_pages()
             
             try:
                 # Re-query to get fresh buttons
@@ -303,11 +311,15 @@ class AlsagrScraper:
                             form_data=self.form_data
                         )
                         
-                        # Download PDF for additional data extraction
-                        pdf_path = await self._download_plan_pdf(download_button, index)
-                        if pdf_path:
-                            plan['pdf_path'] = pdf_path
-                            self.logger.info(f"  ✓ PDF downloaded: {pdf_path}")
+                        # Download PDF for additional data extraction (only for first N plans)
+                        # Using download event method - fast and no tabs opened
+                        if index < max_pdf_downloads:
+                            pdf_path = await self._download_plan_pdf(download_button, index)
+                            if pdf_path:
+                                plan['pdf_path'] = pdf_path
+                                self.logger.info(f"  ✓ PDF downloaded: {pdf_path}")
+                        else:
+                            self.logger.info(f"  ⏭️  Skipping PDF download (limit reached: {max_pdf_downloads})")
                         
                         structured_plans.append(plan)
                         self.logger.info(f"  ✓ Plan parsed successfully from JSON")
@@ -323,13 +335,39 @@ class AlsagrScraper:
                 self.logger.error(f"Error processing plan {index}: {e}")
                 continue
 
+        # Final cleanup: Close all extra tabs before returning
+        await self._close_all_extra_pages()
+        
         self.logger.info(f"\n✅ Successfully extracted {len(structured_plans)} plans")
         return structured_plans
     
+    async def _close_all_extra_pages(self):
+        """
+        Closes all pages/tabs except the main page to prevent tab accumulation.
+        """
+        try:
+            # Get context from the page
+            context = self.page.context
+            if not context:
+                return
+            
+            pages = context.pages
+            main_page = self.page
+            
+            # Close all pages except the main one
+            for page in pages:
+                if page != main_page and not page.is_closed():
+                    try:
+                        await page.close()
+                        self.logger.debug(f"  🗑️  Closed extra tab/page")
+                    except Exception as e:
+                        self.logger.debug(f"  ⚠️  Could not close page: {e}")
+        except Exception as e:
+            self.logger.debug(f"  ⚠️  Error closing extra pages: {e}")
+    
     async def _download_plan_pdf(self, download_button, index: int) -> Optional[str]:
         """
-        Downloads the plan PDF by clicking the download button.
-        Works in both headless and non-headless modes.
+        Downloads the plan PDF using download event (fastest method, works in headless mode).
         Returns the path to the downloaded PDF file, or None if download fails.
         """
         try:
@@ -338,7 +376,7 @@ class AlsagrScraper:
             filename = f"plan_{index}_{int(time.time())}.pdf"
             filepath = os.path.join(self.download_dir, filename)
             
-            # Strategy 1: Use download event handler (works in headless mode)
+            # PRIMARY STRATEGY: Use download event handler (fastest, works in headless mode)
             pdf_downloaded = False
             downloaded_path = None
             
@@ -353,7 +391,7 @@ class AlsagrScraper:
                                 suggested_filename = download.suggested_filename()
                             else:
                                 suggested_filename = download.suggested_filename
-                            self.logger.info(f"  📄 Suggested filename: {suggested_filename}")
+                            self.logger.debug(f"  📄 Suggested filename: {suggested_filename}")
                     except:
                         pass
                     
@@ -365,32 +403,35 @@ class AlsagrScraper:
                     self.logger.info(f"  ✅ PDF downloaded via download event: {file_size} bytes")
                 except Exception as e:
                     self.logger.warning(f"  Download handler error: {e}")
-                    import traceback
-                    self.logger.warning(f"  Download handler traceback:\n{traceback.format_exc()}")
             
             # Register download handler BEFORE clicking
             self.page.on("download", handle_download)
             
             try:
-                self.logger.info(f"  🔘 Clicking download button (Strategy 1: Download Event)...")
+                self.logger.info(f"  🔘 Clicking download button (download event method)...")
                 # Click the download button
                 await download_button.click()
                 
-                # Wait for download to complete (max 8 seconds, optimized)
-                self.logger.debug(f"  Waiting for download event (max 8s)...")
-                for i in range(16):  # 16 × 0.5s = 8s max
+                # Wait for download to complete (max 5 seconds - faster)
+                self.logger.debug(f"  Waiting for download event (max 5s)...")
+                for i in range(10):  # 10 × 0.5s = 5s max
                     if pdf_downloaded:
-                        self.logger.debug(f"  ✅ Download after {i * 0.5:.1f}s")
+                        self.logger.debug(f"  ✅ Download completed after {i * 0.5:.1f}s")
                         break
                     await asyncio.sleep(0.5)
                 
                 # Remove download handler
                 self.page.remove_listener("download", handle_download)
                 
-                if pdf_downloaded and downloaded_path:
-                    return downloaded_path
+                if pdf_downloaded and downloaded_path and os.path.exists(downloaded_path):
+                    file_size = os.path.getsize(downloaded_path)
+                    if file_size > 1000:  # Verify PDF is not empty
+                        self.logger.info(f"  ✅ PDF saved: {os.path.basename(downloaded_path)} ({file_size} bytes)")
+                        return downloaded_path
+                    else:
+                        self.logger.warning(f"  ⚠️ Downloaded file too small ({file_size} bytes), may be invalid")
                 else:
-                    self.logger.debug(f"  ⚠️ Download event did not fire after clicking")
+                    self.logger.debug(f"  ⚠️ Download event did not fire or file not found")
                 
             except Exception as e:
                 self.logger.warning(f"  Download event approach failed: {e}")
@@ -400,62 +441,10 @@ class AlsagrScraper:
                 except:
                     pass
             
-            # Strategy 2: Try popup approach (CRITICAL: Close popup immediately)
-            popup_page = None
+            # FALLBACK: Only try network interception if download event failed
+            # (Skip popup approach to avoid opening tabs)
             try:
-                self.logger.debug("  Trying popup approach...")
-                async with self.page.expect_popup(timeout=5000) as popup_info:
-                    await download_button.click()
-                
-                popup_page = await popup_info.value
-                await popup_page.wait_for_load_state("networkidle", timeout=10000)
-                
-                # Check if popup URL is a PDF
-                popup_url = popup_page.url
-                content_type = await popup_page.evaluate("() => document.contentType || ''")
-                
-                if popup_url.endswith(".pdf") or "application/pdf" in content_type:
-                    # Download PDF from popup URL
-                    try:
-                        response = await popup_page.request.fetch(popup_url)
-                        body = await response.body()
-                        if body.startswith(b'%PDF'):
-                            with open(filepath, "wb") as f:
-                                f.write(body)
-                            # CRITICAL: Close popup immediately
-                            await popup_page.close()
-                            popup_page = None
-                            self.logger.info(f"  ✅ PDF downloaded from popup URL: {len(body)} bytes")
-                            return filepath
-                    except Exception as e:
-                        self.logger.debug(f"  Failed to fetch from popup URL: {e}")
-                
-                # Strategy 3: If popup is HTML, try to generate PDF from it
-                try:
-                    await popup_page.pdf(path=filepath, format='A4')
-                    if os.path.exists(filepath) and os.path.getsize(filepath) > 1000:
-                        # CRITICAL: Close popup immediately
-                        await popup_page.close()
-                        popup_page = None
-                        self.logger.info(f"  ✅ PDF generated from popup content")
-                        return filepath
-                except Exception as e:
-                    self.logger.debug(f"  Failed to generate PDF from popup: {e}")
-                        
-            except Exception as e:
-                self.logger.debug(f"  Popup approach failed: {e}")
-            finally:
-                # CRITICAL: Always close popup if it's still open
-                if popup_page:
-                    try:
-                        await popup_page.close()
-                        self.logger.debug(f"  ✓ Popup closed")
-                    except:
-                        pass
-            
-            # Strategy 4: Intercept network requests for PDF
-            try:
-                self.logger.debug("  Trying network interception...")
+                self.logger.debug("  Trying network interception fallback...")
                 pdf_url = None
                 pdf_body = None
                 
@@ -476,7 +465,7 @@ class AlsagrScraper:
                 
                 # Click again to trigger network request
                 await download_button.click()
-                await asyncio.sleep(3)  # Wait for network request
+                await asyncio.sleep(2)  # Wait for network request
                 
                 # Remove handler
                 self.page.remove_listener("response", handle_response)
@@ -488,9 +477,9 @@ class AlsagrScraper:
                     return filepath
                     
             except Exception as e:
-                self.logger.debug(f"  Network interception failed: {e}")
+                self.logger.debug(f"  Network interception fallback failed: {e}")
             
-            self.logger.warning(f"  ⚠️ All PDF download strategies failed")
+            self.logger.warning(f"  ⚠️ PDF download failed (download event + network interception)")
             return None
             
         except Exception as e:

@@ -56,17 +56,17 @@ class EmailService {
       user: process.env.EMAIL_USER || '',
       pass: process.env.EMAIL_PASS || '',
     };
-    
+
     if (!config.user || !config.pass) {
       throw new Error('Email credentials not configured. Please set EMAIL_USER and EMAIL_PASS environment variables.');
     }
-    
+
     return config;
   }
 
   private createTransporter(): nodemailer.Transporter {
     const config = this.getConfig();
-    
+
     return nodemailer.createTransport({
       host: config.host,
       port: config.port,
@@ -77,18 +77,18 @@ class EmailService {
     });
   }
 
-  async sendQuotationEmail({ 
-    to, 
+  async sendQuotationEmail({
+    to,
     cc,
-    customerName, 
-    quotationReference, 
+    customerName,
+    quotationReference,
     pdfBuffer,
     customMessage,
     reviewLink
   }: SendQuotationEmailParams): Promise<void> {
     const transporter = this.createTransporter();
 
-    const messageSection = customMessage 
+    const messageSection = customMessage
       ? `
         <div class="custom-message">
           <p style="font-style: italic; color: #374151;">"${customMessage}"</p>

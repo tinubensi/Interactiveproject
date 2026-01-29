@@ -24,18 +24,18 @@ const mockTokenService = {
   isTokenUsed: mock.fn(() => false),
 };
 
-// Mock modules
-mock.module('../../services/cosmosService', () => ({
-  cosmosService: mockCosmosService,
-}));
+// Mock modules - using function syntax for Node.js test mocks
+mock.module('../../services/cosmosService', () => {
+  return { cosmosService: mockCosmosService };
+});
 
-mock.module('../../services/eventGridService', () => ({
-  eventGridService: mockEventGridService,
-}));
+mock.module('../../services/eventGridService', () => {
+  return { eventGridService: mockEventGridService };
+});
 
-mock.module('../../services/tokenService', () => ({
-  tokenService: mockTokenService,
-}));
+mock.module('../../services/tokenService', () => {
+  return { tokenService: mockTokenService };
+});
 
 describe('Reject Plans API', () => {
   beforeEach(() => {
@@ -68,7 +68,7 @@ describe('Reject Plans API', () => {
   });
 
   it('should return 404 if quotation not found', async () => {
-    mockCosmosService.getQuotationByToken.mock.mockImplementation(() => Promise.resolve(null));
+    (mockCosmosService.getQuotationByToken as any).mockImplementation(async () => null);
 
     const request = {
       params: { token: 'valid-token-123' },

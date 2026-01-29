@@ -64,9 +64,16 @@ class InsuranceBot:
             browser_launcher = self.playwright.chromium
         
         # Launch browser
+        # Force headless=False if explicitly set in config
+        headless_mode = self.config.get('headless', False)
+        if not headless_mode:
+            # Ensure browser is visible - add args to keep window on top
+            self.logger.info("🔍 Launching browser in VISIBLE mode (headless=False)")
+        
         self.browser = await browser_launcher.launch(
-            headless=self.config.get('headless', False),
-            slow_mo=self.config.get('slow_mo', 0)
+            headless=headless_mode,
+            slow_mo=self.config.get('slow_mo', 0),
+            args=['--start-maximized'] if not headless_mode else []
         )
         
         # Create download directory if it doesn't exist
@@ -105,13 +112,34 @@ class InsuranceBot:
         
         self.logger.info(f"Navigating to portal: {portal_url}")
         
-        try:
-            await self.page.goto(portal_url, wait_until='networkidle')
-            self.logger.info("Successfully navigated to portal")
-        
-        except Exception as e:
-            self.logger.error(f"Failed to navigate to portal: {e}")
-            raise
+        # Retry logic for page crashes
+        import asyncio
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                # Use 'domcontentloaded' instead of 'networkidle' for more reliable navigation
+                # 'networkidle' can cause crashes if network is slow or unstable
+                await self.page.goto(portal_url, wait_until='domcontentloaded', timeout=30000)
+                # Wait a bit for any dynamic content
+                await asyncio.sleep(2)
+                self.logger.info("Successfully navigated to portal")
+                return
+            
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    self.logger.warning(f"Navigation attempt {attempt + 1} failed: {e}. Retrying...")
+                    await asyncio.sleep(2)
+                    # Try to close and recreate page if it crashed
+                    try:
+                        if not self.page.is_closed():
+                            await self.page.close()
+                    except:
+                        pass
+                    # Get a new page
+                    self.page = await self.context.new_page()
+                else:
+                    self.logger.error(f"Failed to navigate to portal after {max_retries} attempts: {e}")
+                    raise
     
     async def login(self, username_selector: str = None, password_selector: str = None, 
                    submit_selector: str = None):

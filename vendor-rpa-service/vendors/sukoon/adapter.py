@@ -190,6 +190,7 @@ class SukoonAdapter(VendorAdapter):
             'dob': dob,
             'maritalStatus': marital_code,
             'nationality': nationality_guid,
+            'nationalityName': nationality,  # Pass original nationality name for fallback selection
             'isPrimary': is_primary
         }
     

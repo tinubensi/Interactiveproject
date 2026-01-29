@@ -73,10 +73,15 @@ class AlsagrParser:
             raise ValueError(f"PDF file is empty: {pdf_path}")
         
         # Initialize Default Structure
+        # Get leadId from form_data (vendor_payload should include leadId)
+        lead_id = None
+        if form_data:
+            lead_id = form_data.get('leadId') or form_data.get('id') or form_data.get('lead_id')
+        
         plan_data = {
             "id": f"plan-{uuid.uuid4()}",
             "type": "plan",
-            "leadId": form_data.get('leadId') if form_data else str(uuid.uuid4()),
+            "leadId": lead_id if lead_id else str(uuid.uuid4()),
             "vendorId": "vendor-alsagr",
             "fetchedAt": datetime.datetime.now().isoformat(),
             "vendorName": "Alsagr Insurance",
@@ -539,10 +544,15 @@ class AlsagrParser:
             Dictionary in StandardPlan format
         """
         # Initialize Default Structure
+        # Get leadId from form_data (vendor_payload should include leadId)
+        lead_id = None
+        if form_data:
+            lead_id = form_data.get('leadId') or form_data.get('id') or form_data.get('lead_id')
+        
         plan_data = {
             "id": f"plan-{uuid.uuid4()}",
             "type": "plan",
-            "leadId": form_data.get('leadId') if form_data else str(uuid.uuid4()),
+            "leadId": lead_id if lead_id else str(uuid.uuid4()),
             "vendorId": "vendor-alsagr",
             "vendorPlanId": None,  # Will store Alsagr's planId
             "fetchedAt": datetime.datetime.now().isoformat(),

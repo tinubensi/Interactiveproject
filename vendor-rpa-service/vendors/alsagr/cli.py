@@ -58,7 +58,23 @@ async def main():
     
     try:
         # Parse lead data
-        lead_data = json.loads(args.lead_data)
+        lead_data_raw = json.loads(args.lead_data)
+        
+        # Handle nested structure: {success: true, data: {lead: {...}}}
+        # or flat structure: {id: "...", formData: {...}}
+        if isinstance(lead_data_raw, dict):
+            if 'data' in lead_data_raw and 'lead' in lead_data_raw['data']:
+                # Nested structure: extract the lead
+                lead_data = lead_data_raw['data']['lead']
+            elif 'id' in lead_data_raw:
+                # Flat structure: use as-is
+                lead_data = lead_data_raw
+            else:
+                # Try to find lead in any nested structure
+                lead_data = lead_data_raw
+        else:
+            lead_data = lead_data_raw
+        
         lead_id = lead_data.get('id')
         
         # DEBUG: Log exact lead data structure received from production
@@ -68,6 +84,44 @@ async def main():
         print(f"Lead ID: {lead_id}", file=sys.stderr)
         print(f"\n📋 Full Lead Data Structure:", file=sys.stderr)
         print(json.dumps(lead_data, indent=2), file=sys.stderr)
+        
+        # ADD: Comprehensive dependents check
+        print(f"\n🔍 DEPENDENTS CHECK:", file=sys.stderr)
+        lob_data = lead_data.get('lobData', {})
+        form_data = lead_data.get('formData', {})
+        print(f"  - Has lobData: {bool(lob_data)}", file=sys.stderr)
+        print(f"  - Has formData: {bool(form_data)}", file=sys.stderr)
+        print(f"  - Top-level dependents: {lead_data.get('dependents', [])}", file=sys.stderr)
+        print(f"  - Marital Status: {lead_data.get('maritalStatus', 'N/A')}", file=sys.stderr)
+        
+        # Check all possible locations for dependents
+        all_section_keys = [k for k in lead_data.keys() if k.startswith('section-')]
+        if form_data:
+            form_section_keys = [k for k in form_data.keys() if k.startswith('section-')]
+            all_section_keys.extend(form_section_keys)
+        
+        print(f"  - All section-* keys found: {list(set(all_section_keys))}", file=sys.stderr)
+        
+        if form_data:
+            section_keys = [k for k in form_data.keys() if k.startswith('section-')]
+            print(f"  - formData section-* keys: {section_keys}", file=sys.stderr)
+            for section_key in section_keys:
+                section_data = form_data.get(section_key, [])
+                print(f"    - {section_key}: {len(section_data)} items", file=sys.stderr)
+                if section_data:
+                    print(f"      First item: {json.dumps(section_data[0], indent=6)}", file=sys.stderr)
+        
+        # Check top-level section keys
+        for key in lead_data.keys():
+            if key.startswith('section-'):
+                section_data = lead_data.get(key, [])
+                print(f"  - Top-level {key}: {len(section_data)} items", file=sys.stderr)
+                if section_data:
+                    print(f"    First item: {json.dumps(section_data[0], indent=6)}", file=sys.stderr)
+        
+        if lob_data:
+            print(f"  - lobData.dependents: {lob_data.get('dependents', [])}", file=sys.stderr)
+        
         print(f"{'='*60}\n", file=sys.stderr)
         
         if not lead_id:
@@ -93,8 +147,9 @@ async def main():
         vendor_config = vendor_registry.get_config(registry_vendor_id) or {}
         
         # Bot configuration
+        # Use headless=True for production (faster, PDF downloads work better)
         bot_config = {
-            'headless': True,
+            'headless': True,  # Production mode - headless browser
             'browser_type': 'chromium',
             'enable_screenshots': False,
             'default_timeout': 60000,
@@ -132,15 +187,24 @@ async def main():
             
             # Step 6: Extract plans using scraper
             print("Extracting plans...", file=sys.stderr)
-            scraper = AlsagrScraper(bot.page, bot_config, vendor_payload)
+            # Add leadId to vendor_payload so parser can access it
+            vendor_payload_with_lead = {**vendor_payload, 'leadId': lead_id}
+            scraper = AlsagrScraper(bot.page, bot_config, vendor_payload_with_lead)
             raw_plans = await asyncio.wait_for(scraper.extract_all_plans(bot), timeout=900.0)
             print(f"Extracted {len(raw_plans)} raw plans", file=sys.stderr)
             
             # Step 6.5: Enrich plans with PDF data
+            # CRITICAL: All plans MUST be enriched with PDF data to get:
+            # - Inpatient limit
+            # - Alternative Medicine
+            # - Claims Settlement Basis
+            # - Full inpatient/outpatient benefits
             print("Enriching plans with PDF data...", file=sys.stderr)
             from vendors.alsagr.pdf_parser import parse_plan_pdf
             enriched_plans = []
             pdf_paths_to_cleanup = []  # Track PDFs in case parsing fails
+            enriched_count = 0
+            missing_pdf_count = 0
             
             for plan in raw_plans:
                 if plan.get('pdf_path'):
@@ -148,10 +212,31 @@ async def main():
                     try:
                         # Parse PDF and enrich plan data (PDF will be deleted inside parse_plan_pdf)
                         enriched_plan = await parse_plan_pdf(plan['pdf_path'], plan)
+                        
+                        # Verify critical fields were extracted
+                        has_alt_med = bool(enriched_plan.get('lobSpecificData', {}).get('alternativeMedicine'))
+                        has_claims = bool(enriched_plan.get('lobSpecificData', {}).get('claimsSettlementBasis'))
+                        has_inpatient = bool(enriched_plan.get('inpatientLimit', 0) > 0 or 
+                                          any(b.get('categoryId') == 'inpatient' for b in enriched_plan.get('benefits', [])))
+                        
                         enriched_plans.append(enriched_plan)
-                        print(f"  ✓ Enriched plan with PDF data", file=sys.stderr)
+                        enriched_count += 1
+                        
+                        # Log what was extracted
+                        extracted_fields = []
+                        if has_alt_med:
+                            extracted_fields.append("Alternative Medicine")
+                        if has_claims:
+                            extracted_fields.append("Claims Settlement Basis")
+                        if has_inpatient:
+                            extracted_fields.append("Inpatient")
+                        
+                        if extracted_fields:
+                            print(f"  ✓ Enriched plan {enriched_plan.get('planCode', 'N/A')}: {', '.join(extracted_fields)}", file=sys.stderr)
+                        else:
+                            print(f"  ✓ Enriched plan {enriched_plan.get('planCode', 'N/A')} (basic data)", file=sys.stderr)
                     except Exception as e:
-                        print(f"  ⚠️ PDF parsing failed, using base plan: {e}", file=sys.stderr)
+                        print(f"  ⚠️ PDF parsing failed for plan {plan.get('planCode', 'N/A')}, using base plan: {e}", file=sys.stderr)
                         enriched_plans.append(plan)
                         # Cleanup failed PDF
                         try:
@@ -160,8 +245,11 @@ async def main():
                         except:
                             pass
                 else:
+                    missing_pdf_count += 1
+                    print(f"  ⚠️ Plan {plan.get('planCode', 'N/A')} missing PDF - will not have Alternative Medicine, Claims Settlement Basis, or Inpatient limit", file=sys.stderr)
                     enriched_plans.append(plan)
-            print(f"PDF enrichment complete: {len(enriched_plans)} plans", file=sys.stderr)
+            
+            print(f"PDF enrichment complete: {enriched_count} plans enriched, {missing_pdf_count} plans without PDF", file=sys.stderr)
             
             # Cleanup any remaining PDFs in download directory
             try:
@@ -186,8 +274,10 @@ async def main():
             if standard_plans:
                 await save_plans_to_cosmos(lead_id, vendor_id, standard_plans)
             
-            # Step 9: Return plans as JSON to stdout
-            print(json.dumps(standard_plans))
+            # Step 9: Return plans as JSON to stdout (ensure clean output)
+            sys.stdout.flush()  # Flush any buffered output
+            print(json.dumps(standard_plans), flush=True)
+            sys.stdout.flush()  # Ensure JSON is written
             sys.exit(0)
     
     except Exception as e:
