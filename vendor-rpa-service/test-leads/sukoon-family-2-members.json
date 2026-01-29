@@ -1,0 +1,25 @@
+{
+  "id": "test-sukoon-family-002",
+  "leadId": "test-sukoon-family-002",
+  "firstName": "Ali",
+  "lastName": "Mohammed",
+  "lineOfBusiness": "medical",
+  "lobData": {
+    "dateOfBirth": "1998-04-13",
+    "gender": "Male",
+    "nationality": "United Arab Emirates",
+    "maritalStatus": "Married",
+    "visaType": "resident",
+    "coverageType": "Family",
+    "numberOfDependents": 1,
+    "dependents": [
+      {
+        "name": "Sara Mohammed",
+        "relationship": "Spouse",
+        "dateOfBirth": "1998-08-26",
+        "gender": "Female",
+        "nationality": "United Arab Emirates"
+      }
+    ]
+  }
+}

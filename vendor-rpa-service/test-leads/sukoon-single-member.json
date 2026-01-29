@@ -1,0 +1,15 @@
+{
+  "id": "test-sukoon-single-001",
+  "leadId": "test-sukoon-single-001",
+  "firstName": "Ahmed",
+  "lastName": "Hassan",
+  "lineOfBusiness": "medical",
+  "lobData": {
+    "dateOfBirth": "1990-06-15",
+    "gender": "Male",
+    "nationality": "United Arab Emirates",
+    "maritalStatus": "Single",
+    "visaType": "resident",
+    "coverageType": "Individual"
+  }
+}

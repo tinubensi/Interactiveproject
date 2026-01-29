@@ -1,0 +1,7 @@
+{
+  "portalUrl": "https://health.gig-gulf.com/broker-quotation/BrokerIndividualQuotation/Index",
+  "plansUrl": "https://health.gig-gulf.com/health/quotation/add",
+  "enable_screenshots": true,
+  "default_timeout": 60000,
+  "navigation_timeout": 90000
+}

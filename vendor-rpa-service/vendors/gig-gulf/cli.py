@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CLI wrapper for Sukoon bot - called from Node.js Express server
+CLI wrapper for GIG Gulf bot - called from Node.js Express server
 Follows the exact executor.py flow with adapter pattern
 """
 import asyncio
@@ -14,9 +14,9 @@ from datetime import datetime
 # Add vendor-rpa-service directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from vendors.sukoon.bot import SukoonBot
-from vendors.sukoon.adapter import SukoonAdapter
-from vendors.sukoon.scraper import SukoonScraper
+from vendors.gig_gulf.bot import GigGulfBot
+from vendors.gig_gulf.adapter import GigGulfAdapter
+from vendors.gig_gulf.scraper import GigGulfScraper
 from vendors import vendor_registry
 
 
@@ -52,7 +52,7 @@ async def save_plans_to_cosmos(lead_id: str, vendor_id: str, plans: list):
 
 
 async def main():
-    parser = argparse.ArgumentParser(description='Run Sukoon bot')
+    parser = argparse.ArgumentParser(description='Run GIG Gulf bot')
     parser.add_argument('--lead-data', type=str, required=True, help='Lead data as JSON string')
     args = parser.parse_args()
     
@@ -64,8 +64,8 @@ async def main():
         if not lead_id:
             raise ValueError("Lead ID is required")
         
-        vendor_id = 'vendor-sukoon'
-        registry_vendor_id = 'sukoon'
+        vendor_id = 'vendor-gig-gulf'
+        registry_vendor_id = 'gig-gulf'
         
         # Load credentials
         cred_path = Path(__file__).parent.parent.parent / 'config' / 'credentials.json'
@@ -74,10 +74,10 @@ async def main():
         
         credentials = all_creds.get(vendor_id)
         if not credentials:
-            raise ValueError(f"Sukoon credentials not found for key: {vendor_id}")
+            raise ValueError(f"GIG Gulf credentials not found for key: {vendor_id}")
         
         # Initialize adapter and prepare vendor payload
-        adapter = SukoonAdapter()
+        adapter = GigGulfAdapter()
         vendor_payload = adapter.prepare_vendor_payload(lead_data)
         
         # Load vendor config
@@ -85,7 +85,7 @@ async def main():
         
         # Bot configuration
         bot_config = {
-            'headless': False,
+            'headless': True,
             'browser_type': 'chromium',
             'enable_screenshots': False,
             'default_timeout': 60000,
@@ -93,10 +93,10 @@ async def main():
             **vendor_config
         }
         
-        print(f"Starting Sukoon bot for lead {lead_id}", file=sys.stderr)
+        print(f"Starting GIG Gulf bot for lead {lead_id}", file=sys.stderr)
         
         # Run bot using exact executor flow
-        async with SukoonBot(credentials=credentials, config=bot_config) as bot:
+        async with GigGulfBot(credentials=credentials, config=bot_config) as bot:
             print("Browser started", file=sys.stderr)
             
             # Step 1: Navigate to portal
@@ -109,7 +109,7 @@ async def main():
             await asyncio.sleep(2)
             
             # Step 3: Fill form with vendor payload
-            await asyncio.wait_for(bot.fill_insurance_form(vendor_payload), timeout=180.0)
+            await asyncio.wait_for(bot.fill_insurance_form(vendor_payload), timeout=120.0)
             print("Form filled successfully", file=sys.stderr)
             
             # Step 4: Wait for plans to load
@@ -117,8 +117,8 @@ async def main():
             
             # Step 5: Extract plans using scraper
             print("Extracting plans...", file=sys.stderr)
-            scraper = SukoonScraper(bot.page, bot_config, vendor_payload)
-            raw_plans = await asyncio.wait_for(scraper.extract_all_plans(bot), timeout=180.0)
+            scraper = GigGulfScraper(bot.page, bot_config, vendor_payload)
+            raw_plans = await asyncio.wait_for(scraper.extract_all_plans(bot), timeout=900.0)
             print(f"Extracted {len(raw_plans)} raw plans", file=sys.stderr)
             
             # Step 6: Normalize plans using adapter

@@ -1,0 +1,49 @@
+{
+  "id": "lead-test-004",
+  "leadId": "lead-test-004",
+  "firstName": "Kane",
+  "lastName": "Williamson",
+  "email": "kane.largefamily@gmail.com",
+  "phone": {
+    "number": "504567890",
+    "countryCode": "+971",
+    "isoCode": "AE"
+  },
+  "emirate": "Dubai",
+  "lobData": {
+    "dateOfBirth": "1985-04-18",
+    "gender": "Male",
+    "nationality": "Indian",
+    "maritalStatus": "Married",
+    "visaType": "Resident visa",
+    "salaryRange": "20000-50000",
+    "effectiveDate": "2026-01-31",
+    "numberOfDependents": 4,
+    "dependents": [
+      {
+        "name": "Alexandra Kane",
+        "relationship": "Spouse",
+        "dateOfBirth": "1987-08-26",
+        "gender": "Female"
+      },
+      {
+        "name": "Ravindra Kane",
+        "relationship": "Child",
+        "dateOfBirth": "2015-06-13",
+        "gender": "Male"
+      },
+      {
+        "name": "Priya Kane",
+        "relationship": "Child",
+        "dateOfBirth": "2018-03-20",
+        "gender": "Female"
+      },
+      {
+        "name": "Arjun Kane",
+        "relationship": "Child",
+        "dateOfBirth": "2021-11-05",
+        "gender": "Male"
+      }
+    ]
+  }
+}

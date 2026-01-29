@@ -47,6 +47,18 @@ module.exports = {
         NODE_ENV: 'production',
         COSMOS_CONNECTION_STRING: process.env.COSMOS_CONNECTION_STRING || ''
       }
+    },
+    {
+      name: 'gig-gulf-bot',
+      script: './bots/gig-gulf/server.js',
+      instances: 1,
+      exec_mode: 'cluster',
+      max_memory_restart: '2G',
+      env: {
+        PORT: 3005,
+        NODE_ENV: 'production',
+        COSMOS_CONNECTION_STRING: process.env.COSMOS_CONNECTION_STRING || ''
+      }
     }
   ]
 };

@@ -23,8 +23,13 @@ import './functions/quotations/updateQuotationPlan';
 // Import customer-facing public endpoints
 import './functions/customer/getQuotationByToken';
 import './functions/customer/selectPlan';
+<<<<<<< HEAD
+import './functions/customer/requestRevision';
+import './functions/customer/rejectPlans';
+=======
 import './functions/customer/rejectPlans';
 import './functions/customer/requestRevision';
+>>>>>>> development
 
 // Import all event handlers
 import './functions/events/handlePlansSelected';

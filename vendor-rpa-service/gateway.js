@@ -15,7 +15,8 @@ const BOT_PORTS = {
   'alsagr': 3001,
   'takaful': 3002,
   'watania': 3003,
-  'sukoon': 3004
+  'sukoon': 3004,
+  'gig-gulf': 3005
 };
 
 // Health check

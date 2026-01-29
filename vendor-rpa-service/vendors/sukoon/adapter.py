@@ -62,6 +62,9 @@ class SukoonAdapter(VendorAdapter):
         """
         Transform StandardLead into Sukoon-specific payload format for form filling.
         
+        Supports both individual and family coverage by extracting primary member
+        and all dependents from lead data.
+        
         Sukoon expects specific form field values as defined in the browser script.
         """
         # Extract lobData (medical-specific fields)
@@ -70,21 +73,7 @@ class SukoonAdapter(VendorAdapter):
         # Extract lead ID
         lead_id = standard_lead.get('leadId') or standard_lead.get('id', 'unknown')
         
-        # Get date of birth
-        dob_str = lob_data.get('dateOfBirth') or standard_lead.get('dob', '1996-06-15')
-        
-        # Calculate age from DOB for form filling
-        try:
-            if isinstance(dob_str, str):
-                dob_obj = datetime.fromisoformat(dob_str.replace('Z', '+00:00').split('T')[0])
-                age = (datetime.now() - dob_obj).days // 365
-            else:
-                age = 30  # Default
-        except Exception:
-            age = 30  # Default fallback
-        
-        # Visa Type mapping for Sukoon dropdown
-        # Options: 1-6 (need to discover exact mappings from portal)
+        # Visa Type mapping for Sukoon dropdown (applies to all members)
         visa_type_raw = lob_data.get('visaType') or standard_lead.get('visaType', 'citizen')
         visa_type_mapping = {
             'resident': '1',
@@ -95,42 +84,113 @@ class SukoonAdapter(VendorAdapter):
         }
         visa_type = visa_type_mapping.get(visa_type_raw.lower() if isinstance(visa_type_raw, str) else 'citizen', '5')
         
+        # Initialize members array
+        members = []
+        
+        # ============ PRIMARY MEMBER (Index 0) ============
+        primary_member = self._extract_member_data(
+            dob=lob_data.get('dateOfBirth') or standard_lead.get('dob', '1996-06-15'),
+            gender=lob_data.get('gender') or standard_lead.get('gender', 'Male'),
+            marital_status=lob_data.get('maritalStatus') or standard_lead.get('maritalStatus', 'Single'),
+            nationality=lob_data.get('nationality') or standard_lead.get('nationality', 'UAE'),
+            relationship='Self/Employee',
+            index=0,
+            is_primary=True
+        )
+        members.append(primary_member)
+        
+        # ============ DEPENDENTS (Index 1+) ============
+        dependents = lob_data.get('dependents', [])
+        if isinstance(dependents, list):
+            for idx, dependent in enumerate(dependents):
+                # Extract dependent info
+                dep_dob = dependent.get('dateOfBirth', '2000-01-01')
+                dep_gender = dependent.get('gender', 'Male')
+                dep_relationship = dependent.get('relationship', 'Child')
+                dep_nationality = dependent.get('nationality') or lob_data.get('nationality', 'UAE')
+                
+                # Determine marital status based on relationship
+                # Children are always Single, others inherit or default
+                if dep_relationship.lower() == 'child':
+                    dep_marital = 'Single'
+                elif dep_relationship.lower() == 'spouse':
+                    dep_marital = 'Married'
+                else:
+                    # For parents or other relationships, use primary's status or default
+                    dep_marital = dependent.get('maritalStatus', 'Married')
+                
+                dependent_member = self._extract_member_data(
+                    dob=dep_dob,
+                    gender=dep_gender,
+                    marital_status=dep_marital,
+                    nationality=dep_nationality,
+                    relationship=dep_relationship,
+                    index=idx + 1,
+                    is_primary=False
+                )
+                members.append(dependent_member)
+        
+        # Build Sukoon-specific payload with members array
+        return {
+            'leadId': lead_id,
+            'visaType': visa_type,
+            'members': members
+        }
+    
+    def _extract_member_data(self, dob: str, gender: str, marital_status: str, 
+                            nationality: str, relationship: str, index: int, 
+                            is_primary: bool = False) -> Dict[str, Any]:
+        """
+        Helper method to extract and normalize member data.
+        
+        Args:
+            dob: Date of birth (ISO format)
+            gender: Gender (Male/Female)
+            marital_status: Marital status
+            nationality: Nationality name
+            relationship: Relationship to primary (Self/Employee, Spouse, Child, Parent)
+            index: Member index for form filling
+            is_primary: Whether this is the primary insured
+            
+        Returns:
+            Dictionary with normalized member data for Sukoon portal
+        """
         # Gender mapping
-        gender_raw = lob_data.get('gender') or standard_lead.get('gender', 'Male')
-        gender = gender_raw.lower() if isinstance(gender_raw, str) else 'male'
+        gender_normalized = gender.lower() if isinstance(gender, str) else 'male'
         
         # Marital status mapping for Sukoon dropdown
-        marital_status_raw = lob_data.get('maritalStatus') or standard_lead.get('maritalStatus', 'Single')
         marital_mapping = {
             'single': '1',
             'married': '2',
             'divorced': '3',
             'widowed': '4'
         }
-        marital_status = marital_mapping.get(marital_status_raw.lower() if isinstance(marital_status_raw, str) else 'single', '1')
+        marital_code = marital_mapping.get(
+            marital_status.lower() if isinstance(marital_status, str) else 'single', 
+            '1'
+        )
         
         # Nationality mapping to GUID
-        # Sukoon uses GUIDs for nationalities
-        nationality_raw = lob_data.get('nationality') or standard_lead.get('nationality', 'UAE')
         nationality_guid_mapping = {
             'uae': 'a275c17e-afe4-e611-80c9-005056bd7a8d',
             'united arab emirates': 'a275c17e-afe4-e611-80c9-005056bd7a8d',
+            'india': 'a375c17e-afe4-e611-80c9-005056bd7a8d',  # Example - adjust as needed
+            'pakistan': 'a475c17e-afe4-e611-80c9-005056bd7a8d',  # Example - adjust as needed
             # Add more nationalities as needed by inspecting portal dropdown
         }
-        nationality = nationality_guid_mapping.get(
-            nationality_raw.lower() if isinstance(nationality_raw, str) else 'uae',
+        nationality_guid = nationality_guid_mapping.get(
+            nationality.lower() if isinstance(nationality, str) else 'uae',
             'a275c17e-afe4-e611-80c9-005056bd7a8d'  # Default to UAE
         )
         
-        # Build Sukoon-specific payload (matches bot form fields)
         return {
-            'leadId': lead_id,  # Pass through for tracking
-            'dob': dob_str,
-            'age': age,
-            'gender': gender,
-            'visaType': visa_type,
-            'maritalStatus': marital_status,
-            'nationality': nationality
+            'index': index,
+            'relationship': relationship,
+            'gender': gender_normalized,
+            'dob': dob,
+            'maritalStatus': marital_code,
+            'nationality': nationality_guid,
+            'isPrimary': is_primary
         }
     
     def _extract_limit_from_details(self, coverage_details: Dict[str, Any], keywords: List[str]) -> Optional[float]:
