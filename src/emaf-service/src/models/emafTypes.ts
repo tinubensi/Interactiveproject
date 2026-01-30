@@ -316,7 +316,8 @@ export interface CreateSubmissionRequest {
 
 export interface SaveEmafDataRequest {
   formData: Record<string, any>;
-  leadId: string;
+  leadId?: string;
+  isFinalSubmission?: boolean; // If true, changes status from 'draft' to 'form_completed'
 }
 
 export interface ApproveSubmissionRequest {

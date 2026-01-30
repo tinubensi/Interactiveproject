@@ -16,16 +16,53 @@ class PdfGeneratorService {
   private async getBrowser(): Promise<Browser> {
     if (!this.browser || !this.browser.isConnected()) {
       console.log('Launching Chromium browser...');
-      this.browser = await chromium.launch({
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu'
-        ],
-        headless: true
-      });
-      console.log('Browser launched successfully');
+      
+      try {
+        this.browser = await chromium.launch({
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu'
+          ],
+          headless: true
+        });
+        console.log('Browser launched successfully');
+      } catch (error: any) {
+        // If browser launch fails, try installing browsers first
+        if (error.message && error.message.includes('Executable doesn\'t exist')) {
+          console.warn('Playwright browsers not found. Attempting to install...');
+          try {
+            const { execSync } = require('child_process');
+            execSync('npx playwright install chromium --with-deps', { 
+              stdio: 'inherit',
+              timeout: 300000 // 5 minutes timeout
+            });
+            console.log('Playwright browsers installed. Retrying browser launch...');
+            
+            // Retry browser launch after installation
+            this.browser = await chromium.launch({
+              args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu'
+              ],
+              headless: true
+            });
+            console.log('Browser launched successfully after installation');
+          } catch (installError: any) {
+            console.error('Failed to install Playwright browsers:', installError);
+            throw new Error(
+              'Playwright browsers are not installed. ' +
+              'Please run: npx playwright install chromium --with-deps. ' +
+              'Original error: ' + error.message
+            );
+          }
+        } else {
+          throw error;
+        }
+      }
     }
     return this.browser;
   }

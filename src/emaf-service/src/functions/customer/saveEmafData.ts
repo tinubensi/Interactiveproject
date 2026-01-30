@@ -42,9 +42,15 @@ export async function saveEmafData(
     }
     
     // Update form data
+    // Only change status to 'form_completed' if this is a final submission
+    // Auto-save (when clicking Next) should keep status as 'draft'
+    const newStatus = body.isFinalSubmission && submission.status === 'draft' 
+      ? 'form_completed' 
+      : submission.status;
+    
     const updated = await cosmosService.updateSubmission(submissionId, submission.leadId, {
       formData: body.formData,
-      status: submission.status === 'draft' ? 'form_completed' : submission.status,
+      status: newStatus,
       updatedAt: new Date()
     });
     

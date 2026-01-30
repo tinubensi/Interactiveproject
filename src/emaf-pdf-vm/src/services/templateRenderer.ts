@@ -11,8 +11,8 @@ class TemplateRenderer {
   private templatesPath: string;
   
   constructor() {
-    // Templates are in src/templates/vendors
-    this.templatesPath = join(__dirname, '../templates/vendors');
+    // Templates are in templates/vendors (relative to dist folder)
+    this.templatesPath = join(__dirname, '../../templates/vendors');
     
     // Register Handlebars helpers
     this.registerHelpers();
@@ -22,91 +22,75 @@ class TemplateRenderer {
    * Register custom Handlebars helpers
    */
   private registerHelpers(): void {
-    // Equality helper
     Handlebars.registerHelper('eq', function(a: any, b: any) {
       return a === b;
     });
     
-    // Greater than helper
     Handlebars.registerHelper('gt', function(a: any, b: any) {
       return a > b;
     });
     
-    // Less than helper
     Handlebars.registerHelper('lt', function(a: any, b: any) {
       return a < b;
     });
     
-    // Format date helper
     Handlebars.registerHelper('formatDate', function(date: any) {
       if (!date) return '';
       try {
         const d = new Date(date);
-        return d.toLocaleDateString('en-GB'); // DD/MM/YYYY format
+        return d.toLocaleDateString('en-GB');
       } catch {
         return date;
       }
     });
     
-    // Format date with Arabic
     Handlebars.registerHelper('formatDateArabic', function(date: any) {
       if (!date) return '';
       try {
         const d = new Date(date);
-        return d.toLocaleDateString('ar-AE'); // Arabic format
+        return d.toLocaleDateString('ar-AE');
       } catch {
         return date;
       }
     });
     
-    // Uppercase helper
     Handlebars.registerHelper('uppercase', function(str: string) {
       return str ? str.toUpperCase() : '';
     });
     
-    // Lowercase helper
     Handlebars.registerHelper('lowercase', function(str: string) {
       return str ? str.toLowerCase() : '';
     });
     
-    // Default value helper
     Handlebars.registerHelper('default', function(value: any, defaultValue: any) {
       return value !== undefined && value !== null && value !== '' ? value : defaultValue;
     });
     
-    // Join array helper
     Handlebars.registerHelper('join', function(array: any[], separator: string) {
       if (!Array.isArray(array)) return '';
       return array.join(separator || ', ');
     });
     
-    // Conditional helper for checkboxes
     Handlebars.registerHelper('isChecked', function(value: any, expectedValue: any) {
       return value === expectedValue || value === true;
     });
     
-    // Number formatting
     Handlebars.registerHelper('formatNumber', function(num: any) {
       if (num === undefined || num === null) return '';
       return Number(num).toLocaleString();
     });
     
-    // Index helper (for loop counter)
     Handlebars.registerHelper('increment', function(value: number) {
       return value + 1;
     });
     
-    // Debug helper (for development)
     Handlebars.registerHelper('debug', function(value: any) {
       console.log('Debug:', JSON.stringify(value, null, 2));
       return '';
     });
     
-    // Split date into individual digit boxes for DD/MM/YYYY format
-    // Usage: {{splitDate date "DD/MM/YYYY"}}
     Handlebars.registerHelper('splitDate', function(date: any, format: string = 'DD/MM/YYYY') {
       if (!date) {
-        // Return placeholder boxes
         if (format === 'DD/MM/YYYY') {
           return '<span class="date-box placeholder">d</span><span class="date-box placeholder">d</span><span class="date-box placeholder">m</span><span class="date-box placeholder">m</span><span class="date-box placeholder">y</span><span class="date-box placeholder">y</span><span class="date-box placeholder">y</span><span class="date-box placeholder">y</span>';
         } else if (format === 'DD/MM/YY') {
@@ -118,11 +102,9 @@ class TemplateRenderer {
       try {
         let dateStr: string;
         if (typeof date === 'string') {
-          // Parse DD/MM/YYYY or DD/MM/YY format
           if (date.includes('/')) {
             dateStr = date;
           } else {
-            // Assume ISO format, convert to DD/MM/YYYY
             const d = new Date(date);
             const day = String(d.getDate()).padStart(2, '0');
             const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -138,16 +120,13 @@ class TemplateRenderer {
           return '';
         }
         
-        // Extract digits from date string
         const digits = dateStr.replace(/\//g, '').split('');
         
         if (format === 'DD/MM/YYYY') {
-          // Return 8 digit boxes: DD MM YYYY
           return digits.slice(0, 8).map(digit => 
             `<span class="date-box">${digit}</span>`
           ).join('');
         } else if (format === 'DD/MM/YY') {
-          // Return 6 digit boxes: DD MM YY
           return digits.slice(0, 6).map(digit => 
             `<span class="date-box">${digit}</span>`
           ).join('');
@@ -160,8 +139,6 @@ class TemplateRenderer {
       }
     });
     
-    // Helper to render checkbox with conditional checked state
-    // Usage: {{checkbox value true}} or {{checkbox value "yes"}}
     Handlebars.registerHelper('checkbox', function(value: any, expectedValue: any) {
       const isChecked = value === expectedValue || value === true || 
                        (typeof value === 'string' && value.toLowerCase() === 'yes') ||
@@ -172,15 +149,11 @@ class TemplateRenderer {
   
   /**
    * Render HTML template with form data
-   * @param vendorCode - Vendor code (e.g., 'alsagr', 'watania')
-   * @param formData - Form data to populate template
-   * @returns Rendered HTML string
    */
   async renderTemplate(
     vendorCode: string,
     formData: Record<string, any>
   ): Promise<string> {
-    // Normalize vendorCode to lowercase to match template filenames
     const normalizedVendorCode = vendorCode.toLowerCase();
     const templateFileName = `${normalizedVendorCode}-emaf.hbs`;
     const templatePath = join(this.templatesPath, templateFileName);
@@ -188,26 +161,19 @@ class TemplateRenderer {
     try {
       console.log(`Loading template from: ${templatePath}`);
       
-      // Read template file
       const templateSource = readFileSync(templatePath, 'utf-8');
-      
-      // Compile template
       const template = Handlebars.compile(templateSource);
       
-      // Prepare template data with additional computed fields
       const templateData = {
         ...formData,
-        // Add metadata
         generatedDate: new Date().toLocaleDateString('en-GB'),
         generatedDateTime: new Date().toLocaleString('en-GB'),
         currentYear: new Date().getFullYear(),
-        // Helper flags
         hasInsuredMembers: formData.insuredMembers && formData.insuredMembers.length > 0,
         hasMedicalQuestions: formData.medicalQuestions && formData.medicalQuestions.length > 0,
         hasPreviousInsurance: formData.previousInsurance && formData.previousInsurance.length > 0,
       };
       
-      // Render template
       const html = template(templateData);
       
       console.log(`Template rendered successfully for vendor: ${normalizedVendorCode}`);
@@ -221,11 +187,8 @@ class TemplateRenderer {
   
   /**
    * Check if template exists for vendor
-   * @param vendorCode - Vendor code
-   * @returns True if template exists
    */
   templateExists(vendorCode: string): boolean {
-    // Normalize vendorCode to lowercase to match template filenames
     const normalizedVendorCode = vendorCode.toLowerCase();
     const templateFileName = `${normalizedVendorCode}-emaf.hbs`;
     const templatePath = join(this.templatesPath, templateFileName);
@@ -240,7 +203,6 @@ class TemplateRenderer {
   
   /**
    * Get list of available templates
-   * @returns Array of vendor codes with templates
    */
   getAvailableTemplates(): string[] {
     try {
@@ -257,5 +219,4 @@ class TemplateRenderer {
   }
 }
 
-// Export singleton instance
 export const templateRenderer = new TemplateRenderer();

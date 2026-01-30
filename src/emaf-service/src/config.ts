@@ -29,6 +29,7 @@ export interface EmafServiceConfig {
     jwtSecret: string;
     serviceKey: string;
   };
+  vmPdfServiceUrl: string;
 }
 
 export function getConfig(): EmafServiceConfig {
@@ -59,5 +60,6 @@ export function getConfig(): EmafServiceConfig {
       jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
       serviceKey: process.env.SERVICE_KEY || 'nectaria-internal-2026',
     },
+    vmPdfServiceUrl: process.env.VM_PDF_SERVICE_URL || 'http://20.203.51.248/api/pdf',
   };
 }
