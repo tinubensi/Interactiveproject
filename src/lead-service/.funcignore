@@ -30,9 +30,7 @@ Lead-Service.postman_collection.json
 
 # Large files
 *.pdf
-*.zip
-
-# DO NOT IGNORE (these are needed):
+*.zip# DO NOT IGNORE (these are needed):
 # dist/
 # node_modules/
 # package.json

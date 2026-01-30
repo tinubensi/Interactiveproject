@@ -186,23 +186,23 @@ export async function refetchPlans(
         for (let httpAttempt = 0; httpAttempt < maxHttpRetries; httpAttempt++) {
           try {
             context.log(`[PIPELINE NOTIFICATION] Attempt ${httpAttempt + 1}/${maxHttpRetries}: Notifying pipeline service about lead refetch for lead ${leadId}`);
-            
+                
             const response = await fetch(`${pipelineServiceUrl}/events/process`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
                 'x-service-key': process.env.INTERNAL_SERVICE_KEY || ''
-              },
-              body: JSON.stringify({
+                  },
+                  body: JSON.stringify({
                 eventType: 'lead.created',
-                leadId: latestLead.id,
+                    leadId: latestLead.id,
                 lineOfBusiness: latestLead.lineOfBusiness,
                 data: {
                   leadId: latestLead.id,
                   referenceId: latestLead.referenceId,
                   customerId: latestLead.customerId,
-                  lineOfBusiness: latestLead.lineOfBusiness,
-                  businessType: latestLead.businessType,
+                    lineOfBusiness: latestLead.lineOfBusiness,
+                    businessType: latestLead.businessType,
                   formId: latestLead.formId,
                   formData: latestLead.formData,
                   lobData: latestLead.lobData,
@@ -224,7 +224,7 @@ export async function refetchPlans(
               context.log(`[PIPELINE NOTIFICATION] ✓ Successfully notified pipeline service about lead refetch`);
               pipelineNotified = true;
               break;
-            } else {
+              } else {
               const errorText = await response.text();
               context.warn(`[PIPELINE NOTIFICATION] Attempt ${httpAttempt + 1} failed: ${response.status} - ${errorText}`);
               if (httpAttempt < maxHttpRetries - 1) {
@@ -279,7 +279,7 @@ export async function refetchPlans(
         }
       } catch (triggerError: any) {
         context.warn(`[IMMEDIATE TRIGGER] Error triggering plan fetch: ${triggerError.message}. Event Grid/Pipeline Service will handle as fallback.`);
-      }
+          }
       
       // Note: Immediate trigger above handles plan fetch. 
       // setTimeout delayed check removed since we trigger immediately.
@@ -289,7 +289,7 @@ export async function refetchPlans(
       
       // HTTP Fallback: Trigger plan fetch directly if Event Grid fails
       // Also notify Pipeline Service if pipeline is active
-      const quotationGenUrl = process.env.QUOTATION_GEN_SERVICE_URL || 'https://quotation-gen-service-74e1210c.azurewebsites.net/api';
+        const quotationGenUrl = process.env.QUOTATION_GEN_SERVICE_URL || 'https://quotation-gen-service-74e1210c.azurewebsites.net/api';
       const maxHttpRetries = 3;
       const httpRetryDelays = [1000, 2000, 3000];
       let planFetchTriggered = false;
@@ -353,34 +353,34 @@ export async function refetchPlans(
       for (let httpAttempt = 0; httpAttempt < maxHttpRetries; httpAttempt++) {
         try {
           context.log(`[HTTP FALLBACK] Attempt ${httpAttempt + 1}/${maxHttpRetries}: Triggering plan fetch at ${quotationGenUrl}/plans/fetch`);
-          
-          const response = await fetch(`${quotationGenUrl}/plans/fetch`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              leadId: latestLead.id,
-              lineOfBusiness: latestLead.lineOfBusiness,
-              businessType: latestLead.businessType,
-              leadData: latestLead.lobData || {}, // Use latest lobData
-              forceRefresh: true
+        
+        const response = await fetch(`${quotationGenUrl}/plans/fetch`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            leadId: latestLead.id,
+            lineOfBusiness: latestLead.lineOfBusiness,
+            businessType: latestLead.businessType,
+            leadData: latestLead.lobData || {}, // Use latest lobData
+            forceRefresh: true
             }),
             signal: AbortSignal.timeout(10000)
-          });
-        
+        });
+      
           if (response.ok) {
             context.log(`[HTTP FALLBACK] ✓ Plans refetch triggered successfully for lead ${leadId}`);
             planFetchTriggered = true;
             break;
           } else {
-            const errorText = await response.text();
+          const errorText = await response.text();
             context.warn(`[HTTP FALLBACK] Plan fetch attempt ${httpAttempt + 1} failed: ${response.status} - ${errorText}`);
             if (httpAttempt < maxHttpRetries - 1) {
               await new Promise(resolve => setTimeout(resolve, httpRetryDelays[httpAttempt]));
             }
-          }
-        } catch (httpError: any) {
+        }
+      } catch (httpError: any) {
           context.warn(`[HTTP FALLBACK] Plan fetch attempt ${httpAttempt + 1} error: ${httpError.message}`);
           if (httpAttempt < maxHttpRetries - 1) {
             await new Promise(resolve => setTimeout(resolve, httpRetryDelays[httpAttempt]));

@@ -182,9 +182,8 @@ export async function createLead(
 
     // CRITICAL: Clean formData to remove duplicate keys with different casings
     // Frontend sends polluted formData with firstName, firstname, Firstname, FIRSTNAME, etc.
+    // This cleaning MUST happen even if frontend cleaned it, as a safety layer
     const cleanFormDataForStorage = (() => {
-      if (!body.formData) return body.formData;
-      
       const canonicalFields = [
         'firstName', 'lastName', 'email', 'phone', 'emirate',
         'nationality', 'effectiveDate', 'visaLocation', 'occupation', 
@@ -196,20 +195,27 @@ export async function createLead(
       ];
       
       const cleaned: any = {};
-      Object.keys(body.formData).forEach(key => {
-        // Keep canonical fields
-        if (canonicalFields.includes(key) || 
-            key.startsWith('lobData.') || 
-            key.startsWith('section-') ||
-            key.startsWith('_')) {
-          cleaned[key] = body.formData[key];
-        }
-      });
       
-      // Also merge lobData fields
-      if (body.lobData) {
+      // Clean formData - only keep canonical fields
+      if (body.formData && typeof body.formData === 'object') {
+        Object.keys(body.formData).forEach(key => {
+          // Keep ONLY canonical fields (exact match) and special prefixes
+          // This filters out all variations like "firstname", "Firstname", "FIRSTNAME", "first name", etc.
+          if (canonicalFields.includes(key) || 
+              key.startsWith('lobData.') || 
+              key.startsWith('section-') ||
+              key.startsWith('_')) {
+            cleaned[key] = body.formData[key];
+          }
+        });
+      }
+      
+      // Clean lobData - only merge canonical fields
+      if (body.lobData && typeof body.lobData === 'object') {
         Object.keys(body.lobData).forEach(key => {
-          if (!cleaned.hasOwnProperty(key) && 
+          // Only add canonical fields from lobData (prevent pollution)
+          if (canonicalFields.includes(key) && 
+              !cleaned.hasOwnProperty(key) && 
               typeof body.lobData[key] !== 'object' &&
               body.lobData[key] !== null) {
             cleaned[key] = body.lobData[key];
@@ -236,7 +242,7 @@ export async function createLead(
       emirate: body.emirate,
       formId: body.formId,
       formData: cleanFormDataForStorage, // Use cleaned formData, not polluted one
-      lobData: body.lobData || cleanFormDataForStorage, // Use cleaned data
+      lobData: cleanFormDataForStorage, // Always use cleaned data (don't use body.lobData directly as it may be polluted)
       assignedTo,
       ambassador: body.ambassador,
       agent: body.agent,

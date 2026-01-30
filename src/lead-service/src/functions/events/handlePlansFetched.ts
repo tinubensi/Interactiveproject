@@ -194,7 +194,7 @@ export async function handlePlansFetched(
       } else {
         // This is a per-vendor event with 0 plans - wait for other vendors
         context.log(`Per-vendor event from ${eventData.vendorId} with 0 plans - waiting for other vendors`);
-        return;
+      return;
       }
     }
 
@@ -214,7 +214,7 @@ export async function handlePlansFetched(
       // CRITICAL FIX: Notify pipeline service via HTTP fallback with retry logic
       // This ensures the pipeline service receives the event even if Event Grid fails
       // Prevents leads from getting stuck in "Plans Fetching" stage
-      const pipelineServiceUrl = process.env.PIPELINE_SERVICE_URL || 'https://pipeline-service.azurewebsites.net/api';
+        const pipelineServiceUrl = process.env.PIPELINE_SERVICE_URL || 'https://pipeline-service.azurewebsites.net/api';
       const maxHttpRetries = 3;
       const httpRetryDelays = [1000, 2000, 3000];
       let httpSuccess = false;
@@ -222,35 +222,35 @@ export async function handlePlansFetched(
       for (let httpAttempt = 0; httpAttempt < maxHttpRetries; httpAttempt++) {
         try {
           context.log(`[HTTP FALLBACK] Attempt ${httpAttempt + 1}/${maxHttpRetries}: Notifying pipeline service about plans.fetch_completed for lead ${eventData.leadId}`);
-          
-          const response = await fetch(`${pipelineServiceUrl}/events/process`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-service-key': process.env.INTERNAL_SERVICE_KEY || ''
-            },
-            body: JSON.stringify({
-              eventType: 'plans.fetch_completed',
+        
+        const response = await fetch(`${pipelineServiceUrl}/events/process`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-service-key': process.env.INTERNAL_SERVICE_KEY || ''
+          },
+          body: JSON.stringify({
+            eventType: 'plans.fetch_completed',
+            leadId: eventData.leadId,
+            lineOfBusiness: lead.lineOfBusiness,
+            data: {
               leadId: eventData.leadId,
-              lineOfBusiness: lead.lineOfBusiness,
-              data: {
-                leadId: eventData.leadId,
-                fetchRequestId: eventData.fetchRequestId,
-                totalPlans: totalPlansCount,
-                successfulVendors: eventData.successfulVendors || [],
-                failedVendors: eventData.failedVendors || [],
-                metadata: eventData.metadata
-              }
+              fetchRequestId: eventData.fetchRequestId,
+              totalPlans: totalPlansCount,
+              successfulVendors: eventData.successfulVendors || [],
+              failedVendors: eventData.failedVendors || [],
+              metadata: eventData.metadata
+            }
             }),
             signal: AbortSignal.timeout(10000) // 10 second timeout
-          });
-          
+        });
+        
           if (response.ok) {
             context.log(`[HTTP FALLBACK] ✓ Successfully notified pipeline service about plans.fetch_completed`);
             httpSuccess = true;
             break;
           } else {
-            const errorText = await response.text();
+          const errorText = await response.text();
             context.warn(`[HTTP FALLBACK] Attempt ${httpAttempt + 1} failed: ${response.status} - ${errorText}`);
             if (httpAttempt < maxHttpRetries - 1) {
               await new Promise(resolve => setTimeout(resolve, httpRetryDelays[httpAttempt]));
@@ -260,7 +260,7 @@ export async function handlePlansFetched(
           context.warn(`[HTTP FALLBACK] Attempt ${httpAttempt + 1} error: ${httpError.message}`);
           if (httpAttempt < maxHttpRetries - 1) {
             await new Promise(resolve => setTimeout(resolve, httpRetryDelays[httpAttempt]));
-          }
+        }
         }
       }
       

@@ -322,9 +322,9 @@ async function handleLeadCreated(
         isNewInstance = false;
       } else {
         // Normal duplicate event - skip
-        log(`[LEAD CREATED] ⚠ Lead ${leadId} already has active pipeline instance: ${existingInstance.instanceId}`);
-        instance = existingInstance;
-        isNewInstance = false;
+      log(`[LEAD CREATED] ⚠ Lead ${leadId} already has active pipeline instance: ${existingInstance.instanceId}`);
+      instance = existingInstance;
+      isNewInstance = false;
       }
     } else {
       // No existing instance, try to create
@@ -385,7 +385,7 @@ async function handleLeadCreated(
     log(`[LEAD CREATED] ⚠ This is a duplicate event - skipping event publishing`);
     return { processed: true, instanceId: instance.instanceId };
   }
-  
+
   // For refetch operations, skip instance creation event publishing but still trigger plan fetch
   if (isRefetch && !isNewInstance) {
     log(`[LEAD CREATED] 🔄 Refetch operation - skipping instance creation event (instance already exists)`);
@@ -393,34 +393,34 @@ async function handleLeadCreated(
     // Skip to plan fetch trigger below - step execution already done during reset
   } else {
     // Only track and publish instance creation events for new instances
-    trackPipelineEvent('PipelineInstanceCreated', {
-      instanceId: instance.instanceId,
-      pipelineId: pipeline.pipelineId,
-      leadId,
-      lineOfBusiness: lineOfBusiness || 'unknown',
-      initialStep: instance.currentStepId,
-    });
+  trackPipelineEvent('PipelineInstanceCreated', {
+    instanceId: instance.instanceId,
+    pipelineId: pipeline.pipelineId,
+    leadId,
+    lineOfBusiness: lineOfBusiness || 'unknown',
+    initialStep: instance.currentStepId,
+  });
 
-    // Publish instance created event
-    await publishPipelineInstanceCreated({
-      instanceId: instance.instanceId,
-      pipelineId: pipeline.pipelineId,
-      leadId,
-      lineOfBusiness,
-    });
-    log(`[LEAD CREATED] ✓ Published pipeline.instance.created event`);
+  // Publish instance created event
+  await publishPipelineInstanceCreated({
+    instanceId: instance.instanceId,
+    pipelineId: pipeline.pipelineId,
+    leadId,
+    lineOfBusiness,
+  });
+  log(`[LEAD CREATED] ✓ Published pipeline.instance.created event`);
 
-    log(`[LEAD CREATED] ✓ Instance is ready to receive events`);
+  log(`[LEAD CREATED] ✓ Instance is ready to receive events`);
 
-    // Execute the entry step (Lead Created) to update lead status and set waiting state
-    // This will set the instance to wait for plans.fetch_started event
-    const entryStep = pipeline.steps.find(s => s.id === instance.currentStepId);
-    if (entryStep) {
-      log(`[LEAD CREATED] Executing entry step: ${entryStep.id} (${entryStep.type})`);
-      await executeStep(instance, pipeline, entryStep, 'lead.created', log);
-      log(`[LEAD CREATED] ✓ Entry step executed, instance ready to receive events`);
-    } else {
-      log(`[LEAD CREATED] ⚠ WARNING: Entry step not found for instance.currentStepId: ${instance.currentStepId}`);
+  // Execute the entry step (Lead Created) to update lead status and set waiting state
+  // This will set the instance to wait for plans.fetch_started event
+  const entryStep = pipeline.steps.find(s => s.id === instance.currentStepId);
+  if (entryStep) {
+    log(`[LEAD CREATED] Executing entry step: ${entryStep.id} (${entryStep.type})`);
+    await executeStep(instance, pipeline, entryStep, 'lead.created', log);
+    log(`[LEAD CREATED] ✓ Entry step executed, instance ready to receive events`);
+  } else {
+    log(`[LEAD CREATED] ⚠ WARNING: Entry step not found for instance.currentStepId: ${instance.currentStepId}`);
     }
   }
 
@@ -767,34 +767,34 @@ async function handleEventForStep(
             }
           }
         } else {
-          // Check if event matches next stage's trigger event
-          // NOTE: We do NOT check if the event matches the current stage's trigger event,
-          // because that's the event that got us TO this stage, not the event that should
-          // advance us FROM this stage. Checking current stage trigger would cause incorrect
-          // advancement (e.g., receiving plans.fetch_completed while at "Plans Available"
-          // would incorrectly advance to "Quotation Created").
-          const nextStep = getNextEnabledStep(pipeline.steps, currentStep.id);
-          log(`[STAGE] Checking next step: ${nextStep ? `${nextStep.id} (${nextStep.type})` : 'none'}`);
+        // Check if event matches next stage's trigger event
+        // NOTE: We do NOT check if the event matches the current stage's trigger event,
+        // because that's the event that got us TO this stage, not the event that should
+        // advance us FROM this stage. Checking current stage trigger would cause incorrect
+        // advancement (e.g., receiving plans.fetch_completed while at "Plans Available"
+        // would incorrectly advance to "Quotation Created").
+        const nextStep = getNextEnabledStep(pipeline.steps, currentStep.id);
+        log(`[STAGE] Checking next step: ${nextStep ? `${nextStep.id} (${nextStep.type})` : 'none'}`);
 
-          if (nextStep?.type === 'stage') {
-            const nextStageStep = nextStep as StageStep;
-            const expectedEvent = getStageById(nextStageStep.stageId)?.triggerEvent;
-            log(`[STAGE] Next stage: ${nextStageStep.stageName} (${nextStageStep.stageId})`);
-            log(`[STAGE] Next stage trigger event: ${expectedEvent || 'NONE'}`);
-            shouldAdvance = eventType === expectedEvent;
-            if (shouldAdvance) {
-              log(`[STAGE] ✓ MATCH: Event ${eventType} matches next stage trigger ${expectedEvent} - WILL ADVANCE`);
-            } else {
-              log(`[STAGE] ✗ NO MATCH: Event ${eventType} does NOT match next stage trigger ${expectedEvent}`);
-              log(`[STAGE] ✗ Instance is waiting for: ${instance.waitingForEvent || 'NONE'}`);
-              log(`[STAGE] ✗ This event will be ignored - instance will remain at current stage`);
-            }
-          } else if (nextStep) {
-            // Next step is not a stage - check if current stage is complete
-            shouldAdvance = true;
-            log(`[STAGE] Next step is not a stage (${nextStep.type}), auto-advancing`);
+        if (nextStep?.type === 'stage') {
+          const nextStageStep = nextStep as StageStep;
+          const expectedEvent = getStageById(nextStageStep.stageId)?.triggerEvent;
+          log(`[STAGE] Next stage: ${nextStageStep.stageName} (${nextStageStep.stageId})`);
+          log(`[STAGE] Next stage trigger event: ${expectedEvent || 'NONE'}`);
+          shouldAdvance = eventType === expectedEvent;
+          if (shouldAdvance) {
+            log(`[STAGE] ✓ MATCH: Event ${eventType} matches next stage trigger ${expectedEvent} - WILL ADVANCE`);
           } else {
-            log(`[STAGE] No next step found after ${currentStep.id} - pipeline may be complete`);
+            log(`[STAGE] ✗ NO MATCH: Event ${eventType} does NOT match next stage trigger ${expectedEvent}`);
+            log(`[STAGE] ✗ Instance is waiting for: ${instance.waitingForEvent || 'NONE'}`);
+            log(`[STAGE] ✗ This event will be ignored - instance will remain at current stage`);
+          }
+        } else if (nextStep) {
+          // Next step is not a stage - check if current stage is complete
+          shouldAdvance = true;
+          log(`[STAGE] Next step is not a stage (${nextStep.type}), auto-advancing`);
+        } else {
+          log(`[STAGE] No next step found after ${currentStep.id} - pipeline may be complete`);
           }
         }
       }
