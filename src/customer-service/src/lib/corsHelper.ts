@@ -1,5 +1,5 @@
 /**
- * CORS Helper for Lead Service
+ * CORS Helper for Customer Service
  * Provides consistent CORS headers across all endpoints
  */
 
@@ -10,7 +10,6 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3001',
   'https://localhost:3000',
   'https://localhost:3001',
-  // Add production domains here when deployed
 ];
 
 /**
@@ -101,4 +100,3 @@ export function withCors(request: HttpRequest, response: HttpResponseInit): Http
     },
   };
 }
-

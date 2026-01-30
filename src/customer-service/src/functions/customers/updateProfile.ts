@@ -3,8 +3,13 @@ import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
 import { UpdateProfileRequest, Customer } from '../../types/customer';
 import { ensureAuthorized, requirePermission, CUSTOMER_PERMISSIONS } from '../../lib/auth';
+import { handlePreflight, withCors } from '../../lib/corsHelper';
 
 export async function updateProfile(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+  // Handle CORS preflight
+  const preflightResponse = handlePreflight(request);
+  if (preflightResponse) return preflightResponse;
+
   try {
     const userContext = await ensureAuthorized(request);
     await requirePermission(userContext.userId, CUSTOMER_PERMISSIONS.CUSTOMERS_UPDATE);
@@ -12,18 +17,18 @@ export async function updateProfile(request: HttpRequest, context: InvocationCon
     const body = (await request.json()) as UpdateProfileRequest;
 
     if (!id) {
-      return {
+      return withCors(request, {
         status: 400,
         jsonBody: { error: 'Customer ID is required' },
-      };
+      });
     }
 
     const existingCustomer = await cosmosService.getCustomerById(id);
     if (!existingCustomer) {
-      return {
+      return withCors(request, {
         status: 404,
         jsonBody: { error: 'Customer not found' },
-      };
+      });
     }
 
     const updatedFields: string[] = [];
@@ -118,10 +123,10 @@ export async function updateProfile(request: HttpRequest, context: InvocationCon
         if (body.emiratesId && body.emiratesId.trim() !== '') {
           const existingByEmiratesId = await cosmosService.getCustomerByEmiratesId(body.emiratesId);
           if (existingByEmiratesId && existingByEmiratesId.id !== id) {
-            return {
+            return withCors(request, {
               status: 409,
               jsonBody: { error: 'Customer with this Emirates ID already exists' },
-            };
+            });
           }
         }
         updates.emiratesId = body.emiratesId;
@@ -198,10 +203,10 @@ export async function updateProfile(request: HttpRequest, context: InvocationCon
     }
 
     if (updatedFields.length === 0) {
-      return {
+      return withCors(request, {
         status: 400,
         jsonBody: { error: 'No valid fields to update' },
-      };
+      });
     }
 
     const updatedCustomer = await cosmosService.updateCustomer(id, updates);
@@ -212,21 +217,21 @@ export async function updateProfile(request: HttpRequest, context: InvocationCon
       updatedFields,
     });
 
-    return {
+    return withCors(request, {
       status: 200,
       jsonBody: updatedCustomer,
-    };
+    });
   } catch (error: any) {
     context.log('Update profile error:', error);
-    return {
+    return withCors(request, {
       status: 500,
       jsonBody: { error: 'Internal server error', message: error.message },
-    };
+    });
   }
 }
 
 app.http('updateProfile', {
-  methods: ['PUT'],
+  methods: ['PUT', 'OPTIONS'],
   authLevel: 'anonymous',
   route: 'customers/{id}/profile',
   handler: updateProfile,
