@@ -560,25 +560,20 @@ class Gig_gulfBot(InsuranceBot):
                             option_found = True
                             self.logger.info(f"✓ Salary Range selected (exact match): {opt_text}")
                             break
-                        # Try matching by normalizing the comparison symbols
-                        # The HTML has &gt; and &lt; but we compare with > and <
-                        normalized_opt = opt_text.replace('&gt;', '>').replace('&lt;', '<')
-                        normalized_range = salary_range.replace('&gt;', '>').replace('&lt;', '<')
+                        
+                        # Normalize both strings for comparison
+                        # Remove extra spaces, normalize HTML entities
+                        normalized_opt = opt_text.replace('&gt;', '>').replace('&lt;', '<').replace('&amp;', '&')
+                        normalized_opt = ' '.join(normalized_opt.split())  # Normalize whitespace
+                        
+                        normalized_range = salary_range.replace('&gt;', '>').replace('&lt;', '<').replace('&amp;', '&')
+                        normalized_range = ' '.join(normalized_range.split())  # Normalize whitespace
+                        
                         if normalized_opt == normalized_range:
                             await opt.click()
                             option_found = True
                             self.logger.info(f"✓ Salary Range selected (normalized match): {opt_text}")
                             break
-                        # Try partial match - check if key parts match
-                        elif 'AED/month' in opt_text and 'AED/month' in salary_range:
-                            # Extract the numeric ranges for comparison
-                            opt_nums = opt_text.replace('>', '').replace('<', '').replace('=', '').replace('AED/month', '').strip()
-                            range_nums = salary_range.replace('>', '').replace('<', '').replace('=', '').replace('AED/month', '').strip()
-                            if range_nums in opt_nums or opt_nums in range_nums:
-                                await opt.click()
-                                option_found = True
-                                self.logger.info(f"✓ Salary Range selected (partial match): {opt_text}")
-                                break
                 except Exception as e:
                     self.logger.debug(f"Error checking option: {e}")
                     continue
