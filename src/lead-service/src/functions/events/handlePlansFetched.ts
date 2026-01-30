@@ -117,21 +117,85 @@ export async function handlePlansFetched(
     // NOTE: Plans are already saved by RPA container - no need to save them again
     // RPA container publishes per-vendor events, so we query DB for actual plan count
     
-    // Query all plans for this lead from Cosmos DB
-    const existingPlans = await cosmosService.getPlansForLead(leadId);
+    // CRITICAL FIX: Improved retry logic for Cosmos DB eventual consistency
+    // The event might arrive before plans are queryable due to replication lag
+    // Increased retries and delays to handle slower replication scenarios
+    let existingPlans: Plan[] = [];
+    let totalPlansCount = 0;
+    const maxRetries = 5;
+    const retryDelays = [1000, 2000, 3000, 5000, 8000]; // Exponential backoff: 1s, 2s, 3s, 5s, 8s
     
-    // Deduplicate plans by planCode to get accurate count
-    // (RPA may create duplicates due to Event Grid retries or multiple triggers)
-    const uniquePlanCodes = new Set(existingPlans.map(plan => plan.planCode));
-    const totalPlansCount = uniquePlanCodes.size;
-    
-    context.log(`Found ${existingPlans.length} total plans (${totalPlansCount} unique) for lead ${leadId} in database`);
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      existingPlans = await cosmosService.getPlansForLead(leadId);
+      
+      // Deduplicate plans by planCode to get accurate count
+      // (RPA may create duplicates due to Event Grid retries or multiple triggers)
+      const uniquePlanCodes = new Set(existingPlans.map(plan => plan.planCode));
+      totalPlansCount = uniquePlanCodes.size;
+      
+      context.log(`[Attempt ${attempt + 1}/${maxRetries}] Found ${existingPlans.length} total plans (${totalPlansCount} unique) for lead ${leadId} in database`);
+      
+      if (totalPlansCount > 0) {
+        break; // Plans found, exit retry loop
+      }
+      
+      // If event says plans were saved but we can't find them, retry
+      if (eventData.totalPlans > 0 && attempt < maxRetries - 1) {
+        const delay = retryDelays[attempt];
+        context.log(`[Retry] Event reports ${eventData.totalPlans} plans but query returned 0. Retrying in ${delay}ms (Cosmos DB eventual consistency)...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else if (eventData.totalPlans > 0) {
+        // Last attempt failed, but event says plans exist - use event count as fallback
+        context.log(`[Fallback] Using event totalPlans (${eventData.totalPlans}) as fallback after ${maxRetries} failed queries`);
+        totalPlansCount = eventData.totalPlans;
+        break;
+      } else if (attempt < maxRetries - 1) {
+        // Event doesn't specify plan count, but this might be a per-vendor event
+        // Wait a bit longer before giving up - another vendor might still be processing
+        const delay = retryDelays[attempt];
+        context.log(`[Retry] No plans found yet, but this might be a per-vendor event. Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
 
-    // Update stage immediately if we have ANY plans (don't wait for multiple vendors)
+    // CRITICAL FIX: Handle 0 plans scenario properly
+    // If this is the final aggregated event (not per-vendor) and we have 0 plans, mark as failed
+    const isFinalAggregatedEvent = !eventData.vendorId; // Final event has no vendorId
+    
     if (totalPlansCount === 0) {
-      context.log(`No plans found yet for lead ${leadId} - skipping stage update`);
-      context.log(`This event was from vendor: ${eventData.vendorId || 'unknown'} with ${eventData.totalPlans || 0} plans`);
+      if (isFinalAggregatedEvent) {
+        // This is the final aggregated event and we have 0 plans - all vendors failed
+        context.warn(`⚠️ FINAL EVENT: All vendors failed or returned 0 plans for lead ${leadId}`);
+        context.log(`Setting lead status to "Plans Fetch Failed" instead of "Plans Available"`);
+        
+        // Update lead to "Plans Fetch Failed" status
+        await cosmosService.updateLead(leadId, lead.lineOfBusiness, {
+          currentStage: 'Plans Fetch Failed',
+          stageId: 'stage-plans-fetch-failed',
+          plansCount: 0,
+          updatedAt: new Date()
+        });
+        
+        // Create timeline entry
+        await cosmosService.createTimelineEntry({
+          id: uuidv4(),
+          leadId: leadId,
+          stage: 'Plans Fetch Failed',
+          previousStage: lead.currentStage,
+          stageId: 'stage-plans-fetch-failed',
+          remark: 'All vendors failed to fetch plans or returned 0 plans',
+          changedBy: 'system',
+          changedByName: 'System',
+          timestamp: new Date()
+        });
+        
+        context.log(`✅ Lead ${leadId} marked as "Plans Fetch Failed" - user can retry`);
+        return;
+      } else {
+        // This is a per-vendor event with 0 plans - wait for other vendors
+        context.log(`Per-vendor event from ${eventData.vendorId} with 0 plans - waiting for other vendors`);
       return;
+      }
     }
 
     context.log(`✅ Found ${totalPlansCount} plans - proceeding with stage update`);
@@ -146,6 +210,65 @@ export async function handlePlansFetched(
         plansCount: totalPlansCount,
         updatedAt: new Date()
       });
+      
+      // CRITICAL FIX: Notify pipeline service via HTTP fallback with retry logic
+      // This ensures the pipeline service receives the event even if Event Grid fails
+      // Prevents leads from getting stuck in "Plans Fetching" stage
+        const pipelineServiceUrl = process.env.PIPELINE_SERVICE_URL || 'https://pipeline-service.azurewebsites.net/api';
+      const maxHttpRetries = 3;
+      const httpRetryDelays = [1000, 2000, 3000];
+      let httpSuccess = false;
+      
+      for (let httpAttempt = 0; httpAttempt < maxHttpRetries; httpAttempt++) {
+        try {
+          context.log(`[HTTP FALLBACK] Attempt ${httpAttempt + 1}/${maxHttpRetries}: Notifying pipeline service about plans.fetch_completed for lead ${eventData.leadId}`);
+        
+        const response = await fetch(`${pipelineServiceUrl}/events/process`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-service-key': process.env.INTERNAL_SERVICE_KEY || ''
+          },
+          body: JSON.stringify({
+            eventType: 'plans.fetch_completed',
+            leadId: eventData.leadId,
+            lineOfBusiness: lead.lineOfBusiness,
+            data: {
+              leadId: eventData.leadId,
+              fetchRequestId: eventData.fetchRequestId,
+              totalPlans: totalPlansCount,
+              successfulVendors: eventData.successfulVendors || [],
+              failedVendors: eventData.failedVendors || [],
+              metadata: eventData.metadata
+            }
+            }),
+            signal: AbortSignal.timeout(10000) // 10 second timeout
+        });
+        
+          if (response.ok) {
+            context.log(`[HTTP FALLBACK] ✓ Successfully notified pipeline service about plans.fetch_completed`);
+            httpSuccess = true;
+            break;
+          } else {
+          const errorText = await response.text();
+            context.warn(`[HTTP FALLBACK] Attempt ${httpAttempt + 1} failed: ${response.status} - ${errorText}`);
+            if (httpAttempt < maxHttpRetries - 1) {
+              await new Promise(resolve => setTimeout(resolve, httpRetryDelays[httpAttempt]));
+            }
+          }
+        } catch (httpError: any) {
+          context.warn(`[HTTP FALLBACK] Attempt ${httpAttempt + 1} error: ${httpError.message}`);
+          if (httpAttempt < maxHttpRetries - 1) {
+            await new Promise(resolve => setTimeout(resolve, httpRetryDelays[httpAttempt]));
+        }
+        }
+      }
+      
+      if (!httpSuccess) {
+        context.error(`[HTTP FALLBACK] Failed to notify pipeline service after ${maxHttpRetries} attempts. Event Grid might still deliver the event.`);
+        // Don't throw - Event Grid might still deliver the event
+      }
+      
       return;
     }
 

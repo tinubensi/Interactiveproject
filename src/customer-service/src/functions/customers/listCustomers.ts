@@ -1,6 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { cosmosService } from '../../services/cosmosService';
 import { ensureAuthorized, requirePermission, CUSTOMER_PERMISSIONS } from '../../lib/auth';
+import { CustomerListRequest } from '../../types/customer';
 
 export async function listCustomers(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   context.log('HTTP trigger function processed a request to list customers.');
@@ -8,24 +9,43 @@ export async function listCustomers(request: HttpRequest, context: InvocationCon
   try {
     const userContext = await ensureAuthorized(request);
     await requirePermission(userContext.userId, CUSTOMER_PERMISSIONS.CUSTOMERS_READ);
-    // Get query parameters for pagination (optional)
-    const limit = request.query.get('limit') || '100';
-    const offset = request.query.get('offset') || '0';
-
-    // Query all customers
-    const query = 'SELECT * FROM c ORDER BY c._ts DESC';
-    const customers = await cosmosService.queryCustomers(query);
-
-    context.log(`Found ${customers.length} customers`);
+    
+    // Parse request body
+    const body = await request.json() as any;
+    
+    // Build list request with defaults
+    const listRequest: CustomerListRequest = {
+      page: body.page || 1,
+      limit: body.limit || 10,
+      sortBy: body.sortBy || 'createdAt',
+      sortOrder: body.sortOrder || 'desc',
+      search: body.search,
+      filters: body.filters,
+    };
+    
+    // Validate pagination
+    if (listRequest.page < 1) {
+      return {
+        status: 400,
+        jsonBody: { error: 'Invalid page number. Page must be >= 1.' },
+      };
+    }
+    
+    if (listRequest.limit < 1 || listRequest.limit > 100) {
+      return {
+        status: 400,
+        jsonBody: { error: 'Invalid limit. Limit must be between 1 and 100.' },
+      };
+    }
+    
+    // Get paginated customers
+    const result = await cosmosService.listCustomers(listRequest);
+    
+    context.log(`Found ${result.data.length} customers (page ${result.pagination.page} of ${result.pagination.totalPages})`);
 
     return {
       status: 200,
-      jsonBody: {
-        customers,
-        total: customers.length,
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-      },
+      jsonBody: result,
     };
   } catch (error) {
     context.log('Error listing customers:', error);
@@ -40,7 +60,7 @@ export async function listCustomers(request: HttpRequest, context: InvocationCon
 }
 
 app.http('listCustomers', {
-  methods: ['GET'],
+  methods: ['POST'],
   authLevel: 'anonymous',
   route: 'customers',
   handler: listCustomers,

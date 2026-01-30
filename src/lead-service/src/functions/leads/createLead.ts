@@ -180,6 +180,65 @@ export async function createLead(
       context.log(`Using provided customerId: ${customerId}`);
     }
 
+    // CRITICAL: Clean formData to remove duplicate keys with different casings
+    // Frontend sends polluted formData with firstName, firstname, Firstname, FIRSTNAME, etc.
+    // This cleaning MUST happen even if frontend cleaned it, as a safety layer
+    const canonicalFields = [
+      'firstName', 'lastName', 'email', 'phone', 'emirate',
+      'nationality', 'effectiveDate', 'visaLocation', 'occupation', 
+      'homeCountry', 'dateOfBirth', 'gender', 'emiratesId',
+      'monthlySalaryRange', 'salaryRange', 'visaType', 'maritalStatus',
+      'passportNumber', 'visaFileNumber', 'visaExpiryDate',
+      'residentialLocation', 'countryOfResidence', 'currentlyInsured',
+      '_fieldLabels', '_sectionLabels', 'title', 'relation'
+    ];
+    
+    // Clean formData - only keep canonical fields
+    const cleanFormDataForStorage = (() => {
+      const cleaned: any = {};
+      
+      if (body.formData && typeof body.formData === 'object') {
+        Object.keys(body.formData).forEach(key => {
+          // Keep ONLY canonical fields (exact match) and special prefixes
+          // This filters out all variations like "firstname", "Firstname", "FIRSTNAME", "first name", etc.
+          if (canonicalFields.includes(key) || 
+              key.startsWith('lobData.') || 
+              key.startsWith('section-') ||
+              key.startsWith('_')) {
+            cleaned[key] = body.formData[key];
+          }
+        });
+      }
+      
+      return cleaned;
+    })();
+    
+    // Clean lobData - extract ONLY LOB-specific fields (not common fields like firstName, lastName, etc.)
+    const cleanLobDataForStorage = (() => {
+      // LOB-specific fields only (exclude common customer fields)
+      const lobSpecificFields = [
+        'dateOfBirth', 'gender', 'emiratesId', 'monthlySalaryRange', 'salaryRange',
+        'visaType', 'maritalStatus', 'passportNumber', 'visaFileNumber',
+        'visaExpiryDate', 'visaLocation', 'occupation', 'homeCountry',
+        'nationality', 'residentialLocation', 'countryOfResidence', 'currentlyInsured'
+      ];
+      
+      const cleaned: any = {};
+      
+      if (body.lobData && typeof body.lobData === 'object') {
+        Object.keys(body.lobData).forEach(key => {
+          // Only include LOB-specific fields (exclude firstName, lastName, email, phone, emirate)
+          if (lobSpecificFields.includes(key) && 
+              typeof body.lobData[key] !== 'object' &&
+              body.lobData[key] !== null) {
+            cleaned[key] = body.lobData[key];
+          }
+        });
+      }
+      
+      return cleaned;
+    })();
+
     // Create lead object
     const lead: any = {
       type: 'lead', // Required for Cosmos DB queries
@@ -195,13 +254,13 @@ export async function createLead(
       phone: body.phone,
       emirate: body.emirate,
       formId: body.formId,
-      formData: body.formData,
-      lobData: body.lobData,
+      formData: cleanFormDataForStorage, // Use cleaned formData, not polluted one
+      lobData: cleanLobDataForStorage, // Use cleaned lobData (only LOB-specific fields, no common fields)
       assignedTo,
       ambassador: body.ambassador,
       agent: body.agent,
       source: body.source || 'Website',
-      currentStage: 'Lead Created', // Start at Lead Created stage
+      currentStage: 'Lead Created', // Start at Lead Created stage - Pipeline Service will handle progression
       stageId: 'stage-0', // stage-0 = Lead Created
       isHotLead: false,
       isEmailRepeated,
@@ -219,9 +278,9 @@ export async function createLead(
     await cosmosService.createTimelineEntry({
       id: uuidv4(),
       leadId: createdLead.id,
-      stage: 'Lead Created', // Initial stage is Lead Created
+      stage: 'Lead Created', // Initial stage is Lead Created - Pipeline Service will handle progression
       stageId: 'stage-0', // stage-0 = Lead Created
-      remark: 'Lead created',
+      remark: 'Lead created successfully',
       changedBy: body.assignedTo || 'system',
       changedByName: 'System',
       timestamp: new Date()
@@ -231,6 +290,10 @@ export async function createLead(
     let eventPublished = false;
     let httpFallbackTriggered = false;
     
+    // CRITICAL: Ensure formData is clean before sending to Event Grid
+    // Even though we cleaned it before saving, ensure it's clean here too
+    const cleanFormDataForEventGrid = createdLead.formData || cleanFormDataForStorage;
+    
     try {
       await eventGridService.publishLeadCreated({
         leadId: createdLead.id,
@@ -239,7 +302,7 @@ export async function createLead(
         lineOfBusiness: createdLead.lineOfBusiness,
         businessType: createdLead.businessType,
         formId: createdLead.formId,
-        formData: createdLead.formData,
+        formData: cleanFormDataForEventGrid, // Use cleaned formData, not polluted one
         lobData: createdLead.lobData,
         assignedTo: createdLead.assignedTo,
         createdAt: createdLead.createdAt,
@@ -276,7 +339,7 @@ export async function createLead(
               lineOfBusiness: createdLead.lineOfBusiness,
               businessType: createdLead.businessType,
               formId: createdLead.formId,
-              formData: createdLead.formData,
+              formData: cleanFormDataForEventGrid, // Use cleaned formData, not polluted one
               lobData: createdLead.lobData,
               assignedTo: createdLead.assignedTo,
               createdAt: createdLead.createdAt.toISOString(),

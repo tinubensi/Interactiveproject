@@ -70,17 +70,16 @@ const stepIds = {
       description: 'Fetching insurance plans from vendors',
     } satisfies StageStep,
 
-    // Step 2.5: Plans Fetch Failed (Error State)
+    // Step 2.3: Plans Refetching (used during refetch operations)
     {
-      id: stepIds.plansFetchFailed,
-      order: 2.5,
+      id: uuidv4(), // Generate new ID for Plans Refetching step
+      order: 2.3,
       enabled: true,
       type: 'stage' as const,
-      stageId: 'plans-fetch-failed' as const,
-      stageName: 'Plans Fetch Failed',
-      name: 'Plans Fetch Failed',
-      description: 'Failed to fetch insurance plans - user can retry',
-      allowedActions: ['REFETCH_PLANS'],
+      stageId: 'plans-refetching' as const,
+      stageName: 'Plans Refetching',
+      name: 'Plans Refetching',
+      description: 'Refetching insurance plans from vendors with updated data',
     } satisfies StageStep,
 
     // Step 3: Plans Available
@@ -94,6 +93,19 @@ const stepIds = {
       name: 'Plans Available',
       description: 'Insurance plans have been fetched and are ready',
       allowedActions: ['CREATE_QUOTATION', 'REFETCH_PLANS', 'MANUAL_ADVANCE'],
+    } satisfies StageStep,
+
+    // Step 3.5: Plans Fetch Failed (Error State - parallel to Plans Available, not in sequence)
+    {
+      id: stepIds.plansFetchFailed,
+      order: 3.5,
+      enabled: true,
+      type: 'stage' as const,
+      stageId: 'plans-fetch-failed' as const,
+      stageName: 'Plans Fetch Failed',
+      name: 'Plans Fetch Failed',
+      description: 'Failed to fetch insurance plans - user can retry',
+      allowedActions: ['REFETCH_PLANS'],
     } satisfies StageStep,
 
     // Step 4: Hot Lead Decision

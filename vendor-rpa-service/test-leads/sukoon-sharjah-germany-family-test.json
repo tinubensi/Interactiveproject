@@ -1,0 +1,20 @@
+{
+  "leadId": "test-sharjah-germany-family-001",
+  "emirate": "Sharjah",
+  "members": [
+    {
+      "relationship": "Self/Employee",
+      "gender": "Female",
+      "dob": "1996-06-13",
+      "maritalStatus": "Married",
+      "nationality": "Germany"
+    },
+    {
+      "relationship": "Child",
+      "gender": "Male",
+      "dob": "2023-06-13",
+      "maritalStatus": "Married",
+      "nationality": "Germany"
+    }
+  ]
+}

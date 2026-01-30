@@ -26,13 +26,18 @@ export async function createStaff(
   const now = new Date().toISOString();
   const staffId = uuidv4();
 
+  // Handle displayName: use firstName only if lastName is empty
+  const displayName = request.lastName 
+    ? `${request.firstName} ${request.lastName}`.trim()
+    : request.firstName;
+
   const document: StaffMemberDocument = {
     id: staffId,
     staffId,
     email: request.email.toLowerCase(),
     firstName: request.firstName,
-    lastName: request.lastName,
-    displayName: `${request.firstName} ${request.lastName}`,
+    lastName: request.lastName || '', // Default to empty string if not provided
+    displayName,
     phone: request.phone,
     staffType: request.staffType,
     status: 'active',
@@ -121,11 +126,13 @@ export async function findStaffByEmployeeId(employeeId: string): Promise<StaffMe
  */
 export async function listStaff(query: StaffListQuery): Promise<StaffListResponse> {
   const container = getStaffContainer();
-  const limit = query.limit || 50;
-  const offset = query.offset || 0;
+  const page = query.page || 1;
+  const limit = query.limit || 10;
+  const sortBy = query.sortBy || 'displayName';
+  const sortOrder = query.sortOrder || 'asc';
 
   let queryText = 'SELECT * FROM c WHERE 1=1';
-  const parameters: { name: string; value: string | number }[] = [];
+  const parameters: { name: string; value: string | number | boolean }[] = [];
 
   // Filter out soft-deleted staff by default
   queryText += ' AND (NOT IS_DEFINED(c.deletedAt) OR c.deletedAt = null)';
@@ -147,15 +154,28 @@ export async function listStaff(query: StaffListQuery): Promise<StaffListRespons
     parameters.push({ name: '@search', value: query.search.toLowerCase() });
   }
 
+  // Additional filters
+  if (query.filters?.isAvailable !== undefined) {
+    queryText += ' AND c.availability.isAvailable = @isAvailable';
+    parameters.push({ name: '@isAvailable', value: query.filters.isAvailable });
+  }
+
   // Count total
   const countQuery = queryText.replace('SELECT *', 'SELECT VALUE COUNT(1)');
   const { resources: countResult } = await container.items
     .query({ query: countQuery, parameters })
     .fetchAll();
-  const total = countResult[0] || 0;
+  const totalRecords = countResult[0] || 0;
+
+  // Build ORDER BY clause
+  let orderByField = 'c.displayName';
+  if (sortBy === 'email') orderByField = 'c.email';
+  else if (sortBy === 'createdAt') orderByField = 'c.createdAt';
+  else if (sortBy === 'staffType') orderByField = 'c.staffType';
 
   // Add pagination
-  queryText += ' ORDER BY c.displayName OFFSET @offset LIMIT @limit';
+  const offset = (page - 1) * limit;
+  queryText += ` ORDER BY ${orderByField} ${sortOrder.toUpperCase()} OFFSET @offset LIMIT @limit`;
   parameters.push({ name: '@offset', value: offset });
   parameters.push({ name: '@limit', value: limit });
 
@@ -164,7 +184,7 @@ export async function listStaff(query: StaffListQuery): Promise<StaffListRespons
     .fetchAll();
 
   // Map to summary
-  const staff: StaffSummary[] = resources.map((s) => ({
+  const data: StaffSummary[] = resources.map((s) => ({
     staffId: s.staffId,
     displayName: s.displayName,
     email: s.email,
@@ -172,11 +192,21 @@ export async function listStaff(query: StaffListQuery): Promise<StaffListRespons
     staffType: s.staffType,
   }));
 
+  // Calculate pagination metadata
+  const totalPages = Math.ceil(totalRecords / limit);
+  const hasNext = page < totalPages;
+  const hasPrevious = page > 1;
+
   return {
-    total,
-    limit,
-    offset,
-    staff,
+    data,
+    pagination: {
+      page,
+      limit,
+      totalRecords,
+      totalPages,
+      hasNext,
+      hasPrevious,
+    },
   };
 }
 
@@ -198,6 +228,7 @@ export async function updateStaff(
   const now = new Date().toISOString();
   const updated: StaffMemberDocument = {
     ...existing,
+    email: updates.email ?? existing.email,
     firstName: updates.firstName ?? existing.firstName,
     lastName: updates.lastName ?? existing.lastName,
     displayName: updates.firstName || updates.lastName

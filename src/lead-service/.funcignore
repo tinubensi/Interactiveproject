@@ -30,15 +30,11 @@ Lead-Service.postman_collection.json
 
 # Large files
 *.pdf
-*.zip
-
-# DO NOT IGNORE (these are needed):
+*.zip# DO NOT IGNORE (these are needed):
 # dist/
 # node_modules/
 # package.json
 # package-lock.json
-# host.json
-
-# Dev tools that shouldn't be deployed
+# host.json# Dev tools that shouldn't be deployed
 node_modules/azure-functions-core-tools/**
 node_modules/tsx/**

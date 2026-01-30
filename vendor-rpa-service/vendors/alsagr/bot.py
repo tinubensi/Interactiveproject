@@ -246,6 +246,36 @@ class AlsagrBot(InsuranceBot):
                     self.logger.error(f"Could not select maritalStatus at all, continuing anyway: {e2}")
             await asyncio.sleep(0.3)
             
+            # Nationality dropdown - CRITICAL FIELD
+            nationality_code = primary.get('nationalityCode', primary.get('nationality', '108'))  # Default to Indian (108)
+            self.logger.info(f"Selecting nationality: {nationality_code}")
+            try:
+                # Check if nationality field exists first
+                nationality_field = self.page.locator("#nationality")
+                if await nationality_field.count() > 0:
+                    await nationality_field.select_option(nationality_code, timeout=5000)
+                    self.logger.info(f"✅ Successfully selected nationality: {nationality_code}")
+                else:
+                    self.logger.info(f"ℹ️  Nationality field not present on form (optional)")
+            except Exception as e:
+                self.logger.warning(f"Could not select nationality (field may be optional): {e}")
+            await asyncio.sleep(0.3)
+            
+            # Occupation dropdown - OPTIONAL FIELD (not always present)
+            occupation_code = primary.get('occupationCode', primary.get('occupation', '42'))  # Default to Engineer (42)
+            self.logger.info(f"Checking for occupation field...")
+            try:
+                # Check if occupation field exists first
+                occupation_field = self.page.locator("#occupation")
+                if await occupation_field.count() > 0:
+                    await occupation_field.select_option(occupation_code, timeout=5000)
+                    self.logger.info(f"✅ Successfully selected occupation: {occupation_code}")
+                else:
+                    self.logger.info(f"ℹ️  Occupation field not present on form (optional for this scenario)")
+            except Exception as e:
+                self.logger.info(f"ℹ️  Occupation field not available (this is OK, field is optional): {e}")
+            await asyncio.sleep(0.3)
+            
             # Phone number
             await self.page.get_by_role("textbox", name="05X-XXXXXXX / 0X-XXXXXXX").fill(primary.get('phone', '0502503969'))
             await asyncio.sleep(0.2)
@@ -253,6 +283,22 @@ class AlsagrBot(InsuranceBot):
             # Email
             await self.page.get_by_role("textbox", name="Enter Email").fill(primary.get('email', 'demo@gmail.com'))
             await asyncio.sleep(0.3)
+            
+            # Effective Date - OPTIONAL FIELD (not always present)
+            effective_date = primary.get('effectiveDate', form_data.get('effectiveDate', ''))
+            if effective_date:
+                self.logger.info(f"Checking for effective date field...")
+                try:
+                    # Check if effective date field exists first
+                    effective_date_field = self.page.locator("#effectiveDate")
+                    if await effective_date_field.count() > 0:
+                        await effective_date_field.fill(effective_date, timeout=5000)
+                        self.logger.info(f"✅ Successfully set effective date: {effective_date}")
+                    else:
+                        self.logger.info(f"ℹ️  Effective date field not present on form (optional for this scenario)")
+                except Exception as e:
+                    self.logger.info(f"ℹ️  Effective date field not available (this is OK, field is optional): {e}")
+                await asyncio.sleep(0.3)
             
             if self.config.get('enable_screenshots'):
                 await save_screenshot(self.page, "alsagr_form_filled")
@@ -537,13 +583,42 @@ class AlsagrBot(InsuranceBot):
                 except Exception as e:
                     self.logger.warning(f"  ⚠️ Could not verify dependents in table: {e}")
             
+            # CRITICAL: Wait for loading overlay to disappear before clicking
+            self.logger.info("⏳ Waiting for loading overlay to disappear...")
+            try:
+                await self.page.wait_for_selector(".loading-progress-overlay", state="hidden", timeout=30000)
+                self.logger.info("✓ Loading overlay hidden")
+            except Exception as e:
+                self.logger.warning(f"Loading overlay check timed out: {e}")
+            
+            # Extra wait for form to stabilize
+            await asyncio.sleep(2)
+            
             # Click "Show Plans" button
             self.logger.info("🔘 Clicking Show Plans button...")
-            await self.page.get_by_role("button", name="Show Plans").click()
+            try:
+                # Try force click to bypass any remaining overlays
+                await self.page.get_by_role("button", name="Show Plans").click(force=True, timeout=10000)
+            except Exception as click_err:
+                self.logger.warning(f"Force click failed, trying regular click: {click_err}")
+                await self.page.get_by_role("button", name="Show Plans").click(timeout=10000)
             
             # Wait for plans to load
             self.logger.info("⏳ Waiting for page to load after Show Plans...")
             await self.page.wait_for_load_state("networkidle", timeout=30000)
+            
+            # Check for validation errors after clicking Show Plans
+            try:
+                validation_errors = await self.page.locator(".alert-danger, .error, .text-danger, .invalid-feedback").all_text_contents()
+                if validation_errors:
+                    self.logger.error(f"❌ VALIDATION ERRORS ON FORM: {validation_errors}")
+                    # Take screenshot of validation errors
+                    import time
+                    screenshot_path = f"/tmp/alsagr_validation_error_{int(time.time())}.png"
+                    await self.page.screenshot(path=screenshot_path, full_page=True)
+                    self.logger.error(f"📸 Validation error screenshot: {screenshot_path}")
+            except Exception as e:
+                self.logger.debug(f"No validation errors found (this is good): {e}")
             await asyncio.sleep(3)
             
         except Exception as e:

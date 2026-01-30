@@ -1,0 +1,20 @@
+{
+  "leadId": "test-sharjah-india-couple-001",
+  "emirate": "Sharjah",
+  "members": [
+    {
+      "relationship": "Self/Employee",
+      "gender": "Male",
+      "dob": "1996-06-13",
+      "maritalStatus": "Married",
+      "nationality": "India"
+    },
+    {
+      "relationship": "Spouse",
+      "gender": "Female",
+      "dob": "1998-06-13",
+      "maritalStatus": "Married",
+      "nationality": "India"
+    }
+  ]
+}

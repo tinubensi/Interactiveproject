@@ -49,6 +49,16 @@ export const PREDEFINED_STAGES: StageDefinition[] = [
     order: 2,
   },
   {
+    id: 'plans-refetching',
+    name: 'Plans Refetching',
+    description: 'Refetching insurance plans from vendors with updated data',
+    icon: 'refresh-cw',
+    triggerEvent: 'plans.refetch_started',
+    progressPercent: 15,
+    applicableFor: ['medical', 'motor', 'general', 'marine'],
+    order: 2.3,
+  },
+  {
     id: 'plans-fetch-failed',
     name: 'Plans Fetch Failed',
     description: 'Failed to fetch insurance plans from vendors - retry available',

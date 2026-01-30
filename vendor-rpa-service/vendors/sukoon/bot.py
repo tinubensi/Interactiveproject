@@ -160,47 +160,52 @@ class SukoonBot(InsuranceBot):
             await self.page.wait_for_timeout(500)
             
             # ============ DATE OF BIRTH ============
+            # SIMPLIFIED: Type date directly instead of using problematic datepicker
             dob_str = member_data.get('dob', '1996-06-15')
             try:
                 dob = datetime.fromisoformat(dob_str.split('T')[0])
-                birth_year = dob.year
-                birth_month = dob.month - 1  # jQuery datepicker is 0-indexed
-                birth_day = dob.day
+                # Format as DD/MM/YYYY for Sukoon portal
+                dob_formatted = f"{dob.day:02d}/{dob.month:02d}/{dob.year}"
             except Exception as e:
-                self.logger.warning(f"Error parsing DOB '{dob_str}': {e}, using defaults")
-                birth_year = 1990
-                birth_month = 0  # January
-                birth_day = 1
+                self.logger.warning(f"Error parsing DOB '{dob_str}': {e}, using default")
+                dob_formatted = "15/06/1996"
             
-            # Click on date of birth field
-            # First, close any open datepickers by clicking outside
-            try:
-                datepicker = self.page.locator("#ui-datepicker-div")
-                if await datepicker.count() > 0 and await datepicker.is_visible():
-                    # Click outside to close any open datepicker
-                    await self.page.keyboard.press("Escape")
-                    await self.page.wait_for_timeout(300)
-            except:
-                pass  # No datepicker open, continue
+            self.logger.debug(f"Setting DOB for member {member_index}: {dob_formatted}")
             
-            # Use nth() selector based on member index - most reliable approach
+            # Locate the DOB field
             try:
                 dob_fields = self.page.get_by_placeholder("Date of Birth")
-                # Wait for the field to be visible
                 dob_field = dob_fields.nth(member_index)
                 await dob_field.wait_for(state="visible", timeout=5000)
                 
-                # Scroll the field into view if needed
+                # Scroll into view if needed
                 await dob_field.scroll_into_view_if_needed()
                 await self.page.wait_for_timeout(200)
                 
+                # Clear the field first
                 await dob_field.click()
-                self.logger.debug(f"Clicked DOB field for member {member_index}")
+                await self.page.wait_for_timeout(300)
+                
+                # Select all and delete (to clear any existing value)
+                await dob_field.press("Control+a")
+                await self.page.wait_for_timeout(100)
+                await dob_field.press("Backspace")
+                await self.page.wait_for_timeout(200)
+                
+                # Type the date in DD/MM/YYYY format
+                await dob_field.type(dob_formatted, delay=50)
+                await self.page.wait_for_timeout(300)
+                
+                # Press Tab or Enter to trigger any validation
+                await dob_field.press("Tab")
+                await self.page.wait_for_timeout(300)
+                
+                self.logger.info(f"Successfully set DOB for member {member_index}: {dob_formatted}")
+                
             except Exception as e:
-                self.logger.error(f"Failed to click DOB field for member {member_index}: {e}")
+                self.logger.error(f"Failed to set DOB for member {member_index}: {e}")
                 # Try alternative: use ID-based selector
                 try:
-                    # The ID pattern might be different, try a few variations
                     possible_ids = [
                         f"ctl00_ctl00_ContentContainer_MainContent_ucQuickQuote_grdPremiumCalculation_ctl{(member_index * 2) + 2:02d}_txtDOB",
                         f"ContentContainer_MainContent_ucQuickQuote_grdPremiumCalculation_txtDOB_{member_index}"
@@ -210,67 +215,22 @@ class SukoonBot(InsuranceBot):
                             field = self.page.locator(f"#{field_id}")
                             if await field.count() > 0:
                                 await field.click()
-                                self.logger.debug(f"Clicked DOB field for member {member_index} using ID selector")
+                                await self.page.wait_for_timeout(300)
+                                await field.press("Control+a")
+                                await field.press("Backspace")
+                                await self.page.wait_for_timeout(200)
+                                await field.type(dob_formatted, delay=50)
+                                await self.page.wait_for_timeout(300)
+                                await field.press("Tab")
+                                await self.page.wait_for_timeout(300)
+                                self.logger.info(f"Set DOB using ID selector: {dob_formatted}")
                                 break
                         except:
                             continue
                     else:
-                        raise e  # Re-raise original error if all attempts failed
+                        raise e
                 except:
-                    raise e  # Re-raise original error
-            
-            # Wait for datepicker to appear after clicking
-            await self.page.wait_for_timeout(1000)
-            
-            # Wait for the datepicker to be visible
-            # The datepicker div should appear after clicking the field
-            try:
-                await self.page.locator("#ui-datepicker-div").wait_for(state="visible", timeout=3000)
-            except:
-                self.logger.warning(f"Datepicker not visible immediately for member {member_index}, continuing anyway")
-            
-            # Select year and month in datepicker
-            # Use the visible datepicker div - it should be the one associated with the clicked field
-            try:
-                datepicker = self.page.locator("#ui-datepicker-div")
-                
-                # Get all comboboxes in the datepicker
-                comboboxes = datepicker.get_by_role("combobox")
-                combobox_count = await comboboxes.count()
-                
-                if combobox_count >= 2:
-                    # Standard datepicker: first is month, second is year
-                    await comboboxes.nth(1).select_option(str(birth_year))
-                    await self.page.wait_for_timeout(300)
-                    await comboboxes.first.select_option(str(birth_month))
-                    await self.page.wait_for_timeout(300)
-                else:
-                    # Fallback: try class-based selectors
-                    self.logger.warning(f"Using fallback datepicker selectors for member {member_index}")
-                    await self.page.locator(".ui-datepicker-year").first.select_option(str(birth_year))
-                    await self.page.wait_for_timeout(300)
-                    await self.page.locator(".ui-datepicker-month").first.select_option(str(birth_month))
-                    await self.page.wait_for_timeout(300)
-            except Exception as e:
-                self.logger.error(f"Failed to select date in datepicker for member {member_index}: {e}")
-                raise
-            
-            # Select day - wait for it to be visible and click
-            try:
-                day_link = self.page.get_by_role("link", name=str(birth_day), exact=True)
-                await day_link.wait_for(state="visible", timeout=3000)
-                await day_link.click()
-                await self.page.wait_for_timeout(500)
-                self.logger.debug(f"Set DOB for member {member_index}: {birth_year}-{birth_month+1}-{birth_day}")
-            except Exception as e:
-                self.logger.error(f"Failed to select day {birth_day} for member {member_index}: {e}")
-                # Try alternative: click any link with the day number
-                try:
-                    await self.page.get_by_role("link", name=str(birth_day)).first.click()
-                    await self.page.wait_for_timeout(500)
-                    self.logger.debug(f"Set DOB for member {member_index} using fallback day selector")
-                except:
-                    raise
+                    raise e
             
             # ============ MARITAL STATUS ============
             marital_status = member_data.get('maritalStatus', '1')
@@ -284,41 +244,41 @@ class SukoonBot(InsuranceBot):
                 raise
             
             # ============ NATIONALITY ============
-            nationality_guid = member_data.get('nationality', 'a275c17e-afe4-e611-80c9-005056bd7a8d')
+            nationality_value = member_data.get('nationality', 'a275c17e-afe4-e611-80c9-005056bd7a8d')
             nationality_name = member_data.get('nationalityName', 'UAE')
             nationality_selector = f"#ContentContainer_MainContent_ucQuickQuote_grdPremiumCalculation_ddlNationality_{member_index}"
+            
+            # Determine if nationality_value is a GUID or a country name
+            # GUIDs have format like: 'a375c17e-afe4-e611-80c9-005056bd7a8d' (contains hyphens)
+            is_guid = '-' in str(nationality_value) and len(str(nationality_value)) > 20
+            
             try:
                 await self.page.locator(nationality_selector).wait_for(state="visible", timeout=3000)
                 
-                # Try selecting by value (GUID) first
-                try:
-                    await self.page.locator(nationality_selector).select_option(nationality_guid, timeout=5000)
-                    self.logger.debug(f"Set nationality (by GUID) for member {member_index}: {nationality_guid}")
-                except Exception as guid_error:
-                    # Fallback: Try selecting by label (nationality name)
-                    self.logger.warning(f"Failed to select nationality by GUID {nationality_guid}, trying by label '{nationality_name}': {guid_error}")
-                    
+                if is_guid:
+                    # Value is a GUID, select by value
                     try:
-                        await self.page.locator(nationality_selector).select_option(label=nationality_name, timeout=5000)
-                        self.logger.debug(f"Set nationality (by label) for member {member_index}: {nationality_name}")
+                        await self.page.locator(nationality_selector).select_option(nationality_value, timeout=5000)
+                        self.logger.debug(f"Set nationality (by GUID) for member {member_index}: {nationality_value}")
+                    except Exception as guid_error:
+                        # Fallback: Try selecting by label using nationalityName (uppercase for portal)
+                        self.logger.warning(f"Failed to select nationality by GUID {nationality_value}, trying by label '{nationality_name.upper()}': {guid_error}")
+                        await self.page.locator(nationality_selector).select_option(label=nationality_name.upper(), timeout=5000)
+                        self.logger.debug(f"Set nationality (by label) for member {member_index}: {nationality_name.upper()}")
+                else:
+                    # Value is a country name, select by label directly (portal uses UPPERCASE)
+                    try:
+                        await self.page.locator(nationality_selector).select_option(label=nationality_value.upper(), timeout=5000)
+                        self.logger.debug(f"Set nationality (by label) for member {member_index}: {nationality_value.upper()}")
                     except Exception as label_error:
-                        # Last resort: Try to get available options and select the first one
-                        self.logger.warning(f"Failed to select by label '{nationality_name}', trying first available option: {label_error}")
-                        try:
-                            # Get all options and select the first non-empty one
-                            options = await self.page.locator(f"{nationality_selector} option").all()
-                            if len(options) > 1:  # Skip the first empty/default option
-                                first_option_value = await options[1].get_attribute('value')
-                                if first_option_value:
-                                    await self.page.locator(nationality_selector).select_option(first_option_value, timeout=5000)
-                                    self.logger.warning(f"Selected first available nationality option for member {member_index}: {first_option_value}")
-                                else:
-                                    raise Exception("No valid nationality options found")
-                            else:
-                                raise Exception("No nationality options available in dropdown")
-                        except Exception as fallback_error:
-                            self.logger.error(f"All nationality selection methods failed for member {member_index}: {fallback_error}")
-                            raise
+                        # Fallback: Try with nationalityName if different
+                        if nationality_name.lower() != nationality_value.lower():
+                            self.logger.warning(f"Failed to select nationality by label '{nationality_value.upper()}', trying '{nationality_name.upper()}': {label_error}")
+                            await self.page.locator(nationality_selector).select_option(label=nationality_name.upper(), timeout=5000)
+                            self.logger.debug(f"Set nationality (by fallback label) for member {member_index}: {nationality_name.upper()}")
+                        else:
+                            raise label_error
+                            
             except Exception as e:
                 self.logger.error(f"Failed to set nationality for member {member_index}: {e}")
                 raise
@@ -352,7 +312,7 @@ class SukoonBot(InsuranceBot):
                       Expected structure:
                       {
                           'leadId': 'lead-123',
-                          'visaType': '1',
+                          'emirate': '1',  # '1'=Dubai, '5'=Sharjah, etc.
                           'members': [
                               {'index': 0, 'relationship': 'Self/Employee', ...},
                               {'index': 1, 'relationship': 'Spouse', ...},
@@ -374,10 +334,10 @@ class SukoonBot(InsuranceBot):
             await self.page.wait_for_timeout(2000)
             self.logger.debug("Selected HealthPlus plan")
             
-            # ============ SELECT VISA TYPE (applies to all members) ============
-            visa_type = form_data.get('visaType', '5')  # Default to UAE/GCC National
-            await self.page.locator("#ContentContainer_MainContent_ucQuickQuote_DropDownList1").select_option(visa_type)
-            self.logger.debug(f"Selected visa type: {visa_type}")
+            # ============ SELECT EMIRATE (Basic Details - First Dropdown) ============
+            emirate = form_data.get('emirate', '1')  # Default to Dubai
+            await self.page.locator("#ContentContainer_MainContent_ucQuickQuote_DropDownList1").select_option(emirate)
+            self.logger.debug(f"Selected emirate: {emirate}")
             
             # ============ EXTRACT MEMBERS ARRAY ============
             members = form_data.get('members', [])
@@ -387,11 +347,12 @@ class SukoonBot(InsuranceBot):
                 self.logger.warning("Using legacy single-member format, converting to members array")
                 members = [{
                     'index': 0,
-                    'relationship': 'Self/Employee',
+                    'relationship': 'Self/Employee',  # Text value as per portal requirement
                     'gender': form_data.get('gender', 'male'),
                     'dob': form_data.get('dob', '1996-06-15'),
                     'maritalStatus': form_data.get('maritalStatus', '1'),
                     'nationality': form_data.get('nationality', 'a275c17e-afe4-e611-80c9-005056bd7a8d'),
+                    'nationalityName': 'UAE',
                     'isPrimary': True
                 }]
             
