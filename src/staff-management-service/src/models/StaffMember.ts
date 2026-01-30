@@ -186,7 +186,7 @@ export interface StaffMemberDocument {
 export interface CreateStaffRequest {
   email: string;
   firstName: string;
-  lastName: string;
+  lastName?: string; // Optional to allow single names
   phone: string;
   staffType: StaffType;
 }
@@ -195,6 +195,7 @@ export interface CreateStaffRequest {
  * Update staff request
  */
 export interface UpdateStaffRequest {
+  email?: string;
   firstName?: string;
   lastName?: string;
   phone?: string;
