@@ -1,0 +1,15 @@
+{
+  "id": "test-sukoon-sharjah-001",
+  "leadId": "test-sukoon-sharjah-001",
+  "firstName": "Mohammed",
+  "lastName": "Ali",
+  "lineOfBusiness": "medical",
+  "lobData": {
+    "dateOfBirth": "1985-03-20",
+    "gender": "Male",
+    "nationality": "United Arab Emirates",
+    "maritalStatus": "Married",
+    "emirate": "Sharjah",
+    "coverageType": "Individual"
+  }
+}

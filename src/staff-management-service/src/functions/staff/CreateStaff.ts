@@ -25,6 +25,7 @@ export async function CreateStaffHandler(
         status: 400,
         jsonBody: {
           error: 'Validation Error',
+          message: validation.errors.join(', '),
           details: validation.errors,
         },
       };

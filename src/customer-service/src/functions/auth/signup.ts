@@ -30,7 +30,7 @@ export async function signup(request: HttpRequest, context: InvocationContext): 
       };
     }
 
-    // Check if customer already exists
+    // Check if customer already exists by email
     const existingCustomer = await cosmosService.getCustomerByEmail(
       body.customerType === 'INDIVIDUAL' ? body.email! : body.email1!
     );
@@ -39,6 +39,17 @@ export async function signup(request: HttpRequest, context: InvocationContext): 
         status: 409,
         jsonBody: { error: 'Customer with this email already exists' },
       };
+    }
+
+    // Check if Emirates ID is provided and if it already exists
+    if (body.customerType === 'INDIVIDUAL' && body.emiratesId && body.emiratesId.trim() !== '') {
+      const existingCustomerByEmiratesId = await cosmosService.getCustomerByEmiratesId(body.emiratesId);
+      if (existingCustomerByEmiratesId) {
+        return {
+          status: 409,
+          jsonBody: { error: 'Customer with this Emirates ID already exists' },
+        };
+      }
     }
 
     const now = new Date().toISOString();
@@ -78,6 +89,18 @@ export async function signup(request: HttpRequest, context: InvocationContext): 
         contacts: [],
         createdAt: now,
         updatedAt: now,
+        // Medical form fields
+        emirate: body.emirate,
+        countryOfResidence: body.countryOfResidence,
+        monthlySalaryRange: body.monthlySalaryRange,
+        visaType: body.visaType,
+        maritalStatus: body.maritalStatus,
+        passportNumber: body.passportNumber,
+        visaFileNumber: body.visaFileNumber,
+        visaExpiryDate: body.visaExpiryDate,
+        visaLocation: body.visaLocation,
+        occupation: body.occupation,
+        homeCountry: body.homeCountry,
       } as IndividualCustomer;
     } else {
       customer = {

@@ -187,9 +187,7 @@ export function validateCreateStaffRequest(request: {
   if (!request.firstName) {
     errors.push('First name is required');
   }
-  if (!request.lastName) {
-    errors.push('Last name is required');
-  }
+  // lastName is optional - allow single names
   if (!request.phone) {
     errors.push('Phone is required');
   } else {

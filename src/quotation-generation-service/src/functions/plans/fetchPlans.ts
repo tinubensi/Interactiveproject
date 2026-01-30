@@ -14,6 +14,7 @@ import { FetchPlansRequest, PlanFetchRequest } from '../../models/plan';
 import { ensureAuthorized, requirePermission, QUOTE_PERMISSIONS, validateServiceKey } from '../../lib/auth';
 import { handlePreflight, withCors } from '../../utils/corsHelper';
 import { notifyPipelineService } from '../../utils/pipelineFallback';
+import { cleanAndMergeFormData } from '../../utils/formDataCleaner';
 
 export async function fetchPlans(
   request: HttpRequest,
@@ -45,6 +46,14 @@ export async function fetchPlans(
           error: 'leadId and lineOfBusiness are required'
         }
       });
+    }
+    
+    // CRITICAL: Clean formData before processing to prevent RPA bots from receiving polluted data
+    if (body.leadData && body.leadData.formData) {
+      body.leadData.formData = cleanAndMergeFormData(
+        body.leadData.formData,
+        body.leadData.lobData
+      );
     }
 
     // Check if plans already exist for this lead

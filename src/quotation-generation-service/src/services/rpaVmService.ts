@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { cosmosService } from './cosmosService';
+import { cleanAndMergeFormData } from '../utils/formDataCleaner';
 
 export interface VmRpaResult {
   vendorId: string;
@@ -43,17 +44,34 @@ class RpaVmService {
     
     console.log(`[RPA VM] Calling ${vendorName} at ${endpoint}`);
     
-    // 🔍 DEBUG: Log leadData structure to verify formData is included
+    // CRITICAL: Final safeguard - clean formData before sending to VM
+    // Even if previous services didn't clean it, ensure it's clean here
+    const cleanedLeadData = {
+      ...leadData,
+      formData: cleanAndMergeFormData(leadData?.formData || {}, leadData?.lobData)
+    };
+    
+    // 🔍 DEBUG: Log leadData structure to verify formData is included and clean
     console.log(`[RPA VM] Lead data structure check:`);
-    console.log(`  - Has formData: ${!!leadData?.formData}`);
-    console.log(`  - Has lobData: ${!!leadData?.lobData}`);
-    console.log(`  - Has id: ${!!leadData?.id}`);
-    console.log(`  - Has leadId: ${!!leadData?.leadId}`);
-    if (leadData?.formData) {
-      const sectionKeys = Object.keys(leadData.formData).filter((k: string) => k.startsWith('section-'));
+    console.log(`  - Has formData: ${!!cleanedLeadData?.formData}`);
+    console.log(`  - Has lobData: ${!!cleanedLeadData?.lobData}`);
+    console.log(`  - Has id: ${!!cleanedLeadData?.id}`);
+    console.log(`  - Has leadId: ${!!cleanedLeadData?.leadId}`);
+    if (cleanedLeadData?.formData) {
+      const formDataKeys = Object.keys(cleanedLeadData.formData);
+      const duplicateKeys = formDataKeys.filter(k => {
+        const lower = k.toLowerCase();
+        return formDataKeys.some(other => other !== k && other.toLowerCase() === lower);
+      });
+      if (duplicateKeys.length > 0) {
+        console.warn(`  - ⚠️ WARNING: Found ${duplicateKeys.length} potential duplicate keys in formData!`);
+      } else {
+        console.log(`  - ✅ formData is clean (no duplicate keys)`);
+      }
+      const sectionKeys = formDataKeys.filter((k: string) => k.startsWith('section-'));
       console.log(`  - formData section-* keys: ${sectionKeys.join(', ')}`);
       if (sectionKeys.length > 0) {
-        const firstSection = leadData.formData[sectionKeys[0]];
+        const firstSection = cleanedLeadData.formData[sectionKeys[0]];
         console.log(`  - ${sectionKeys[0]}: ${Array.isArray(firstSection) ? firstSection.length : 0} items`);
       }
     }
@@ -61,7 +79,7 @@ class RpaVmService {
     try {
       const response = await axios.post(
         endpoint,
-        { leadData },
+        { leadData: cleanedLeadData }, // Use cleaned leadData
         { 
           timeout: this.timeout,
           headers: { 'Content-Type': 'application/json' }

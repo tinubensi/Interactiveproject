@@ -91,6 +91,112 @@ export async function updateProfile(request: HttpRequest, context: InvocationCon
       updatedFields.push('address');
     }
 
+    // Handle medical form fields for individual customers
+    if (existingCustomer.customerType === 'INDIVIDUAL') {
+      if (body.emirate !== undefined) {
+        updates.emirate = body.emirate;
+        updatedFields.push('emirate');
+      }
+      if (body.countryOfResidence !== undefined) {
+        updates.countryOfResidence = body.countryOfResidence;
+        updatedFields.push('countryOfResidence');
+      }
+      if (body.dateOfBirth !== undefined) {
+        updates.dateOfBirth = body.dateOfBirth;
+        updatedFields.push('dateOfBirth');
+      }
+      if (body.gender !== undefined) {
+        updates.gender = body.gender;
+        updatedFields.push('gender');
+      }
+      if (body.nationality !== undefined) {
+        updates.nationality = body.nationality;
+        updatedFields.push('nationality');
+      }
+      if (body.emiratesId !== undefined) {
+        // Check for duplicate Emirates ID (excluding current customer)
+        if (body.emiratesId && body.emiratesId.trim() !== '') {
+          const existingByEmiratesId = await cosmosService.getCustomerByEmiratesId(body.emiratesId);
+          if (existingByEmiratesId && existingByEmiratesId.id !== id) {
+            return {
+              status: 409,
+              jsonBody: { error: 'Customer with this Emirates ID already exists' },
+            };
+          }
+        }
+        updates.emiratesId = body.emiratesId;
+        updatedFields.push('emiratesId');
+      }
+      if (body.monthlySalaryRange !== undefined) {
+        updates.monthlySalaryRange = body.monthlySalaryRange;
+        updatedFields.push('monthlySalaryRange');
+      }
+      if (body.visaType !== undefined) {
+        updates.visaType = body.visaType;
+        updatedFields.push('visaType');
+      }
+      if (body.maritalStatus !== undefined) {
+        updates.maritalStatus = body.maritalStatus;
+        updatedFields.push('maritalStatus');
+      }
+      if (body.passportNumber !== undefined) {
+        updates.passportNumber = body.passportNumber;
+        updatedFields.push('passportNumber');
+      }
+      if (body.visaFileNumber !== undefined) {
+        updates.visaFileNumber = body.visaFileNumber;
+        updatedFields.push('visaFileNumber');
+      }
+      if (body.visaExpiryDate !== undefined) {
+        updates.visaExpiryDate = body.visaExpiryDate;
+        updatedFields.push('visaExpiryDate');
+      }
+      if (body.visaLocation !== undefined) {
+        updates.visaLocation = body.visaLocation;
+        updatedFields.push('visaLocation');
+      }
+      if (body.occupation !== undefined) {
+        updates.occupation = body.occupation;
+        updatedFields.push('occupation');
+      }
+      if (body.homeCountry !== undefined) {
+        updates.homeCountry = body.homeCountry;
+        updatedFields.push('homeCountry');
+      }
+      if (body.mobileNumber !== undefined) {
+        updates.mobileNumber = body.mobileNumber;
+        updatedFields.push('mobileNumber');
+      }
+      if (body.faxNumber !== undefined) {
+        updates.faxNumber = body.faxNumber;
+        updatedFields.push('faxNumber');
+      }
+      if (body.title !== undefined) {
+        updates.title = body.title;
+        updatedFields.push('title');
+      }
+      if (body.middleName !== undefined) {
+        updates.middleName = body.middleName;
+        updatedFields.push('middleName');
+      }
+      if (body.email2 !== undefined) {
+        updates.email2 = body.email2;
+        updatedFields.push('email2');
+      }
+      if (body.placementExecutive !== undefined) {
+        updates.placementExecutive = body.placementExecutive;
+        updatedFields.push('placementExecutive');
+      }
+      if (body.customerTypeCategory !== undefined) {
+        updates.customerTypeCategory = body.customerTypeCategory;
+        updatedFields.push('customerTypeCategory');
+      }
+      if (body.currency !== undefined) {
+        updates.currency = body.currency;
+        updatedFields.push('currency');
+      }
+    }
+
     if (updatedFields.length === 0) {
       return {
         status: 400,

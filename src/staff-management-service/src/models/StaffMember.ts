@@ -186,7 +186,7 @@ export interface StaffMemberDocument {
 export interface CreateStaffRequest {
   email: string;
   firstName: string;
-  lastName: string;
+  lastName?: string; // Optional to allow single names
   phone: string;
   staffType: StaffType;
 }
@@ -195,6 +195,7 @@ export interface CreateStaffRequest {
  * Update staff request
  */
 export interface UpdateStaffRequest {
+  email?: string;
   firstName?: string;
   lastName?: string;
   phone?: string;
@@ -214,21 +215,33 @@ export interface UpdateStaffStatusRequest {
  * Staff list query parameters
  */
 export interface StaffListQuery {
+  page?: number;
+  limit?: number;
+  sortBy?: 'displayName' | 'email' | 'createdAt' | 'staffType';
+  sortOrder?: 'asc' | 'desc';
   staffType?: StaffType;
   status?: StaffStatus;
   search?: string;
-  limit?: number;
-  offset?: number;
+  filters?: {
+    department?: string[];
+    role?: string[];
+    isAvailable?: boolean;
+  };
 }
 
 /**
  * Staff list response
  */
 export interface StaffListResponse {
-  total: number;
-  limit: number;
-  offset: number;
-  staff: StaffSummary[];
+  data: StaffSummary[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalRecords: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  };
 }
 
 /**

@@ -1,5 +1,5 @@
 import { CosmosClient, Container, Database } from '@azure/cosmos';
-import { Customer, OTPRecord } from '../types/customer';
+import { Customer, OTPRecord, CustomerListRequest, CustomerListResponse } from '../types/customer';
 
 const CUSTOMER_CONTAINER = 'customers';
 const OTP_CONTAINER = 'otps';
@@ -135,6 +135,18 @@ class CosmosService {
     return resources.length > 0 ? (resources[0] as Customer) : null;
   }
 
+  async getCustomerByEmiratesId(emiratesId: string): Promise<Customer | null> {
+    const container = await this.getCustomerContainer();
+    const query = `SELECT * FROM c WHERE c.emiratesId = @emiratesId AND c.emiratesId != null AND c.emiratesId != ''`;
+    const { resources } = await container.items
+      .query({
+        query,
+        parameters: [{ name: '@emiratesId', value: emiratesId }],
+      })
+      .fetchAll();
+    return resources.length > 0 ? (resources[0] as Customer) : null;
+  }
+
   async updateCustomer(id: string, updates: Partial<Customer>): Promise<Customer> {
     const container = await this.getCustomerContainer();
     const existing = await this.getCustomerById(id);
@@ -148,6 +160,11 @@ class CosmosService {
     };
     const { resource } = await container.item(id, id).replace(updated);
     return resource as Customer;
+  }
+
+  async deleteCustomer(id: string): Promise<void> {
+    const container = await this.getCustomerContainer();
+    await container.item(id, id).delete();
   }
 
   async saveOTP(email: string, otp: string, ttlSeconds: number = 300): Promise<OTPRecord> {
@@ -217,6 +234,119 @@ class CosmosService {
     const { resources } = await container.items.query(querySpec).fetchAll();
     return resources as Customer[];
   }
+
+  async listCustomers(request: CustomerListRequest): Promise<CustomerListResponse> {
+    const { page, limit, sortBy = 'createdAt', sortOrder = 'desc', search, filters } = request;
+    
+    // Build WHERE conditions
+    const conditions: string[] = [];
+    const parameters: any[] = [];
+    let paramIndex = 0;
+    
+    // Customer type filter
+    if (filters?.customerType && filters.customerType.length > 0) {
+      const typeConditions = filters.customerType.map(() => {
+        const paramName = `@type${paramIndex++}`;
+        return `c.customerType = ${paramName}`;
+      });
+      typeConditions.forEach((_, idx) => {
+        parameters.push({ name: `@type${paramIndex - filters.customerType!.length + idx}`, value: filters.customerType![idx] });
+      });
+      conditions.push(`(${typeConditions.join(' OR ')})`);
+    }
+    
+    // Emirate filter
+    if (filters?.emirate && filters.emirate.length > 0) {
+      const emirateConditions = filters.emirate.map(() => {
+        const paramName = `@emirate${paramIndex++}`;
+        return `c.emirate = ${paramName}`;
+      });
+      emirateConditions.forEach((_, idx) => {
+        parameters.push({ name: `@emirate${paramIndex - filters.emirate!.length + idx}`, value: filters.emirate![idx] });
+      });
+      conditions.push(`(${emirateConditions.join(' OR ')})`);
+    }
+    
+    // Nationality filter
+    if (filters?.nationality && filters.nationality.length > 0) {
+      const nationalityConditions = filters.nationality.map(() => {
+        const paramName = `@nationality${paramIndex++}`;
+        return `c.nationality = ${paramName}`;
+      });
+      nationalityConditions.forEach((_, idx) => {
+        parameters.push({ name: `@nationality${paramIndex - filters.nationality!.length + idx}`, value: filters.nationality![idx] });
+      });
+      conditions.push(`(${nationalityConditions.join(' OR ')})`);
+    }
+    
+    // Date range filters
+    if (filters?.createdFrom) {
+      conditions.push(`c.createdAt >= @createdFrom`);
+      parameters.push({ name: '@createdFrom', value: filters.createdFrom });
+    }
+    if (filters?.createdTo) {
+      conditions.push(`c.createdAt <= @createdTo`);
+      parameters.push({ name: '@createdTo', value: filters.createdTo });
+    }
+    
+    // Global search across multiple fields
+    if (search?.trim()) {
+      const searchConditions = [
+        'CONTAINS(LOWER(c.firstName), LOWER(@search))',
+        'CONTAINS(LOWER(c.lastName), LOWER(@search))',
+        'CONTAINS(LOWER(c.companyName), LOWER(@search))',
+        'CONTAINS(LOWER(c.email), LOWER(@search))',
+        'CONTAINS(LOWER(c.email1), LOWER(@search))',
+        'CONTAINS(LOWER(c.phoneNumber), LOWER(@search))',
+        'CONTAINS(LOWER(c.phoneNumber1), LOWER(@search))',
+        'CONTAINS(LOWER(c.mobileNumber), LOWER(@search))'
+      ];
+      conditions.push(`(${searchConditions.join(' OR ')})`);
+      parameters.push({ name: '@search', value: search.trim() });
+    }
+    
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    
+    // Build ORDER BY clause
+    let orderByField = 'c.createdAt';
+    if (sortBy === 'firstName') orderByField = 'c.firstName';
+    else if (sortBy === 'lastName') orderByField = 'c.lastName';
+    else if (sortBy === 'companyName') orderByField = 'c.companyName';
+    
+    const orderByClause = `ORDER BY ${orderByField} ${sortOrder.toUpperCase()}`;
+    
+    // Count query
+    const countQuery = `SELECT VALUE COUNT(1) FROM c ${whereClause}`;
+    const container = await this.getCustomerContainer();
+    const { resources: countResult } = await container.items
+      .query({ query: countQuery, parameters })
+      .fetchAll();
+    const totalRecords = countResult[0] || 0;
+    
+    // Data query with pagination
+    const offset = (page - 1) * limit;
+    const dataQuery = `SELECT * FROM c ${whereClause} ${orderByClause} OFFSET ${offset} LIMIT ${limit}`;
+    const { resources: customers } = await container.items
+      .query({ query: dataQuery, parameters })
+      .fetchAll();
+    
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalRecords / limit);
+    const hasNext = page < totalPages;
+    const hasPrevious = page > 1;
+    
+    return {
+      data: customers as Customer[],
+      pagination: {
+        page,
+        limit,
+        totalRecords,
+        totalPages,
+        hasNext,
+        hasPrevious,
+      },
+    };
+  }
 }
 
 // Lazy initialization - only create instance when first accessed
@@ -240,11 +370,20 @@ export const cosmosService = {
   async getCustomerByEmail(email: string): Promise<Customer | null> {
     return getInstance().getCustomerByEmail(email);
   },
+  async getCustomerByEmiratesId(emiratesId: string): Promise<Customer | null> {
+    return getInstance().getCustomerByEmiratesId(emiratesId);
+  },
   async updateCustomer(id: string, updates: Partial<Customer>): Promise<Customer> {
     return getInstance().updateCustomer(id, updates);
   },
+  async deleteCustomer(id: string): Promise<void> {
+    return getInstance().deleteCustomer(id);
+  },
   async queryCustomers(query: string, parameters?: Array<{ name: string; value: any }>): Promise<Customer[]> {
     return getInstance().queryCustomers(query, parameters);
+  },
+  async listCustomers(request: CustomerListRequest): Promise<CustomerListResponse> {
+    return getInstance().listCustomers(request);
   },
   async saveOTP(email: string, otp: string, ttlSeconds?: number): Promise<OTPRecord> {
     return getInstance().saveOTP(email, otp, ttlSeconds);

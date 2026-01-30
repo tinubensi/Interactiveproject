@@ -11,6 +11,7 @@ from typing import List, Dict, Any, Optional
 from playwright.async_api import Page
 from vendors.base.utils import setup_logging
 from vendors.alsagr.parser import AlsagrParser
+from vendors.alsagr.pdf_parser import parse_plan_pdf
 
 class AlsagrScraper:
     """
@@ -33,6 +34,18 @@ class AlsagrScraper:
         self.logger.info("🚀 Starting Alsagr plan extraction...")
         await self.page.wait_for_load_state("networkidle")
         await asyncio.sleep(1)  # Optimized: reduced from 3s to 1s
+        
+        # DEBUG: Log current page URL
+        current_url = self.page.url
+        self.logger.info(f"📍 Current page URL: {current_url}")
+        
+        # DEBUG: Check for error messages on the page
+        try:
+            page_text = await self.page.inner_text("body")
+            if "no plans" in page_text.lower() or "error" in page_text.lower() or "not available" in page_text.lower():
+                self.logger.warning(f"⚠️  Page may contain error message. Preview: {page_text[:500]}")
+        except Exception as e:
+            self.logger.debug(f"Could not read page text: {e}")
         
         # Select "All Plan Types" to show all plans
         self.logger.info("Selecting 'All Plan Types'...")
@@ -91,6 +104,30 @@ class AlsagrScraper:
         
         if num_plans == 0:
             self.logger.error("❌ NO PLANS FOUND!")
+            
+            # Take screenshot to see what went wrong
+            try:
+                screenshot_path = f"/tmp/alsagr_no_plans_{int(time.time())}.png"
+                await self.page.screenshot(path=screenshot_path, full_page=True)
+                self.logger.error(f"📸 Screenshot saved: {screenshot_path}")
+                
+                # Log page content to help debug
+                page_content = await self.page.content()
+                self.logger.error(f"📄 Page URL: {self.page.url}")
+                
+                # Check for error messages on the page
+                error_messages = await self.page.locator(".alert-danger, .error, .validation-error").all_text_contents()
+                if error_messages:
+                    self.logger.error(f"⚠️ Error messages found on page: {error_messages}")
+                
+                # Check if there's a message saying no plans available
+                page_text = await self.page.locator("body").inner_text()
+                if "no plan" in page_text.lower() or "not available" in page_text.lower():
+                    self.logger.error(f"ℹ️  Portal message: No plans available for this combination")
+                    
+            except Exception as debug_error:
+                self.logger.error(f"Failed to capture debug info: {debug_error}")
+            
             return []
 
         # Download PDFs for ALL plans to ensure Alternative Medicine and Claims Settlement Basis are extracted
@@ -198,11 +235,14 @@ class AlsagrScraper:
                             if 'application/json' in content_type:
                                 # Log the URL to see what endpoints are being used
                                 self.logger.debug(f"  📡 Capturing API: {url[:100]}...")
-                                json_data = await response.json()
-                                json_captured = True
-                                self.logger.info(f"  📥 JSON captured: {len(json_data) if isinstance(json_data, list) else 'object'} items")
-                    except:
-                        pass
+                                try:
+                                    json_data = await response.json()
+                                    json_captured = True
+                                    self.logger.info(f"  📥 JSON captured: {len(json_data) if isinstance(json_data, list) else 'object'} items")
+                                except Exception as json_err:
+                                    self.logger.warning(f"  Failed to parse JSON from {url[:50]}: {json_err}")
+                    except Exception as e:
+                        self.logger.debug(f"  Response handler error: {e}")
                 
                 # Use try/finally to ensure listener is ALWAYS removed
                 handler_added = False
@@ -249,8 +289,8 @@ class AlsagrScraper:
                         except:
                             self.logger.warning(f"  Modal still not opening after retry")
                     
-                    # Wait for JSON response - 5s max (optimized)
-                    for _ in range(25):  # 25 × 0.2s = 5s max
+                    # Wait for JSON response - 10s max (increased for reliability)
+                    for _ in range(50):  # 50 × 0.2s = 10s max
                         if json_captured:
                             break
                         await asyncio.sleep(0.2)
@@ -318,6 +358,18 @@ class AlsagrScraper:
                             if pdf_path:
                                 plan['pdf_path'] = pdf_path
                                 self.logger.info(f"  ✓ PDF downloaded: {pdf_path}")
+                                
+                                # Parse PDF to extract benefits data
+                                try:
+                                    self.logger.info(f"  📄 Parsing PDF to extract benefits...")
+                                    plan = await parse_plan_pdf(pdf_path, plan)
+                                    self.logger.info(f"  ✅ PDF parsed successfully - benefits extracted")
+                                except Exception as pdf_error:
+                                    self.logger.error(f"  ❌ PDF parsing failed: {pdf_error}")
+                                    import traceback
+                                    self.logger.error(f"  Traceback: {traceback.format_exc()}")
+                            else:
+                                self.logger.warning(f"  ⚠️ PDF download failed for plan {index + 1}")
                         else:
                             self.logger.info(f"  ⏭️  Skipping PDF download (limit reached: {max_pdf_downloads})")
                         
@@ -325,8 +377,14 @@ class AlsagrScraper:
                         self.logger.info(f"  ✓ Plan parsed successfully from JSON")
                     except Exception as e:
                         self.logger.error(f"  ❌ JSON parse error: {e}")
+                        import traceback
+                        self.logger.error(f"  Traceback: {traceback.format_exc()}")
                 else:
                     self.logger.warning(f"  ⚠️ No JSON data captured for this plan")
+                    # Log more details for debugging
+                    self.logger.warning(f"  json_captured={json_captured}, json_data type={type(json_data)}")
+                    if json_data:
+                        self.logger.warning(f"  json_data preview: {str(json_data)[:200]}")
                 
                 # Wait between plans for UI stability (optimized for speed)
                 await asyncio.sleep(0.8)  # Balanced for speed vs stability

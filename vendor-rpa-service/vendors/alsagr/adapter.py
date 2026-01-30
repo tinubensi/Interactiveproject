@@ -177,12 +177,26 @@ def transform_lead_to_alsagr_format(lead_data: Dict[str, Any]) -> Dict[str, Any]
         phone_raw = ''
     phone_formatted = format_phone_for_portal(phone_raw)
     
+    # Map nationality and occupation
+    nationality_raw = lob_data.get('nationality') or form_data.get('nationality') or lead_data.get('nationality', 'Indian')
+    occupation_raw = lob_data.get('occupation') or form_data.get('occupation') or lead_data.get('occupation', 'Engineer')
+    
+    # Effective date - ensure it's a future date (Alsagr requires at least 7 days in future)
+    effective_date = lob_data.get('effectiveDate') or form_data.get('effectiveDate') or lead_data.get('effectiveDate', '')
+    if not effective_date:
+        # Default to 14 days from today if not provided
+        from datetime import datetime, timedelta
+        effective_date = (datetime.now() + timedelta(days=14)).strftime('%Y-%m-%d')
+    
     primary = {
         'firstName': lead_data.get('firstName') or form_data.get('firstName', ''),
         'lastName': lead_data.get('lastName') or form_data.get('lastName', ''),
         'dateOfBirth': lob_data.get('dateOfBirth') or lead_data.get('dateOfBirth', ''),
         'gender': map_gender(lob_data.get('gender') or lead_data.get('gender', 'Male')),
         'maritalStatus': map_marital_status(lob_data.get('maritalStatus') or lead_data.get('maritalStatus', 'Single')),
+        'nationalityCode': map_nationality(nationality_raw),
+        'occupationCode': map_occupation(occupation_raw),
+        'effectiveDate': effective_date,
         'phone': phone_formatted,
         'email': lead_data.get('email') or form_data.get('email', '')
     }
@@ -449,6 +463,100 @@ def map_marital_status(status: str) -> str:
         'widowed': '23'
     }
     return mapping.get(status, '21')  # Default to Single
+
+
+def map_nationality(nationality: str) -> str:
+    """
+    Map nationality name to Alsagr portal code
+    
+    Common nationalities:
+    - Indian = 108
+    - Pakistani = 167
+    - Filipino = 172
+    - Bangladeshi = 19
+    - Egyptian = 64
+    - Jordanian = 112
+    - UAE = 1
+    
+    Args:
+        nationality: Nationality name ('Indian', 'Pakistani', etc.)
+        
+    Returns:
+        Portal dropdown value code
+    """
+    if not nationality:
+        return '108'  # Default to Indian
+    
+    nationality_lower = nationality.strip().lower()
+    
+    mapping = {
+        'indian': '108',
+        'india': '108',
+        'pakistani': '167',
+        'pakistan': '167',
+        'filipino': '172',
+        'philippines': '172',
+        'bangladeshi': '19',
+        'bangladesh': '19',
+        'egyptian': '64',
+        'egypt': '64',
+        'jordanian': '112',
+        'jordan': '112',
+        'uae': '1',
+        'emirati': '1',
+        'british': '233',
+        'uk': '233',
+        'american': '231',
+        'usa': '231',
+        'canadian': '39',
+        'canada': '39'
+    }
+    
+    return mapping.get(nationality_lower, '108')  # Default to Indian
+
+
+def map_occupation(occupation: str) -> str:
+    """
+    Map occupation name to Alsagr portal code
+    
+    Common occupations:
+    - Engineer = 42
+    - Manager = 43
+    - Teacher = 44
+    - Doctor = 45
+    - Accountant = 46
+    
+    Args:
+        occupation: Occupation name ('Engineer', 'Manager', etc.)
+        
+    Returns:
+        Portal dropdown value code
+    """
+    if not occupation:
+        return '42'  # Default to Engineer
+    
+    occupation_lower = occupation.strip().lower()
+    
+    mapping = {
+        'engineer': '42',
+        'engineering': '42',
+        'manager': '43',
+        'management': '43',
+        'teacher': '44',
+        'teaching': '44',
+        'doctor': '45',
+        'medical': '45',
+        'accountant': '46',
+        'accounting': '46',
+        'consultant': '47',
+        'sales': '48',
+        'marketing': '49',
+        'it': '50',
+        'software': '50',
+        'developer': '50'
+    }
+    
+    return mapping.get(occupation_lower, '42')  # Default to Engineer
 
 
 def map_emirate(emirate: str) -> str:

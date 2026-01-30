@@ -59,6 +59,24 @@ class EventGridService {
       },
     ]);
   }
+
+  async publishCustomerDeleted(customer: any): Promise<void> {
+    const client = this.getClient();
+    if (!client) {
+      // Event Grid not configured - skip publishing (local development)
+      console.log('Event Grid not configured, skipping CustomerDeleted event publication');
+      return;
+    }
+    await client.send([
+      {
+        eventType: 'customer.deleted',
+        subject: `customers/${customer.id}`,
+        dataVersion: '1.0',
+        data: { customer },
+        eventTime: new Date(),
+      },
+    ]);
+  }
 }
 
 export const eventGridService = new EventGridService();

@@ -1,5 +1,5 @@
 /**
- * ListStaff Handler - GET /api/staff
+ * ListStaff Handler - POST /api/staff
  */
 
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
@@ -13,14 +13,31 @@ export async function ListStaffHandler(
   context.log('ListStaff invoked');
 
   try {
-    // Parse query parameters
+    // Parse request body
+    const body = await request.json() as any;
+
+    // Build list query with defaults
     const query: StaffListQuery = {
-      staffType: (request.query.get('staffType') as StaffType) || undefined,
-      status: (request.query.get('status') as StaffStatus) || undefined,
-      search: request.query.get('search') || undefined,
-      limit: parseInt(request.query.get('limit') || '50', 10),
-      offset: parseInt(request.query.get('offset') || '0', 10),
+      page: body.page || 1,
+      limit: body.limit || 10,
+      sortBy: body.sortBy || 'displayName',
+      sortOrder: body.sortOrder || 'asc',
+      staffType: body.staffType as StaffType,
+      status: body.status as StaffStatus,
+      search: body.search,
+      filters: body.filters,
     };
+
+    // Validate page
+    if (query.page && query.page < 1) {
+      return {
+        status: 400,
+        jsonBody: {
+          error: 'Validation Error',
+          message: 'Page must be >= 1',
+        },
+      };
+    }
 
     // Validate limit
     if (query.limit && (query.limit < 1 || query.limit > 100)) {
@@ -53,8 +70,8 @@ export async function ListStaffHandler(
 }
 
 app.http('ListStaff', {
-  methods: ['GET'],
-  route: 'staff',
+  methods: ['POST'],
+  route: 'staff/list',
   authLevel: 'anonymous',
   handler: ListStaffHandler,
 });

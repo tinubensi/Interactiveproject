@@ -34,6 +34,18 @@ export interface IndividualCustomer {
   contacts?: Contact[];
   createdAt: string;
   updatedAt: string;
+  // Medical form fields
+  emirate?: string;
+  countryOfResidence?: string;
+  monthlySalaryRange?: string;
+  visaType?: string;
+  maritalStatus?: string;
+  passportNumber?: string;
+  visaFileNumber?: string;
+  visaExpiryDate?: string;
+  visaLocation?: string;
+  occupation?: string;
+  homeCountry?: string;
 }
 
 export interface CompanyCustomer {
@@ -111,6 +123,18 @@ export interface SignupRequest {
   currency?: string;
   mainCustomer?: string;
   insuredName?: string;
+  // Medical form fields
+  emirate?: string;
+  countryOfResidence?: string;
+  monthlySalaryRange?: string;
+  visaType?: string;
+  maritalStatus?: string;
+  passportNumber?: string;
+  visaFileNumber?: string;
+  visaExpiryDate?: string;
+  visaLocation?: string;
+  occupation?: string;
+  homeCountry?: string;
   // Company fields
   companyName?: string;
   tradeLicenseId?: string;
@@ -146,6 +170,30 @@ export interface UpdateProfileRequest {
   email?: string;
   phoneNumber?: string;
   address?: string;
+  // Medical form fields
+  emirate?: string;
+  countryOfResidence?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  nationality?: string;
+  emiratesId?: string;
+  monthlySalaryRange?: string;
+  visaType?: string;
+  maritalStatus?: string;
+  passportNumber?: string;
+  visaFileNumber?: string;
+  visaExpiryDate?: string;
+  visaLocation?: string;
+  occupation?: string;
+  homeCountry?: string;
+  mobileNumber?: string;
+  faxNumber?: string;
+  title?: string;
+  middleName?: string;
+  email2?: string;
+  placementExecutive?: string;
+  customerTypeCategory?: string;
+  currency?: string;
 }
 
 export interface AddContactRequest {
@@ -180,3 +228,30 @@ export interface CustomerDocumentExpiredEvent {
   documentId: string;
 }
 
+export interface CustomerListRequest {
+  page: number;
+  limit: number;
+  sortBy?: 'createdAt' | 'firstName' | 'lastName' | 'companyName';
+  sortOrder?: 'asc' | 'desc';
+  search?: string; // Search: firstName, lastName, email, phone, companyName
+  filters?: {
+    customerType?: ('INDIVIDUAL' | 'COMPANY')[];
+    status?: string[];
+    emirate?: string[];
+    nationality?: string[];
+    createdFrom?: string;
+    createdTo?: string;
+  };
+}
+
+export interface CustomerListResponse {
+  data: Customer[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalRecords: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  };
+}
