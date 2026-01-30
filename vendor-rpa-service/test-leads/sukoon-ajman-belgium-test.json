@@ -1,0 +1,15 @@
+{
+  "id": "test-sukoon-ajman-belgium-001",
+  "leadId": "test-sukoon-ajman-belgium-001",
+  "firstName": "Jean",
+  "lastName": "Dubois",
+  "lineOfBusiness": "medical",
+  "lobData": {
+    "dateOfBirth": "1988-07-15",
+    "gender": "Male",
+    "nationality": "Belgium",
+    "maritalStatus": "Married",
+    "emirate": "Ajman",
+    "coverageType": "Individual"
+  }
+}

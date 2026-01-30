@@ -26,13 +26,18 @@ export async function createStaff(
   const now = new Date().toISOString();
   const staffId = uuidv4();
 
+  // Handle displayName: use firstName only if lastName is empty
+  const displayName = request.lastName 
+    ? `${request.firstName} ${request.lastName}`.trim()
+    : request.firstName;
+
   const document: StaffMemberDocument = {
     id: staffId,
     staffId,
     email: request.email.toLowerCase(),
     firstName: request.firstName,
-    lastName: request.lastName,
-    displayName: `${request.firstName} ${request.lastName}`,
+    lastName: request.lastName || '', // Default to empty string if not provided
+    displayName,
     phone: request.phone,
     staffType: request.staffType,
     status: 'active',
@@ -198,6 +203,7 @@ export async function updateStaff(
   const now = new Date().toISOString();
   const updated: StaffMemberDocument = {
     ...existing,
+    email: updates.email ?? existing.email,
     firstName: updates.firstName ?? existing.firstName,
     lastName: updates.lastName ?? existing.lastName,
     displayName: updates.firstName || updates.lastName

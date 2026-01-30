@@ -65,7 +65,10 @@ class SukoonAdapter(VendorAdapter):
         Supports both individual and family coverage by extracting primary member
         and all dependents from lead data.
         
-        Sukoon expects specific form field values as defined in the browser script.
+        Sukoon expects specific form field values:
+        - Emirate: '1'=Dubai, '5'=Sharjah, '6'=Ajman, '7'=Fujairah, '8'=RAK, '9'=UAQ
+        - Marital Status: '1'=Single, '2'=Married
+        - Relationship: Text values - "Self/Employee", "Spouse", "Child", "Parent"
         """
         # Extract lobData (medical-specific fields)
         lob_data = standard_lead.get('lobData', {})
@@ -73,16 +76,20 @@ class SukoonAdapter(VendorAdapter):
         # Extract lead ID
         lead_id = standard_lead.get('leadId') or standard_lead.get('id', 'unknown')
         
-        # Visa Type mapping for Sukoon dropdown (applies to all members)
-        visa_type_raw = lob_data.get('visaType') or standard_lead.get('visaType', 'citizen')
-        visa_type_mapping = {
-            'resident': '1',
-            'citizen': '5',      # UAE/GCC National
-            'gcc_national': '5',
-            'dependent': '2',
-            'visit_visa': '3'
+        # Emirate mapping for Sukoon dropdown (Basic Details - first dropdown)
+        # This is the EMIRATE selector, not visa type
+        emirate_raw = lob_data.get('emirate') or standard_lead.get('emirate', 'dubai')
+        emirate_mapping = {
+            'dubai': '1',
+            'sharjah': '5',
+            'ajman': '6',
+            'fujairah': '7',
+            'ras al khaimah': '8',
+            'rak': '8',
+            'umm al quwain': '9',
+            'uaq': '9'
         }
-        visa_type = visa_type_mapping.get(visa_type_raw.lower() if isinstance(visa_type_raw, str) else 'citizen', '5')
+        emirate = emirate_mapping.get(emirate_raw.lower() if isinstance(emirate_raw, str) else 'dubai', '1')
         
         # Initialize members array
         members = []
@@ -133,7 +140,7 @@ class SukoonAdapter(VendorAdapter):
         # Build Sukoon-specific payload with members array
         return {
             'leadId': lead_id,
-            'visaType': visa_type,
+            'emirate': emirate,
             'members': members
         }
     
@@ -158,7 +165,7 @@ class SukoonAdapter(VendorAdapter):
         # Gender mapping
         gender_normalized = gender.lower() if isinstance(gender, str) else 'male'
         
-        # Marital status mapping for Sukoon dropdown
+        # Marital status mapping for Sukoon dropdown (numeric values)
         marital_mapping = {
             'single': '1',
             'married': '2',
@@ -171,11 +178,13 @@ class SukoonAdapter(VendorAdapter):
         )
         
         # Nationality mapping to GUID
+        # Note: If nationality not in mapping, bot will try to select by label name
         nationality_guid_mapping = {
-            'uae': 'a275c17e-afe4-e611-80c9-005056bd7a8d',
-            'united arab emirates': 'a275c17e-afe4-e611-80c9-005056bd7a8d',
-            'india': 'a375c17e-afe4-e611-80c9-005056bd7a8d',  # Example - adjust as needed
-            'pakistan': 'a475c17e-afe4-e611-80c9-005056bd7a8d',  # Example - adjust as needed
+            'uae': 'b276c17e-afe4-e611-80c9-005056bd7a8d',  # UNITED ARAB EMIRATES
+            'united arab emirates': 'b276c17e-afe4-e611-80c9-005056bd7a8d',
+            'india': 'a275c17e-afe4-e611-80c9-005056bd7a8d',  # Corrected GUID
+            'pakistan': '2e76c17e-afe4-e611-80c9-005056bd7a8d',
+            'belgium': '1875c17e-afe4-e611-80c9-005056bd7a8d',
             # Add more nationalities as needed by inspecting portal dropdown
         }
         nationality_guid = nationality_guid_mapping.get(
@@ -183,9 +192,30 @@ class SukoonAdapter(VendorAdapter):
             'a275c17e-afe4-e611-80c9-005056bd7a8d'  # Default to UAE
         )
         
+        # Relationship mapping for Sukoon dropdown (TEXT values, not numeric!)
+        # Portal expects exact text: "Self/Employee", "Spouse", "Child", "Parent"
+        relationship_mapping = {
+            'self': 'Self/Employee',
+            'employee': 'Self/Employee',
+            'self/employee': 'Self/Employee',
+            'spouse': 'Spouse',
+            'wife': 'Spouse',
+            'husband': 'Spouse',
+            'child': 'Child',
+            'son': 'Child',
+            'daughter': 'Child',
+            'parent': 'Parent',
+            'father': 'Parent',
+            'mother': 'Parent'
+        }
+        relationship_normalized = relationship_mapping.get(
+            relationship.lower() if isinstance(relationship, str) else 'self/employee',
+            'Self/Employee'  # Default to Self/Employee
+        )
+        
         return {
             'index': index,
-            'relationship': relationship,
+            'relationship': relationship_normalized,
             'gender': gender_normalized,
             'dob': dob,
             'maritalStatus': marital_code,
