@@ -3,5 +3,6 @@
   "requiresAuth": true,
   "timeout": 420,
   "priority": 3,
-  "linesOfBusiness": ["Medical"]
+  "linesOfBusiness": ["Medical"],
+  "headless": true
 }
