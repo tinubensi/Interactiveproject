@@ -37,8 +37,6 @@ Lead-Service.postman_collection.json
 # node_modules/
 # package.json
 # package-lock.json
-# host.json
-
-# Dev tools that shouldn't be deployed
+# host.json# Dev tools that shouldn't be deployed
 node_modules/azure-functions-core-tools/**
 node_modules/tsx/**

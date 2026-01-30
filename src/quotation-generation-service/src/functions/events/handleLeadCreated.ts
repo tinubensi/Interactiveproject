@@ -9,6 +9,7 @@ import { rpaVmService } from '../../services/rpaVmService';
 import { cosmosService } from '../../services/cosmosService';
 import { eventGridService } from '../../services/eventGridService';
 import { v4 as uuidv4 } from 'uuid';
+import { cleanAndMergeFormData } from '../../utils/formDataCleaner';
 
 // 🔒 In-memory deduplication cache (leadId -> timestamp)
 const processingCache = new Map<string, number>();
@@ -201,17 +202,23 @@ async function handleLeadCreatedEvent(
         // Continue anyway - RPA can still run
       }
       
+      // CRITICAL: Clean formData before sending to RPA bots
+      // Remove all duplicate keys with different casings (firstName, firstname, Firstname, etc.)
+      const cleanFormDataForRpa = cleanAndMergeFormData(
+        leadDataForRpa.formData || eventData.formData || {},
+        leadDataForRpa.lobData || lobData
+      );
+      
       // Trigger RPA via VM
       // Build complete lead data for RPA (VM requires id field + all lead details)
-      // CRITICAL: Use leadDataForRpa which already has formData explicitly included
-      // Don't rebuild manually - that might lose formData if eventData.formData is undefined
+      // CRITICAL: Use cleaned formData to prevent RPA bots from receiving polluted data
       const completeLeadData = {
         ...leadDataForRpa,  // Start with leadDataForRpa which has formData
         id: leadId,         // Ensure id is set
         leadId: leadId,     // Also set leadId for compatibility
         lineOfBusiness: lineOfBusiness,  // Ensure lineOfBusiness is set
-        // Explicitly ensure formData is included (even if undefined in eventData)
-        formData: leadDataForRpa.formData || eventData.formData || {},
+        // CRITICAL: Use cleaned formData, not polluted one
+        formData: cleanFormDataForRpa,
         // Explicitly ensure lobData is included
         lobData: leadDataForRpa.lobData || lobData || {}
       };

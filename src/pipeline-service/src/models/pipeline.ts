@@ -29,6 +29,7 @@ export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'expired';
 export type PredefinedStageId =
   | 'lead-created'
   | 'plans-fetching'
+  | 'plans-refetching'
   | 'plans-fetch-failed'
   | 'plans-available'
   | 'quotation-created'

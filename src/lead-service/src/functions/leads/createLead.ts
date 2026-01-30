@@ -180,6 +180,46 @@ export async function createLead(
       context.log(`Using provided customerId: ${customerId}`);
     }
 
+    // CRITICAL: Clean formData to remove duplicate keys with different casings
+    // Frontend sends polluted formData with firstName, firstname, Firstname, FIRSTNAME, etc.
+    const cleanFormDataForStorage = (() => {
+      if (!body.formData) return body.formData;
+      
+      const canonicalFields = [
+        'firstName', 'lastName', 'email', 'phone', 'emirate',
+        'nationality', 'effectiveDate', 'visaLocation', 'occupation', 
+        'homeCountry', 'dateOfBirth', 'gender', 'emiratesId',
+        'monthlySalaryRange', 'salaryRange', 'visaType', 'maritalStatus',
+        'passportNumber', 'visaFileNumber', 'visaExpiryDate',
+        'residentialLocation', 'countryOfResidence', 'currentlyInsured',
+        '_fieldLabels', '_sectionLabels', 'title', 'relation'
+      ];
+      
+      const cleaned: any = {};
+      Object.keys(body.formData).forEach(key => {
+        // Keep canonical fields
+        if (canonicalFields.includes(key) || 
+            key.startsWith('lobData.') || 
+            key.startsWith('section-') ||
+            key.startsWith('_')) {
+          cleaned[key] = body.formData[key];
+        }
+      });
+      
+      // Also merge lobData fields
+      if (body.lobData) {
+        Object.keys(body.lobData).forEach(key => {
+          if (!cleaned.hasOwnProperty(key) && 
+              typeof body.lobData[key] !== 'object' &&
+              body.lobData[key] !== null) {
+            cleaned[key] = body.lobData[key];
+          }
+        });
+      }
+      
+      return cleaned;
+    })();
+
     // Create lead object
     const lead: any = {
       type: 'lead', // Required for Cosmos DB queries
@@ -195,14 +235,14 @@ export async function createLead(
       phone: body.phone,
       emirate: body.emirate,
       formId: body.formId,
-      formData: body.formData,
-      lobData: body.lobData,
+      formData: cleanFormDataForStorage, // Use cleaned formData, not polluted one
+      lobData: body.lobData || cleanFormDataForStorage, // Use cleaned data
       assignedTo,
       ambassador: body.ambassador,
       agent: body.agent,
       source: body.source || 'Website',
-      currentStage: 'Lead Created', // Start at Lead Created stage
-      stageId: 'stage-0', // stage-0 = Lead Created
+      currentStage: 'Plans Fetching', // Start at Plans Fetching stage (plans fetch starts immediately)
+      stageId: 'stage-1', // stage-1 = Plans Fetching
       isHotLead: false,
       isEmailRepeated,
       isPhoneRepeated,
@@ -219,9 +259,9 @@ export async function createLead(
     await cosmosService.createTimelineEntry({
       id: uuidv4(),
       leadId: createdLead.id,
-      stage: 'Lead Created', // Initial stage is Lead Created
-      stageId: 'stage-0', // stage-0 = Lead Created
-      remark: 'Lead created',
+      stage: 'Plans Fetching', // Initial stage is Plans Fetching (plans fetch starts immediately)
+      stageId: 'stage-1', // stage-1 = Plans Fetching
+      remark: 'Lead created - fetching plans',
       changedBy: body.assignedTo || 'system',
       changedByName: 'System',
       timestamp: new Date()
@@ -231,6 +271,10 @@ export async function createLead(
     let eventPublished = false;
     let httpFallbackTriggered = false;
     
+    // CRITICAL: Ensure formData is clean before sending to Event Grid
+    // Even though we cleaned it before saving, ensure it's clean here too
+    const cleanFormDataForEventGrid = createdLead.formData || cleanFormDataForStorage;
+    
     try {
       await eventGridService.publishLeadCreated({
         leadId: createdLead.id,
@@ -239,7 +283,7 @@ export async function createLead(
         lineOfBusiness: createdLead.lineOfBusiness,
         businessType: createdLead.businessType,
         formId: createdLead.formId,
-        formData: createdLead.formData,
+        formData: cleanFormDataForEventGrid, // Use cleaned formData, not polluted one
         lobData: createdLead.lobData,
         assignedTo: createdLead.assignedTo,
         createdAt: createdLead.createdAt,
@@ -276,7 +320,7 @@ export async function createLead(
               lineOfBusiness: createdLead.lineOfBusiness,
               businessType: createdLead.businessType,
               formId: createdLead.formId,
-              formData: createdLead.formData,
+              formData: cleanFormDataForEventGrid, // Use cleaned formData, not polluted one
               lobData: createdLead.lobData,
               assignedTo: createdLead.assignedTo,
               createdAt: createdLead.createdAt.toISOString(),

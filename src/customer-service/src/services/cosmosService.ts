@@ -135,6 +135,18 @@ class CosmosService {
     return resources.length > 0 ? (resources[0] as Customer) : null;
   }
 
+  async getCustomerByEmiratesId(emiratesId: string): Promise<Customer | null> {
+    const container = await this.getCustomerContainer();
+    const query = `SELECT * FROM c WHERE c.emiratesId = @emiratesId AND c.emiratesId != null AND c.emiratesId != ''`;
+    const { resources } = await container.items
+      .query({
+        query,
+        parameters: [{ name: '@emiratesId', value: emiratesId }],
+      })
+      .fetchAll();
+    return resources.length > 0 ? (resources[0] as Customer) : null;
+  }
+
   async updateCustomer(id: string, updates: Partial<Customer>): Promise<Customer> {
     const container = await this.getCustomerContainer();
     const existing = await this.getCustomerById(id);
@@ -148,6 +160,11 @@ class CosmosService {
     };
     const { resource } = await container.item(id, id).replace(updated);
     return resource as Customer;
+  }
+
+  async deleteCustomer(id: string): Promise<void> {
+    const container = await this.getCustomerContainer();
+    await container.item(id, id).delete();
   }
 
   async saveOTP(email: string, otp: string, ttlSeconds: number = 300): Promise<OTPRecord> {
@@ -240,8 +257,14 @@ export const cosmosService = {
   async getCustomerByEmail(email: string): Promise<Customer | null> {
     return getInstance().getCustomerByEmail(email);
   },
+  async getCustomerByEmiratesId(emiratesId: string): Promise<Customer | null> {
+    return getInstance().getCustomerByEmiratesId(emiratesId);
+  },
   async updateCustomer(id: string, updates: Partial<Customer>): Promise<Customer> {
     return getInstance().updateCustomer(id, updates);
+  },
+  async deleteCustomer(id: string): Promise<void> {
+    return getInstance().deleteCustomer(id);
   },
   async queryCustomers(query: string, parameters?: Array<{ name: string; value: any }>): Promise<Customer[]> {
     return getInstance().queryCustomers(query, parameters);
