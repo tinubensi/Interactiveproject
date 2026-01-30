@@ -183,20 +183,20 @@ export async function createLead(
     // CRITICAL: Clean formData to remove duplicate keys with different casings
     // Frontend sends polluted formData with firstName, firstname, Firstname, FIRSTNAME, etc.
     // This cleaning MUST happen even if frontend cleaned it, as a safety layer
+    const canonicalFields = [
+      'firstName', 'lastName', 'email', 'phone', 'emirate',
+      'nationality', 'effectiveDate', 'visaLocation', 'occupation', 
+      'homeCountry', 'dateOfBirth', 'gender', 'emiratesId',
+      'monthlySalaryRange', 'salaryRange', 'visaType', 'maritalStatus',
+      'passportNumber', 'visaFileNumber', 'visaExpiryDate',
+      'residentialLocation', 'countryOfResidence', 'currentlyInsured',
+      '_fieldLabels', '_sectionLabels', 'title', 'relation'
+    ];
+    
+    // Clean formData - only keep canonical fields
     const cleanFormDataForStorage = (() => {
-      const canonicalFields = [
-        'firstName', 'lastName', 'email', 'phone', 'emirate',
-        'nationality', 'effectiveDate', 'visaLocation', 'occupation', 
-        'homeCountry', 'dateOfBirth', 'gender', 'emiratesId',
-        'monthlySalaryRange', 'salaryRange', 'visaType', 'maritalStatus',
-        'passportNumber', 'visaFileNumber', 'visaExpiryDate',
-        'residentialLocation', 'countryOfResidence', 'currentlyInsured',
-        '_fieldLabels', '_sectionLabels', 'title', 'relation'
-      ];
-      
       const cleaned: any = {};
       
-      // Clean formData - only keep canonical fields
       if (body.formData && typeof body.formData === 'object') {
         Object.keys(body.formData).forEach(key => {
           // Keep ONLY canonical fields (exact match) and special prefixes
@@ -210,12 +210,25 @@ export async function createLead(
         });
       }
       
-      // Clean lobData - only merge canonical fields
+      return cleaned;
+    })();
+    
+    // Clean lobData - extract ONLY LOB-specific fields (not common fields like firstName, lastName, etc.)
+    const cleanLobDataForStorage = (() => {
+      // LOB-specific fields only (exclude common customer fields)
+      const lobSpecificFields = [
+        'dateOfBirth', 'gender', 'emiratesId', 'monthlySalaryRange', 'salaryRange',
+        'visaType', 'maritalStatus', 'passportNumber', 'visaFileNumber',
+        'visaExpiryDate', 'visaLocation', 'occupation', 'homeCountry',
+        'nationality', 'residentialLocation', 'countryOfResidence', 'currentlyInsured'
+      ];
+      
+      const cleaned: any = {};
+      
       if (body.lobData && typeof body.lobData === 'object') {
         Object.keys(body.lobData).forEach(key => {
-          // Only add canonical fields from lobData (prevent pollution)
-          if (canonicalFields.includes(key) && 
-              !cleaned.hasOwnProperty(key) && 
+          // Only include LOB-specific fields (exclude firstName, lastName, email, phone, emirate)
+          if (lobSpecificFields.includes(key) && 
               typeof body.lobData[key] !== 'object' &&
               body.lobData[key] !== null) {
             cleaned[key] = body.lobData[key];
@@ -242,13 +255,13 @@ export async function createLead(
       emirate: body.emirate,
       formId: body.formId,
       formData: cleanFormDataForStorage, // Use cleaned formData, not polluted one
-      lobData: cleanFormDataForStorage, // Always use cleaned data (don't use body.lobData directly as it may be polluted)
+      lobData: cleanLobDataForStorage, // Use cleaned lobData (only LOB-specific fields, no common fields)
       assignedTo,
       ambassador: body.ambassador,
       agent: body.agent,
       source: body.source || 'Website',
-      currentStage: 'Plans Fetching', // Start at Plans Fetching stage (plans fetch starts immediately)
-      stageId: 'stage-1', // stage-1 = Plans Fetching
+      currentStage: 'Lead Created', // Start at Lead Created stage - Pipeline Service will handle progression
+      stageId: 'stage-0', // stage-0 = Lead Created
       isHotLead: false,
       isEmailRepeated,
       isPhoneRepeated,
@@ -265,9 +278,9 @@ export async function createLead(
     await cosmosService.createTimelineEntry({
       id: uuidv4(),
       leadId: createdLead.id,
-      stage: 'Plans Fetching', // Initial stage is Plans Fetching (plans fetch starts immediately)
-      stageId: 'stage-1', // stage-1 = Plans Fetching
-      remark: 'Lead created - fetching plans',
+      stage: 'Lead Created', // Initial stage is Lead Created - Pipeline Service will handle progression
+      stageId: 'stage-0', // stage-0 = Lead Created
+      remark: 'Lead created successfully',
       changedBy: body.assignedTo || 'system',
       changedByName: 'System',
       timestamp: new Date()

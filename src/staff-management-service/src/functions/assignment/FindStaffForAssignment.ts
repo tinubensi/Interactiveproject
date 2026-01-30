@@ -48,7 +48,7 @@ export async function FindStaffForAssignmentHandler(
     // Note: For a production system, we'd want to fetch full documents
     // For now, we'll use the summary data and fetch full documents for assignment logic
     const staffList = await Promise.all(
-      staffResult.staff.map(async (s) => {
+      staffResult.data.map(async (s) => {
         // Fetch full document for assignment logic
         const fullStaff = await findStaffById(s.staffId);
         if (!fullStaff) {

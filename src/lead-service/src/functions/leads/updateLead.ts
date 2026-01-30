@@ -524,28 +524,32 @@ export async function updateLead(
       
       // CRITICAL: Create clean payload for RPA - extract ONLY canonical fields
       // Never send polluted formData with duplicate keys to RPA bots
+      // Use type assertion to access lobData properties since it's a union type
+      const lobData = updatedLead.lobData as any;
+      const formData = updatedLead.formData as any;
+      
       const cleanRpaFormData: any = {
         // Extract ONLY canonical fields for RPA
         emirate: updatedLead.emirate,
-        effectiveDate: updatedLead.lobData?.effectiveDate || updatedLead.formData?.effectiveDate,
-        visaLocation: updatedLead.lobData?.visaLocation || updatedLead.formData?.visaLocation,
-        occupation: updatedLead.lobData?.occupation || updatedLead.formData?.occupation,
-        homeCountry: updatedLead.lobData?.homeCountry || updatedLead.formData?.homeCountry,
-        nationality: updatedLead.lobData?.nationality || updatedLead.formData?.nationality,
-        salaryRange: updatedLead.lobData?.salaryRange || updatedLead.lobData?.monthlySalaryRange,
-        dateOfBirth: updatedLead.lobData?.dateOfBirth,
-        gender: updatedLead.lobData?.gender,
+        effectiveDate: lobData?.effectiveDate || formData?.effectiveDate,
+        visaLocation: lobData?.visaLocation || formData?.visaLocation,
+        occupation: lobData?.occupation || formData?.occupation,
+        homeCountry: lobData?.homeCountry || formData?.homeCountry,
+        nationality: lobData?.nationality || formData?.nationality,
+        salaryRange: lobData?.salaryRange || lobData?.monthlySalaryRange,
+        dateOfBirth: lobData?.dateOfBirth,
+        gender: lobData?.gender,
       };
       
       // Add any other lobData fields that might be needed (but filter out duplicates)
-      if (updatedLead.lobData) {
-        Object.keys(updatedLead.lobData).forEach(key => {
+      if (lobData) {
+        Object.keys(lobData).forEach(key => {
           // Only add if not already set and it's a valid field
           if (!cleanRpaFormData.hasOwnProperty(key) && 
-              typeof updatedLead.lobData[key] !== 'object' &&
-              updatedLead.lobData[key] !== null &&
-              updatedLead.lobData[key] !== undefined) {
-            cleanRpaFormData[key] = updatedLead.lobData[key];
+              typeof lobData[key] !== 'object' &&
+              lobData[key] !== null &&
+              lobData[key] !== undefined) {
+            cleanRpaFormData[key] = lobData[key];
           }
         });
       }

@@ -147,7 +147,7 @@ async def main():
         vendor_config = vendor_registry.get_config(registry_vendor_id) or {}
         
         # Bot configuration
-        # Use headless=True for production (faster, PDF downloads work better)
+        # Use headless=False for debugging (visible browser)
         bot_config = {
             'headless': True,  # Production mode - headless browser
             'browser_type': 'chromium',

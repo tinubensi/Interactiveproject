@@ -228,6 +228,8 @@ async def parse_plan_pdf(pdf_path: str, base_plan_data: Dict[str, Any]) -> Dict[
                 alt_med_section = full_text[start_pos:end_pos]
         
         if alt_med_section:
+            # Logging suppressed for clean JSON output
+            pass
             # Extract limit (AED 2,500 per person per year)
             # Text may be split: "AED 2,500 per person per year" or "AED 2,500 per person per year" across lines
             # Try multiple patterns for limit extraction (handle split text)
@@ -327,6 +329,8 @@ async def parse_plan_pdf(pdf_path: str, base_plan_data: Dict[str, Any]) -> Dict[
                 "noCoinsuranceOnFollowup": no_coinsurance_followup,
                 "description": clean_text(alt_med_section[:200])
             }
+            # Logging suppressed for clean JSON output
+            pass
             
             # Also store in rawPlanData for reference
             if "rawPlanData" not in base_plan_data:
@@ -342,9 +346,13 @@ async def parse_plan_pdf(pdf_path: str, base_plan_data: Dict[str, Any]) -> Dict[
         # Check if Alternative Medicine is mentioned but not fully parsed
         # This is a fallback - if we found the section but couldn't extract details, or if it's mentioned elsewhere
         if not base_plan_data.get("lobSpecificData", {}).get("alternativeMedicine"):
+            # Logging suppressed
+            pass
             # Search the entire PDF text for any mention
             alt_med_anywhere = re.search(r'alternative\s+medicine|homeopathy|ayurveda', full_text, re.IGNORECASE)
             if alt_med_anywhere:
+                # Logging suppressed
+                pass
                 if "lobSpecificData" not in base_plan_data:
                     base_plan_data["lobSpecificData"] = {}
                 # Try to extract at least basic info from the context
@@ -531,7 +539,7 @@ async def parse_plan_pdf(pdf_path: str, base_plan_data: Dict[str, Any]) -> Dict[
         base_plan_data["rawPlanData"]["pdf_extracted"] = True
 
     except Exception as e:
-        print(f"Error parsing PDF {pdf_path}: {e}", file=sys.stderr)
+        pass  # Suppress error output
         # Don't fail the whole plan if PDF parsing fails
         if "rawPlanData" not in base_plan_data:
             base_plan_data["rawPlanData"] = {}
@@ -541,9 +549,9 @@ async def parse_plan_pdf(pdf_path: str, base_plan_data: Dict[str, Any]) -> Dict[
         try:
             if os.path.exists(pdf_path):
                 os.remove(pdf_path)
-                print(f"  🗑️  Cleaned up PDF: {os.path.basename(pdf_path)}", flush=True, file=sys.stderr)
+                pass  # Suppress cleanup message
         except Exception as cleanup_error:
             # Don't fail if cleanup fails, just log it
-            print(f"  ⚠️ Failed to cleanup PDF {pdf_path}: {cleanup_error}", file=sys.stderr)
+            pass  # Suppress cleanup error
 
     return base_plan_data

@@ -228,3 +228,30 @@ export interface CustomerDocumentExpiredEvent {
   documentId: string;
 }
 
+export interface CustomerListRequest {
+  page: number;
+  limit: number;
+  sortBy?: 'createdAt' | 'firstName' | 'lastName' | 'companyName';
+  sortOrder?: 'asc' | 'desc';
+  search?: string; // Search: firstName, lastName, email, phone, companyName
+  filters?: {
+    customerType?: ('INDIVIDUAL' | 'COMPANY')[];
+    status?: string[];
+    emirate?: string[];
+    nationality?: string[];
+    createdFrom?: string;
+    createdTo?: string;
+  };
+}
+
+export interface CustomerListResponse {
+  data: Customer[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalRecords: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  };
+}
