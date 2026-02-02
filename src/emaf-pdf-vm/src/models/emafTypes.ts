@@ -158,6 +158,7 @@ export interface EmafSubmission {
   pdfGenerationJobId?: string;
   generatedPdfBlobPath?: string;
   generatedPdfSasUrl?: string;
+  generatedPdfProxyUrl?: string;
   pdfGeneratedAt?: Date;
   pdfDownloadedAt?: Date;
   signedPdfBlobPath?: string;

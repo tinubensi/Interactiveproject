@@ -157,6 +157,18 @@ export const alSagrTemplateSections: FormSection[] = [
         type: 'text',
         order: 15,
         placeholder: 'Enter residential address'
+      },
+      {
+        id: uuidv4(),
+        label: 'Monthly Salary Range',
+        dataKey: 'policyHolder_salary',
+        type: 'radio',
+        order: 16,
+        options: [
+          { label: 'Up to AED 4,000', value: 'up_to_4000' },
+          { label: 'Above AED 4,000', value: 'above_4000' }
+        ],
+        validation: { required: true }
       }
     ]
   },
@@ -367,6 +379,33 @@ export const alSagrTemplateSections: FormSection[] = [
       ]).flat()
     ]
   },
+  {
+    id: uuidv4(),
+    title: 'Insurance Status',
+    order: 3,
+    questions: [
+      {
+        id: uuidv4(),
+        label: 'Any family member not applied for insurance in this application?',
+        dataKey: 'familyMember_notApplied',
+        type: 'radio',
+        order: 1,
+        options: [
+          { label: 'Yes', value: 'yes' },
+          { label: 'No', value: 'no' }
+        ],
+        validation: { required: true }
+      },
+      {
+        id: uuidv4(),
+        label: 'If yes, provide details of existing insurance arrangements',
+        dataKey: 'familyMember_notApplied_details',
+        type: 'text',
+        order: 2,
+        placeholder: 'Enter details'
+      }
+    ]
+  },
   // COMMENTED OUT: Previous Insurance History - Not needed for simplified form
   /* {
     id: uuidv4(),
@@ -428,7 +467,7 @@ export const alSagrTemplateSections: FormSection[] = [
   {
     id: uuidv4(),
     title: 'Medical History Declaration',
-    order: 3,
+    order: 4,
     questions: [
       // Question 1: Under medical observation / treatment
       {

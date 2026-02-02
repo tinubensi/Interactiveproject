@@ -167,12 +167,17 @@ class PdfGeneratorService {
       
       console.log('   Step 2: Launching browser...');
       const browser = await this.getBrowser();
-      const page = await browser.newPage();
-      console.log('   ✓ Browser page created');
+      
+      // Create context with JavaScript disabled for security
+      const context = await browser.newContext({
+        javaScriptEnabled: false,
+      });
+      const page = await context.newPage();
+      console.log('   ✓ Browser page created (JavaScript disabled for security)');
       
       console.log('   Step 3: Loading HTML content...');
       await page.setContent(html, {
-        waitUntil: 'networkidle',
+        waitUntil: 'domcontentloaded', // Changed from networkidle since JS is disabled
         timeout: 30000
       });
       console.log('   ✓ HTML content loaded');
@@ -181,12 +186,17 @@ class PdfGeneratorService {
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
-        preferCSSPageSize: true
+        preferCSSPageSize: true,
+        // Disable PDF features that could be flagged as dangerous
+        displayHeaderFooter: false,
+        // Print tagged PDF for accessibility and security
+        tagged: true,
         // Removed margin option to respect CSS @page { margin: 0; }
       });
       console.log(`   ✓ PDF generated (${pdfBuffer.length} bytes)`);
       
       await page.close();
+      await context.close();
       
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
       console.log(`\n✅ PDF generation completed in ${duration}s`);
