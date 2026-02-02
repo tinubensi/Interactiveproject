@@ -138,7 +138,14 @@ class Gig_gulfAdapter(VendorAdapter):
                 dob_str = '18/04/1998'  # Default fallback
         
         # Extract and format effective date (coverage start date) - DD/MM/YYYY format
-        effective_date_str = lob_data.get('effectiveDate') or lob_data.get('coverageStartDate') or standard_lead.get('effectiveDate', '31/01/2026')
+        # Check multiple sources: lobData, formData, and root level
+        form_data = standard_lead.get('formData', {})
+        effective_date_str = (
+            lob_data.get('effectiveDate') or 
+            lob_data.get('coverageStartDate') or 
+            form_data.get('effectiveDate') or 
+            standard_lead.get('effectiveDate', '31/01/2026')
+        )
         if isinstance(effective_date_str, str) and effective_date_str:
             try:
                 # Handle ISO format (YYYY-MM-DD) or datetime format
@@ -146,7 +153,8 @@ class Gig_gulfAdapter(VendorAdapter):
                     effective_date_obj = datetime.fromisoformat(effective_date_str.replace('Z', '+00:00'))
                     effective_date_str = effective_date_obj.strftime('%d/%m/%Y')
                 # If it's already in DD/MM/YYYY format, keep it
-            except Exception:
+            except Exception as e:
+                print(f"Error parsing effective date '{effective_date_str}': {e}", file=sys.stderr)
                 effective_date_str = '31/01/2026'  # Default fallback
         else:
             effective_date_str = '31/01/2026'  # Default if not provided
@@ -183,13 +191,21 @@ class Gig_gulfAdapter(VendorAdapter):
         marital_status = marital_status_raw.capitalize() if isinstance(marital_status_raw, str) else 'Single'
         
         # Nationality
-        nationality = lob_data.get('nationality') or standard_lead.get('nationality', 'Indian')
+        nationality = (
+            lob_data.get('nationality') or 
+            form_data.get('nationality') or 
+            standard_lead.get('nationality', 'Indian')
+        )
         
         # State/Emirate
         state = standard_lead.get('emirate') or lob_data.get('state', 'Abu Dhabi')
         
         # Visa location (same as state by default)
-        visa_location = lob_data.get('visaLocation', state)
+        visa_location = (
+            lob_data.get('visaLocation') or 
+            form_data.get('visaLocation') or 
+            state
+        )
         
         # Passport country
         passport_country = lob_data.get('passportCountry', 'India')
@@ -198,7 +214,11 @@ class Gig_gulfAdapter(VendorAdapter):
         work_location = lob_data.get('workLocation', 'AL KARAMA')
         
         # Occupation
-        occupation = lob_data.get('occupation') or standard_lead.get('occupation', 'Accountant')
+        occupation = (
+            lob_data.get('occupation') or 
+            form_data.get('occupation') or 
+            standard_lead.get('occupation', 'Accountant')
+        )
         
         # Email
         email = standard_lead.get('email', 'test@gmail.com')

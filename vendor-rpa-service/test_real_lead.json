@@ -1,0 +1,28 @@
+{
+  "leadData": {
+    "id": "6a4aefd9-3586-4b9d-ad69-1177f054e308",
+    "firstName": "vijay",
+    "lastName": "antony",
+    "email": "a11@hj.io",
+    "phone": {
+      "number": "+971502503868",
+      "countryCode": "+971",
+      "isoCode": "AE"
+    },
+    "emirate": "Dubai",
+    "formData": {
+      "effectiveDate": "2026-02-02",
+      "nationality": "India",
+      "occupation": "accounts-assistant",
+      "visaLocation": "Dubai",
+      "monthlySalaryRange": "22"
+    },
+    "lobData": {
+      "dateOfBirth": "1989-02-11",
+      "gender": "Male",
+      "salaryRange": "22",
+      "visaType": "Employment",
+      "maritalStatus": "Married"
+    }
+  }
+}

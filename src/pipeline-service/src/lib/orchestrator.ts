@@ -1588,13 +1588,17 @@ async function updateLeadStageSync(
   log(`[EXECUTE STAGE] Service Key configured: ${process.env.INTERNAL_SERVICE_KEY ? 'YES' : 'NO'}`);
 
   // Extract metadata from eventData if present
-  const metadata = eventData?.metadata as Record<string, any> | undefined;
+  // Check both eventData.metadata and eventData.data.metadata (Event Grid structure)
+  const metadata = (eventData?.metadata || (eventData as any)?.data?.metadata) as Record<string, any> | undefined;
   if (metadata) {
     log(`[EXECUTE STAGE] ✓ Event metadata present, will include in timeline entry`);
     log(`[EXECUTE STAGE] Metadata content:`, JSON.stringify(metadata, null, 2));
   } else {
     log(`[EXECUTE STAGE] ⚠ No metadata found in eventData`);
     log(`[EXECUTE STAGE] eventData keys: ${Object.keys(eventData || {}).join(', ')}`);
+    if ((eventData as any)?.data) {
+      log(`[EXECUTE STAGE] eventData.data keys: ${Object.keys((eventData as any).data || {}).join(', ')}`);
+    }
   }
 
   // CRITICAL: Retry lead stage update with smart timeout handling

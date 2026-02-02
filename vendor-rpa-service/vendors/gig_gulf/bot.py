@@ -963,6 +963,22 @@ class Gig_gulfBot(InsuranceBot):
                 except Exception as e:
                     self.logger.warning(f"Could not click Next again: {e}")
             
+            # Click on "YOUR QUOTATION" tab to load plans
+            self.logger.info("Clicking on 'YOUR QUOTATION' tab to load plans...")
+            try:
+                # Try to find and click the "YOUR QUOTATION" breadcrumb/tab
+                quotation_tab = page1.locator("#breadcrum_your_qta")
+                if await quotation_tab.count() > 0:
+                    # Use JavaScript click to ensure it triggers
+                    await quotation_tab.evaluate("el => el.click()")
+                    self.logger.info("✓ Clicked 'YOUR QUOTATION' tab")
+                    await asyncio.sleep(5)  # Wait for plans to load
+                    await page1.wait_for_load_state("networkidle", timeout=30000)
+                else:
+                    self.logger.warning("Could not find 'YOUR QUOTATION' tab, plans may not load")
+            except Exception as e:
+                self.logger.warning(f"Could not click 'YOUR QUOTATION' tab: {e}")
+            
             # Wait for plans to load - give it more time for data to render
             self.logger.debug("Waiting for plans to load...")
             await asyncio.sleep(5)  # Extra time for dynamic content to load

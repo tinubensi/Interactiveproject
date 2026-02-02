@@ -291,7 +291,10 @@ export async function handlePlansFetched(
             remark: `${totalPlansCount} plans fetched from ${eventData.successfulVendors?.length || 0} vendors`,
             changedBy: 'system',
             changedByName: 'System',
-            timestamp: new Date()
+            timestamp: new Date(),
+            metadata: {
+              vendorTimings: eventData.metadata?.vendorTimings || []
+            }
           });
           
           context.log(`✅ DIRECT UPDATE: Lead status set to Plans Available immediately`);

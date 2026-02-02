@@ -389,8 +389,10 @@ class Gig_gulfScraper:
             Dictionary with raw plan data, or None if element is not a valid plan
         """
         try:
+            self.logger.debug(f"  _extract_plan_from_element called for index {index}")
             # Get text content
             text_content = await element.inner_text()
+            self.logger.debug(f"  Got inner_text, length: {len(text_content)}")
             text_stripped = text_content.strip()
             text_lower = text_stripped.lower()
             
@@ -400,17 +402,16 @@ class Gig_gulfScraper:
             # Filter out quotation reference and other non-plan elements
             # Skip quotation references
             if text_lower.startswith("quotation ref") or "quotation ref #" in text_lower:
-                self.logger.debug(f"Skipping quotation reference element: {text_stripped[:50]}")
+                self.logger.info(f"  ❌ FILTER: Skipping quotation reference element")
                 return None
             
             # Skip form fields and dropdowns FIRST (before length check)
-            # Check if element contains form controls
-            has_select = await element.locator("select, option").count() > 0
-            has_input = await element.locator("input, textarea").count() > 0
+            # Only skip if the ELEMENT ITSELF is a form field, not if it contains one
+            # (plan cards may contain buttons/checkboxes but are still plans)
             tag_name = await element.evaluate("el => el.tagName.toLowerCase()")
             
-            if tag_name in ['select', 'option', 'input', 'textarea'] or has_select or has_input:
-                self.logger.debug(f"Skipping form field element: {tag_name}")
+            if tag_name in ['select', 'option', 'input', 'textarea', 'button', 'label']:
+                self.logger.info(f"  ❌ FILTER: Skipping form field element: {tag_name}")
                 return None
             
             # Skip elements that look like currency dropdowns or form fields
@@ -420,14 +421,14 @@ class Gig_gulfScraper:
                 'select occupation', 'select work location', 'select title', 'select relation'
             ]
             if any(indicator in text_lower for indicator in form_field_indicators):
-                self.logger.debug(f"Skipping form field element: {text_stripped[:50]}")
+                self.logger.info(f"  ❌ FILTER: Skipping form field element (has form indicators)")
                 return None
             
             # Skip elements that are mostly currency codes (like the extracted plan 30)
             currency_codes = ['ada', 'aed', 'afn', 'all', 'amd', 'ang', 'aoa', 'ars', 'aud', 'usd', 'eur', 'gbp']
             currency_count = sum(1 for code in currency_codes if code in text_lower)
             if currency_count > 5 and 'premium' not in text_lower and 'coverage' not in text_lower:
-                self.logger.debug(f"Skipping currency dropdown element (contains {currency_count} currency codes)")
+                self.logger.info(f"  ❌ FILTER: Skipping currency dropdown element (contains {currency_count} currency codes)")
                 return None
             
             # Check for plan-related keywords FIRST (before length check)
@@ -441,12 +442,12 @@ class Gig_gulfScraper:
             if not has_plan_keywords:
                 # Without plan keywords, require more content to ensure it's not just UI
                 if len(text_stripped) < 100:  # Reduced from 200 to be more lenient
-                    self.logger.debug(f"Skipping element without plan keywords and insufficient content ({len(text_stripped)} chars): {text_stripped[:50]}")
+                    self.logger.info(f"  ❌ FILTER: No plan keywords and insufficient content ({len(text_stripped)} chars)")
                     return None
             else:
                 # Has plan keywords - accept even if shorter (minimum 30 chars to avoid empty elements)
                 if len(text_stripped) < 30:  # Reduced from 50
-                    self.logger.debug(f"Skipping element with plan keywords but too short ({len(text_stripped)} chars): {text_stripped[:50]}")
+                    self.logger.info(f"  ❌ FILTER: With plan keywords but too short ({len(text_stripped)} chars)")
                     return None
             
             # Skip elements that only contain navigation/UI text without plan details
@@ -454,7 +455,7 @@ class Gig_gulfScraper:
             if all(keyword in text_lower for keyword in ['add to compare', 'buy now']) and len(text_stripped) < 300:
                 # If it only has UI buttons and nothing else, skip it
                 if 'area of cover' not in text_lower and 'yearly maximum' not in text_lower:
-                    self.logger.debug(f"Skipping UI-only element: {text_stripped[:50]}")
+                    self.logger.info(f"  ❌ FILTER: UI-only element (no plan content)")
                     return None
             
             # Try to extract structured data
@@ -515,10 +516,13 @@ class Gig_gulfScraper:
             except:
                 pass
             
+            self.logger.info(f"  ✓ Returning plan_data with {len(plan_data)} fields: {list(plan_data.keys())}")
             return plan_data
         
         except Exception as e:
             self.logger.error(f"Error extracting plan from element: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
             return None
     
     async def _extract_json_from_page(self) -> Optional[Any]:

@@ -1,0 +1,29 @@
+{
+  "leadData": {
+    "id": "test-sukoon-001",
+    "leadId": "test-sukoon-001",
+    "firstName": "Ahmed",
+    "lastName": "Hassan",
+    "email": "ahmed.test@example.com",
+    "phone": {
+      "number": "+971501234567",
+      "countryCode": "+971",
+      "isoCode": "AE"
+    },
+    "emirate": "Sharjah",
+    "lineOfBusiness": "medical",
+    "formData": {
+      "effectiveDate": "2026-02-15",
+      "nationality": "United Arab Emirates",
+      "maritalStatus": "Single"
+    },
+    "lobData": {
+      "dateOfBirth": "1990-06-15",
+      "gender": "Male",
+      "nationality": "United Arab Emirates",
+      "maritalStatus": "Single",
+      "visaType": "resident",
+      "coverageType": "Individual"
+    }
+  }
+}

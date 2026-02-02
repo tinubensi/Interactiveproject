@@ -54,6 +54,7 @@ async def save_plans_to_cosmos(lead_id: str, vendor_id: str, plans: list):
 async def main():
     parser = argparse.ArgumentParser(description='Run Sukoon bot')
     parser.add_argument('--lead-data', type=str, required=True, help='Lead data as JSON string')
+    parser.add_argument('--headless', type=str, default='false', help='Run in headless mode (true/false)')
     args = parser.parse_args()
     
     try:
@@ -83,14 +84,17 @@ async def main():
         # Load vendor config
         vendor_config = vendor_registry.get_config(registry_vendor_id) or {}
         
-        # Bot configuration
+        # Parse headless argument
+        headless_mode = args.headless.lower() in ['true', '1', 'yes']
+        
+        # Bot configuration - IMPORTANT: Set headless AFTER vendor_config to override it
         bot_config = {
-            'headless': True,  # Production mode - headless for VM without display server
             'browser_type': 'chromium',
-            'enable_screenshots': False,
+            'enable_screenshots': not headless_mode,  # Enable screenshots when visible
             'default_timeout': 60000,
             'navigation_timeout': 90000,
-            **vendor_config
+            **vendor_config,  # Merge vendor config first
+            'headless': headless_mode  # Override headless AFTER vendor_config (so CLI flag wins)
         }
         
         print(f"Starting Sukoon bot for lead {lead_id}", file=sys.stderr)
@@ -125,11 +129,29 @@ async def main():
             standard_plans = adapter.normalize_response(raw_plans, lead_id)
             print(f"Normalized to {len(standard_plans)} standard plans", file=sys.stderr)
             
+            # If running in visible mode, pause before closing browser
+            if not headless_mode:
+                print(f"\n{'='*70}", file=sys.stderr)
+                print("⏸️  VISIBLE MODE: Browser staying open for 60 seconds...", file=sys.stderr)
+                print("   📺 CHECK THE BROWSER WINDOW NOW!", file=sys.stderr)
+                print("   🔍 Look for Chromium in your taskbar or press Alt+Tab", file=sys.stderr)
+                print(f"{'='*70}\n", file=sys.stderr)
+                
+                # Try to activate the window using wmctrl
+                try:
+                    import subprocess
+                    subprocess.run(['wmctrl', '-a', 'chromium'], stderr=subprocess.DEVNULL)
+                except:
+                    pass
+                
+                await asyncio.sleep(60)
+            
             # Step 7: Save to Cosmos DB
             if standard_plans:
                 await save_plans_to_cosmos(lead_id, vendor_id, standard_plans)
             
             # Step 8: Return plans as JSON to stdout
+            sys.stdout.flush()
             print(json.dumps(standard_plans))
             sys.exit(0)
     

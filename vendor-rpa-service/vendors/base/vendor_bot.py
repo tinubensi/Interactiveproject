@@ -66,15 +66,65 @@ class InsuranceBot:
         # Launch browser
         # Force headless=False if explicitly set in config
         headless_mode = self.config.get('headless', False)
-        if not headless_mode:
-            # Ensure browser is visible - add args to keep window on top
-            self.logger.info("🔍 Launching browser in VISIBLE mode (headless=False)")
         
-        self.browser = await browser_launcher.launch(
-            headless=headless_mode,
-            slow_mo=self.config.get('slow_mo', 0),
-            args=['--start-maximized'] if not headless_mode else []
-        )
+        if not headless_mode:
+            # Ensure browser is visible - use simple launch like working Sukoon bot
+            self.logger.info("🔍 Launching browser in VISIBLE mode (headless=False)")
+            
+            # Ensure DISPLAY is set
+            if 'DISPLAY' not in os.environ:
+                os.environ['DISPLAY'] = ':0'
+                self.logger.info(f"Set DISPLAY={os.environ['DISPLAY']}")
+            
+            # Try to use system Chrome if available (better visibility), otherwise use Chromium
+            launch_options = {
+                'headless': False,
+                'slow_mo': self.config.get('slow_mo', 0)
+            }
+            
+            # Try system Chrome first for better visibility
+            try:
+                if browser_launcher == self.playwright.chromium:
+                    # Check if system Chrome is available
+                    import subprocess
+                    chrome_check = subprocess.run(['which', 'google-chrome'], 
+                                                 capture_output=True, timeout=1)
+                    if chrome_check.returncode == 0:
+                        launch_options['channel'] = 'chrome'
+                        self.logger.info("Using system Chrome for better visibility")
+            except Exception:
+                pass
+            
+            self.browser = await browser_launcher.launch(**launch_options)
+            
+            # Force browser window to be visible and on top
+            try:
+                import subprocess
+                # Wait a moment for browser to fully launch
+                await asyncio.sleep(2)
+                # Try to activate Chromium windows using wmctrl
+                result = subprocess.run(['wmctrl', '-l'], capture_output=True, text=True, timeout=3)
+                chromium_windows = [line.split()[0] for line in result.stdout.split('\n') if 'chrom' in line.lower()]
+                if chromium_windows:
+                    self.logger.info(f"Found {len(chromium_windows)} Chromium window(s), activating...")
+                    for win_id in chromium_windows:
+                        subprocess.run(['wmctrl', '-i', '-a', win_id], stderr=subprocess.DEVNULL, timeout=2)
+                        subprocess.run(['wmctrl', '-i', '-R', win_id], stderr=subprocess.DEVNULL, timeout=2)
+                        # Also try to raise it
+                        subprocess.run(['xdotool', 'windowactivate', win_id], stderr=subprocess.DEVNULL, timeout=2)
+                    self.logger.info(f"✓ Activated {len(chromium_windows)} browser window(s)")
+                else:
+                    self.logger.warning("No Chromium windows found to activate")
+            except FileNotFoundError:
+                self.logger.warning("wmctrl/xdotool not available - cannot force window visibility")
+            except Exception as e:
+                self.logger.warning(f"Could not activate browser window: {e}")
+        else:
+            # Headless mode - can use args for optimization
+            self.browser = await browser_launcher.launch(
+                headless=True,
+                args=['--no-sandbox', '--disable-setuid-sandbox']
+            )
         
         # Create download directory if it doesn't exist
         download_dir = self.config.get('download_dir', '/tmp/downloads')
@@ -85,10 +135,10 @@ class InsuranceBot:
         except:
             pass  # Ignore permission errors if already set
         
-        # Create context and page
+        # Create context and page - match working Sukoon bot approach
         self.context = await self.browser.new_context(
             viewport={'width': 1920, 'height': 1080},
-            user_agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             accept_downloads=True  # CRITICAL: Enable downloads
         )
         

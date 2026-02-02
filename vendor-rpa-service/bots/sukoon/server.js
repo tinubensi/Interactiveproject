@@ -29,14 +29,22 @@ app.post('/scrape', async (req, res) => {
     
     // Set PYTHONPATH to include vendor-rpa-service directory
     const vendorRpaPath = path.resolve(__dirname, '../..');
-    const python = spawn(pythonExec, [
+    // Check if headless mode should be disabled (for debugging)
+    const headlessMode = process.env.HEADLESS_MODE !== 'false';
+    const pythonArgs = [
       botPath,
-      '--lead-data', JSON.stringify(leadData)
-    ], {
+      '--lead-data', JSON.stringify(leadData),
+      '--headless', headlessMode ? 'true' : 'false'
+    ];
+    
+    console.error(`[Sukoon] Running in ${headlessMode ? 'HEADLESS' : 'VISIBLE'} mode`);
+    
+    const python = spawn(pythonExec, pythonArgs, {
       env: {
         ...process.env,
         PYTHONUNBUFFERED: '1',
-        PYTHONPATH: vendorRpaPath + (process.env.PYTHONPATH ? ':' + process.env.PYTHONPATH : '')
+        PYTHONPATH: vendorRpaPath + (process.env.PYTHONPATH ? ':' + process.env.PYTHONPATH : ''),
+        DISPLAY: process.env.DISPLAY || ':0'  // Ensure DISPLAY is set for GUI
       },
       cwd: vendorRpaPath  // Set working directory to vendor-rpa-service
     });
