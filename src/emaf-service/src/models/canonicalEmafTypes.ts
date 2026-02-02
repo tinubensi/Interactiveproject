@@ -61,6 +61,28 @@ export interface UnifiedEmafData {
     }>;
   };
   
+  maternity?: {
+    currentlyPregnant?: boolean;
+    currentlyPregnantMemberName?: string;
+    currentlyPregnantDetails?: string;
+    
+    tryingToGetPregnant?: boolean;
+    tryingToGetPregnantMemberName?: string;
+    tryingToGetPregnantDetails?: string;
+    
+    lastMenstrualPeriod?: string;
+    
+    historyComplications?: boolean;
+    historyComplicationsMemberName?: string;
+    historyComplicationsDetails?: string;
+    
+    infertilityTreatment?: boolean;
+    infertilityTreatmentMemberName?: string;
+    infertilityTreatmentDetails?: string;
+    
+    ultrasoundReport?: string;
+  };
+  
   signature?: {
     applicantName?: string;
     date?: string;

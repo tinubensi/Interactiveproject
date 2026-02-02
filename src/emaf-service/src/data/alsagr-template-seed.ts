@@ -721,6 +721,149 @@ export const alSagrTemplateSections: FormSection[] = [
       }
     ]
   },
+  // Maternity Declaration - Section 5
+  {
+    id: uuidv4(),
+    title: 'Maternity Declaration',
+    order: 5,
+    questions: [
+      // Question 1: Are you currently Pregnant?
+      {
+        id: uuidv4(),
+        label: 'Are you currently Pregnant?',
+        dataKey: 'maternity_currentlyPregnant',
+        type: 'radio',
+        order: 1,
+        options: [
+          { label: 'Yes', value: 'yes' },
+          { label: 'No', value: 'no' }
+        ],
+        validation: { required: true },
+        helperText: 'If you are married female, please answer the below questions'
+      },
+      {
+        id: uuidv4(),
+        label: 'Member\'s Name',
+        dataKey: 'maternity_q1_memberName',
+        type: 'text',
+        order: 2,
+        placeholder: 'Enter member\'s name'
+      },
+      {
+        id: uuidv4(),
+        label: 'If YES specify diagnostic details, treatment received & recovery status',
+        dataKey: 'maternity_q1_details',
+        type: 'text',
+        order: 3,
+        placeholder: 'Specify diagnostic details, treatment received & recovery status'
+      },
+      // Question 2: Are you trying to get pregnant?
+      {
+        id: uuidv4(),
+        label: 'Are you trying to get pregnant?',
+        dataKey: 'maternity_tryingToGetPregnant',
+        type: 'radio',
+        order: 4,
+        options: [
+          { label: 'Yes', value: 'yes' },
+          { label: 'No', value: 'no' }
+        ],
+        validation: { required: true }
+      },
+      {
+        id: uuidv4(),
+        label: 'Member\'s Name',
+        dataKey: 'maternity_q2_memberName',
+        type: 'text',
+        order: 5,
+        placeholder: 'Enter member\'s name'
+      },
+      {
+        id: uuidv4(),
+        label: 'If YES specify diagnostic details, treatment received & recovery status',
+        dataKey: 'maternity_q2_details',
+        type: 'text',
+        order: 6,
+        placeholder: 'Specify diagnostic details, treatment received & recovery status'
+      },
+      // Question 3: Last Menstrual period date
+      {
+        id: uuidv4(),
+        label: 'Last Menstrual period date',
+        dataKey: 'maternity_lastMenstrualPeriod',
+        type: 'date',
+        order: 7
+      },
+      // Question 4: History of Caesarean Section, Premature Delivery, etc.
+      {
+        id: uuidv4(),
+        label: 'Do you have earlier history of Caesarean Section, Premature Delivery or Premature babies? Or any other complications related to maternity, till date?',
+        dataKey: 'maternity_historyComplications',
+        type: 'radio',
+        order: 8,
+        options: [
+          { label: 'Yes', value: 'yes' },
+          { label: 'No', value: 'no' }
+        ],
+        validation: { required: true }
+      },
+      {
+        id: uuidv4(),
+        label: 'Member\'s Name',
+        dataKey: 'maternity_q4_memberName',
+        type: 'text',
+        order: 9,
+        placeholder: 'Enter member\'s name'
+      },
+      {
+        id: uuidv4(),
+        label: 'If YES specify diagnostic details, treatment received & recovery status',
+        dataKey: 'maternity_q4_details',
+        type: 'text',
+        order: 10,
+        placeholder: 'Specify diagnostic details, treatment received & recovery status'
+      },
+      // Question 5: Treatment/medications for infertility
+      {
+        id: uuidv4(),
+        label: 'Have you undergone any treatment or taken any medications for infertility to achieve this pregnancy?',
+        dataKey: 'maternity_infertilityTreatment',
+        type: 'radio',
+        order: 11,
+        options: [
+          { label: 'Yes', value: 'yes' },
+          { label: 'No', value: 'no' }
+        ],
+        validation: { required: true }
+      },
+      {
+        id: uuidv4(),
+        label: 'Member\'s Name',
+        dataKey: 'maternity_q5_memberName',
+        type: 'text',
+        order: 12,
+        placeholder: 'Enter member\'s name'
+      },
+      {
+        id: uuidv4(),
+        label: 'If YES specify diagnostic details, treatment received & recovery status',
+        dataKey: 'maternity_q5_details',
+        type: 'text',
+        order: 13,
+        placeholder: 'Specify diagnostic details, treatment received & recovery status'
+      },
+      // Question 6: Ultrasound and medical report
+      {
+        id: uuidv4(),
+        label: 'If pregnant, please send a copy of the latest ultrasound and medical report and specify if there are any abnormal findings or more than one foetus seen',
+        dataKey: 'maternity_ultrasoundReport',
+        type: 'text',
+        order: 14,
+        placeholder: 'Specify abnormal findings or multiple foetus details',
+        helperText: 'Please attach the latest ultrasound and medical report in the documents section'
+      }
+    ]
+  },
   // COMMENTED OUT: Medical History Declaration (Table) - Not needed for simplified form
   /* {
     id: uuidv4(),

@@ -5204,7 +5204,7 @@
                                         <table cellpadding="0" cellspacing="0">
                                             <tr>
                                                 <td rowspan="2" style="width: 14px; border: none;padding: 0;"><span
-                                                        class="checkbox"></span></td>
+                                                        class="checkbox {{#if (eq maternity_currentlyPregnant 'yes')}}checkbox--checked{{/if}}"></span></td>
                                                 <td style="text-align: right; border: none;padding: 0;"><span
                                                         style="font-size: 8px;">YES</span></td>
                                             </tr>
@@ -5218,7 +5218,7 @@
                                         <table cellpadding="0" cellspacing="0">
                                             <tr>
                                                 <td rowspan="2" style="width: 14px; border: none;padding: 0;"><span
-                                                        class="checkbox"></span></td>
+                                                        class="checkbox {{#if (eq maternity_currentlyPregnant 'no')}}checkbox--checked{{/if}}"></span></td>
                                                 <td style="text-align: right; border: none;padding: 0;"><span
                                                         style="font-size: 8px;">NO</span></td>
                                             </tr>
@@ -5231,8 +5231,8 @@
                                 </tr>
                             </table>
                         </td>
-                        <td></td>
-                        <td></td>
+                        <td>{{maternity_q1_memberName}}</td>
+                        <td>{{maternity_q1_details}}</td>
                     </tr>
                     <!-- Row 2: Are you trying to get pregnant? -->
                     <tr>
@@ -5250,7 +5250,7 @@
                                         <table cellpadding="0" cellspacing="0">
                                             <tr>
                                                 <td rowspan="2" style="width: 14px; border: none;padding: 0;"><span
-                                                        class="checkbox"></span></td>
+                                                        class="checkbox {{#if (eq maternity_tryingToGetPregnant 'yes')}}checkbox--checked{{/if}}"></span></td>
                                                 <td style="text-align: right; border: none;padding: 0;"><span
                                                         style="font-size: 8px;">YES</span></td>
                                             </tr>
@@ -5264,7 +5264,7 @@
                                         <table cellpadding="0" cellspacing="0">
                                             <tr>
                                                 <td rowspan="2" style="width: 14px; border: none;padding: 0;"><span
-                                                        class="checkbox"></span></td>
+                                                        class="checkbox {{#if (eq maternity_tryingToGetPregnant 'no')}}checkbox--checked{{/if}}"></span></td>
                                                 <td style="text-align: right; border: none;padding: 0;"><span
                                                         style="font-size: 8px;">NO</span></td>
                                             </tr>
@@ -5277,8 +5277,8 @@
                                 </tr>
                             </table>
                         </td>
-                        <td></td>
-                        <td></td>
+                        <td>{{maternity_q2_memberName}}</td>
+                        <td>{{maternity_q2_details}}</td>
                     </tr>
                     <!-- Row 3: Last Menstrual period date -->
                     <tr>
@@ -5290,7 +5290,7 @@
                                 دورة شهرية</div>
                         </td>
                         <td style="text-align: center; vertical-align: middle;">
-                            &nbsp;
+                            {{maternity_lastMenstrualPeriod}}
                         </td>
                         <td></td>
                         <td></td>
@@ -5313,7 +5313,7 @@
                                         <table cellpadding="0" cellspacing="0">
                                             <tr>
                                                 <td rowspan="2" style="width: 14px; border: none;padding: 0;"><span
-                                                        class="checkbox"></span></td>
+                                                        class="checkbox {{#if (eq maternity_historyComplications 'yes')}}checkbox--checked{{/if}}"></span></td>
                                                 <td style="text-align: right; border: none;padding: 0;"><span
                                                         style="font-size: 8px;">YES</span></td>
                                             </tr>
@@ -5327,7 +5327,7 @@
                                         <table cellpadding="0" cellspacing="0">
                                             <tr>
                                                 <td rowspan="2" style="width: 14px; border: none;padding: 0;"><span
-                                                        class="checkbox"></span></td>
+                                                        class="checkbox {{#if (eq maternity_historyComplications 'no')}}checkbox--checked{{/if}}"></span></td>
                                                 <td style="text-align: right; border: none;padding: 0;"><span
                                                         style="font-size: 8px;">NO</span></td>
                                             </tr>
@@ -5340,8 +5340,8 @@
                                 </tr>
                             </table>
                         </td>
-                        <td></td>
-                        <td></td>
+                        <td>{{maternity_q4_memberName}}</td>
+                        <td>{{maternity_q4_details}}</td>
                     </tr>
                     <!-- Row 5: Treatment/medications for infertility? -->
                     <tr>
@@ -5360,7 +5360,7 @@
                                         <table cellpadding="0" cellspacing="0">
                                             <tr>
                                                 <td rowspan="2" style="width: 14px; border: none;padding: 0;"><span
-                                                        class="checkbox"></span></td>
+                                                        class="checkbox {{#if (eq maternity_infertilityTreatment 'yes')}}checkbox--checked{{/if}}"></span></td>
                                                 <td style="text-align: right; border: none;padding: 0;"><span
                                                         style="font-size: 8px;">YES</span></td>
                                             </tr>
@@ -5374,7 +5374,7 @@
                                         <table cellpadding="0" cellspacing="0">
                                             <tr>
                                                 <td rowspan="2" style="width: 14px; border: none;padding: 0;"><span
-                                                        class="checkbox"></span></td>
+                                                        class="checkbox {{#if (eq maternity_infertilityTreatment 'no')}}checkbox--checked{{/if}}"></span></td>
                                                 <td style="text-align: right; border: none;padding: 0;"><span
                                                         style="font-size: 8px;">NO</span></td>
                                             </tr>
@@ -5387,8 +5387,8 @@
                                 </tr>
                             </table>
                         </td>
-                        <td></td>
-                        <td></td>
+                        <td>{{maternity_q5_memberName}}</td>
+                        <td>{{maternity_q5_details}}</td>
                     </tr>
                     <!-- Row 6: If pregnant, send ultrasound/medical report -->
                     <tr>
@@ -5408,7 +5408,7 @@
                                         <table cellpadding="0" cellspacing="0">
                                             <tr>
                                                 <td rowspan="2" style="width: 14px; border: none;padding: 0;"><span
-                                                        class="checkbox"></span></td>
+                                                        class="checkbox {{#if maternity_ultrasoundReport}}checkbox--checked{{/if}}"></span></td>
                                                 <td style="text-align: right; border: none;padding: 0;"><span
                                                         style="font-size: 10px;">Attached</span></td>
                                             </tr>
@@ -5422,7 +5422,7 @@
                             </table>
                         </td>
                         <td></td>
-                        <td></td>
+                        <td>{{maternity_ultrasoundReport}}</td>
                     </tr>
                 </table>
 

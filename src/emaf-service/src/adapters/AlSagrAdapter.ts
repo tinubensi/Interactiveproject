@@ -110,6 +110,32 @@ export class AlSagrAdapter implements VendorAdapter {
       });
     }
 
+    // Map maternity fields
+    const hasMaternityData = 
+      alsagrData.maternity_currentlyPregnant !== undefined ||
+      alsagrData.maternity_tryingToGetPregnant !== undefined ||
+      alsagrData.maternity_lastMenstrualPeriod !== undefined ||
+      alsagrData.maternity_historyComplications !== undefined ||
+      alsagrData.maternity_infertilityTreatment !== undefined ||
+      alsagrData.maternity_ultrasoundReport !== undefined;
+
+    const maternity = hasMaternityData ? {
+      currentlyPregnant: alsagrData.maternity_currentlyPregnant === 'yes',
+      currentlyPregnantMemberName: alsagrData.maternity_q1_memberName,
+      currentlyPregnantDetails: alsagrData.maternity_q1_details,
+      tryingToGetPregnant: alsagrData.maternity_tryingToGetPregnant === 'yes',
+      tryingToGetPregnantMemberName: alsagrData.maternity_q2_memberName,
+      tryingToGetPregnantDetails: alsagrData.maternity_q2_details,
+      lastMenstrualPeriod: alsagrData.maternity_lastMenstrualPeriod,
+      historyComplications: alsagrData.maternity_historyComplications === 'yes',
+      historyComplicationsMemberName: alsagrData.maternity_q4_memberName,
+      historyComplicationsDetails: alsagrData.maternity_q4_details,
+      infertilityTreatment: alsagrData.maternity_infertilityTreatment === 'yes',
+      infertilityTreatmentMemberName: alsagrData.maternity_q5_memberName,
+      infertilityTreatmentDetails: alsagrData.maternity_q5_details,
+      ultrasoundReport: alsagrData.maternity_ultrasoundReport,
+    } : undefined;
+
     return {
       policyHolder,
       insuredMembers,
@@ -117,6 +143,7 @@ export class AlSagrAdapter implements VendorAdapter {
         hasInsurance: previousInsuranceMembers.length > 0,
         members: previousInsuranceMembers,
       },
+      ...(maternity && { maternity }),
     };
   }
 
@@ -186,6 +213,33 @@ export class AlSagrAdapter implements VendorAdapter {
       result[`dependent${num}_gender`] = dep.gender;
       result[`dependent${num}_maritalStatus`] = dep.maritalStatus;
     });
+
+    // Map maternity fields
+    if (canonical.maternity) {
+      result.maternity_currentlyPregnant = canonical.maternity.currentlyPregnant ? 'yes' : 
+        (canonical.maternity.currentlyPregnant === false ? 'no' : undefined);
+      result.maternity_q1_memberName = canonical.maternity.currentlyPregnantMemberName;
+      result.maternity_q1_details = canonical.maternity.currentlyPregnantDetails;
+      
+      result.maternity_tryingToGetPregnant = canonical.maternity.tryingToGetPregnant ? 'yes' : 
+        (canonical.maternity.tryingToGetPregnant === false ? 'no' : undefined);
+      result.maternity_q2_memberName = canonical.maternity.tryingToGetPregnantMemberName;
+      result.maternity_q2_details = canonical.maternity.tryingToGetPregnantDetails;
+      
+      result.maternity_lastMenstrualPeriod = canonical.maternity.lastMenstrualPeriod;
+      
+      result.maternity_historyComplications = canonical.maternity.historyComplications ? 'yes' : 
+        (canonical.maternity.historyComplications === false ? 'no' : undefined);
+      result.maternity_q4_memberName = canonical.maternity.historyComplicationsMemberName;
+      result.maternity_q4_details = canonical.maternity.historyComplicationsDetails;
+      
+      result.maternity_infertilityTreatment = canonical.maternity.infertilityTreatment ? 'yes' : 
+        (canonical.maternity.infertilityTreatment === false ? 'no' : undefined);
+      result.maternity_q5_memberName = canonical.maternity.infertilityTreatmentMemberName;
+      result.maternity_q5_details = canonical.maternity.infertilityTreatmentDetails;
+      
+      result.maternity_ultrasoundReport = canonical.maternity.ultrasoundReport;
+    }
 
     return result;
   }
