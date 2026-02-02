@@ -41,17 +41,17 @@ ssh -i ${SSH_KEY} ${VM_USER}@${VM_IP} "mkdir -p ${SERVICE_DIR}"
 echo -e "${GREEN}✅ Directory created${NC}"
 echo ""
 
-# Step 3: Copy files via rsync
+# Step 3: Copy files via rsync (including dist folder - pre-built)
 echo -e "${YELLOW}Step 3: Copying files to VM...${NC}"
-rsync -avz -e "ssh -i ${SSH_KEY}" --exclude 'node_modules' --exclude 'dist' --exclude '.git' \
+rsync -avz -e "ssh -i ${SSH_KEY}" --exclude 'node_modules' --exclude '.git' \
   ${SCRIPT_DIR}/ ${VM_USER}@${VM_IP}:${SERVICE_DIR}/
-echo -e "${GREEN}✅ Files copied${NC}"
+echo -e "${GREEN}✅ Files copied (including pre-built dist folder)${NC}"
 echo ""
 
-# Step 4: Install dependencies and build
-echo -e "${YELLOW}Step 4: Installing dependencies and building...${NC}"
-ssh -i ${SSH_KEY} ${VM_USER}@${VM_IP} "cd ${SERVICE_DIR} && npm install --production && npm run build"
-echo -e "${GREEN}✅ Build completed${NC}"
+# Step 4: Install production dependencies only (no build needed - using pre-built dist)
+echo -e "${YELLOW}Step 4: Installing production dependencies...${NC}"
+ssh -i ${SSH_KEY} ${VM_USER}@${VM_IP} "cd ${SERVICE_DIR} && npm install --production"
+echo -e "${GREEN}✅ Dependencies installed${NC}"
 echo ""
 
 # Step 5: Install Playwright browsers
