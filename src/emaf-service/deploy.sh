@@ -155,7 +155,8 @@ az functionapp config appsettings set \
     "QUOTATION_SERVICE_URL=$QUOTATION_SERVICE_URL" \
     "PDF_GENERATION_QUEUE_NAME=$QUEUE_NAME" \
     "JWT_SECRET=your-production-secret-key-here" \
-    "SERVICE_KEY=your-production-service-key-here" \
+    "SERVICE_KEY=nectaria-internal-2026" \
+    "FRONTEND_URL=https://frontend-livid-xi-43.vercel.app" \
     "AzureWebJobsStorage=$STORAGE_CONNECTION" \
     "WEBSITE_NODE_DEFAULT_VERSION=~24" \
     "FUNCTIONS_WORKER_RUNTIME=node"
