@@ -684,7 +684,8 @@ def map_salary_band(salary_range: str = None) -> str:
     - 22 = less than 4,000 AED per month (<4k)
     
     Args:
-        salary_range: Salary range description ('4k-12k', '4k to 12k', '>12k', '<4k', etc.)
+        salary_range: Salary range description ('4k-12k', '15000', '>12k', '<4k', etc.)
+                      Can be numeric string or text description
                       If None, returns default (23 = 4k-12k)
         
     Returns:
@@ -694,7 +695,17 @@ def map_salary_band(salary_range: str = None) -> str:
         return '23'  # Default to 4k-12k range
     
     # Normalize salary range (case-insensitive)
-    salary_lower = salary_range.strip().lower()
+    salary_lower = str(salary_range).strip().lower()
+    
+    # Check if it's a numeric value (e.g., '15000', '8000', '3500')
+    if salary_lower.replace(',', '').isdigit():
+        salary_value = int(salary_lower.replace(',', ''))
+        if salary_value > 12000:
+            return '24'  # > 12k
+        elif salary_value < 4000:
+            return '22'  # < 4k
+        else:
+            return '23'  # 4k-12k
     
     # Check for >12k or greater than 12k
     if any(keyword in salary_lower for keyword in ['>12', 'greater than 12', 'more than 12', 'above 12', 'over 12']):

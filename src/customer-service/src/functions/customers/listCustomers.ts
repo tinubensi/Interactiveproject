@@ -2,9 +2,14 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { cosmosService } from '../../services/cosmosService';
 import { ensureAuthorized, requirePermission, CUSTOMER_PERMISSIONS } from '../../lib/auth';
 import { CustomerListRequest } from '../../types/customer';
+import { handlePreflight, withCors } from '../../lib/corsHelper';
 
 export async function listCustomers(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   context.log('HTTP trigger function processed a request to list customers.');
+
+  // Handle CORS preflight
+  const preflightResponse = handlePreflight(request);
+  if (preflightResponse) return preflightResponse;
 
   try {
     const userContext = await ensureAuthorized(request);
@@ -25,17 +30,17 @@ export async function listCustomers(request: HttpRequest, context: InvocationCon
     
     // Validate pagination
     if (listRequest.page < 1) {
-      return {
+      return withCors(request, {
         status: 400,
         jsonBody: { error: 'Invalid page number. Page must be >= 1.' },
-      };
+      });
     }
     
     if (listRequest.limit < 1 || listRequest.limit > 100) {
-      return {
+      return withCors(request, {
         status: 400,
         jsonBody: { error: 'Invalid limit. Limit must be between 1 and 100.' },
-      };
+      });
     }
     
     // Get paginated customers
@@ -43,24 +48,24 @@ export async function listCustomers(request: HttpRequest, context: InvocationCon
     
     context.log(`Found ${result.data.length} customers (page ${result.pagination.page} of ${result.pagination.totalPages})`);
 
-    return {
+    return withCors(request, {
       status: 200,
       jsonBody: result,
-    };
+    });
   } catch (error) {
     context.log('Error listing customers:', error);
-    return {
+    return withCors(request, {
       status: 500,
       jsonBody: {
         error: 'Internal server error',
         message: error instanceof Error ? error.message : 'Failed to list customers',
       },
-    };
+    });
   }
 }
 
 app.http('listCustomers', {
-  methods: ['POST'],
+  methods: ['POST', 'OPTIONS'],
   authLevel: 'anonymous',
   route: 'customers',
   handler: listCustomers,

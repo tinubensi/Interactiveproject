@@ -30,23 +30,23 @@ async def run_bot_and_save():
             "countryCode": "+971",
             "number": "501234567"
         },
-        "dob": "1998-04-18",
+        "dob": "1996-06-13",
         "gender": "Male",
-        "nationality": "Indian",
-        "emirate": "Abu Dhabi",
+        "nationality": "Belgian",
+        "emirate": "Dubai",
         "occupation": "Accountant",
         "lobData": {
-            "dateOfBirth": "1998-04-18",
+            "dateOfBirth": "1996-06-13",
             "effectiveDate": "31/01/2026",
             "gender": "Male",
             "maritalStatus": "Single",
-            "nationality": "Indian",
-            "state": "Abu Dhabi",
-            "visaLocation": "Abu Dhabi",
-            "passportCountry": "India",
+            "nationality": "Belgian",
+            "state": "Dubai",
+            "visaLocation": "Dubai",
+            "passportCountry": "Belgium",
             "workLocation": "AL KARAMA",
             "occupation": "Accountant",
-            "salaryRange": "5000-10000",
+            "salaryRange": ">4000 and <=12000 AED/month",
             "visaType": "Resident visa"
         }
     }
@@ -127,7 +127,9 @@ async def run_bot_and_save():
             print(f"✓ Normalized {len(standard_plans)} plans")
             
             # Step 6: Save to JSON file
-            output_file = Path(__file__).parent.parent.parent.parent / "gig-gulf-plans-normalized.json"
+            emirate = test_lead.get('emirate', 'unknown').lower().replace(' ', '-')
+            timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+            output_file = Path(__file__).parent.parent.parent.parent / f"gig-gulf-{emirate}-scraped-{timestamp}.json"
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(standard_plans, f, indent=2, ensure_ascii=False)
             

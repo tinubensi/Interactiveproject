@@ -1,0 +1,1845 @@
+[
+  {
+    "id": "plan-cb9ab67c-535c-47a9-91d3-7f016a86446b",
+    "type": "plan",
+    "leadId": "test-gig-20260130-122524",
+    "vendorId": "vendor-gig-gulf",
+    "fetchedAt": "2026-01-30T12:27:34.515130",
+    "vendorName": "GIG Gulf Insurance",
+    "vendorCode": "GIG",
+    "planName": "Smart Health- Global-DXB & NE",
+    "planCode": "GIG-PLA-SmartHealthGlobalDXBNE",
+    "planType": "standard",
+    "annualPremium": 15511.0,
+    "monthlyPremium": 1292.58,
+    "currency": "AED",
+    "annualLimit": 7500000.0,
+    "inpatientLimit": 0,
+    "outpatientLimit": 0,
+    "maternityLimit": 25000.0,
+    "emergencyLimit": 0,
+    "pharmacyLimit": 0,
+    "dentalLimit": 4000.0,
+    "opticalLimit": 1500.0,
+    "deductible": 10.0,
+    "deductibleMetric": "%",
+    "coInsurance": 10.0,
+    "coInsuranceMetric": "%",
+    "copays": {},
+    "waitingPeriod": 0,
+    "waitingPeriodMetric": "days",
+    "waitingPeriods": {
+      "general": 0
+    },
+    "benefits": [
+      {
+        "categoryId": "network",
+        "categoryName": "Network",
+        "benefits": [
+          {
+            "name": "Network",
+            "description": "OP@ A.1 / IP@ A.1",
+            "covered": true,
+            "limit": "OP@ A.1 / IP@ A.1",
+            "benefitId": "1"
+          }
+        ]
+      },
+      {
+        "categoryId": "outpatient",
+        "categoryName": "Outpatient Benefits",
+        "benefits": [
+          {
+            "name": "Per Visit Deductible",
+            "value": "10%",
+            "covered": true,
+            "description": "10%",
+            "limit": "10%"
+          },
+          {
+            "name": "Teleconsultation",
+            "value": "Included",
+            "covered": true,
+            "description": "Included",
+            "limit": "Included"
+          }
+        ]
+      },
+      {
+        "categoryId": "maternity",
+        "categoryName": "Maternity Benefits",
+        "benefits": [
+          {
+            "name": "Maternity Outpatient",
+            "value": "Included",
+            "covered": true,
+            "description": "Included",
+            "limit": "Included"
+          },
+          {
+            "name": "Maternity Coverage",
+            "value": "AED 25,000",
+            "covered": true,
+            "description": "AED 25,000",
+            "limit": "AED 25,000"
+          }
+        ]
+      },
+      {
+        "categoryId": "dental",
+        "categoryName": "Dental Coverage",
+        "benefits": [
+          {
+            "name": "Dental Coverage",
+            "value": "AED 4,000, A co-insurance of 20% applies to this benefit",
+            "covered": true,
+            "description": "AED 4,000, A co-insurance of 20% applies to this benefit",
+            "limit": "AED 4,000, A co-insurance of 20% applies to this benefit"
+          }
+        ]
+      },
+      {
+        "categoryId": "optical",
+        "categoryName": "Optical Coverage",
+        "benefits": [
+          {
+            "name": "Optical Coverage",
+            "value": "AED 1,500 20% co-insurance.",
+            "covered": true,
+            "description": "AED 1,500 20% co-insurance.",
+            "limit": "AED 1,500 20% co-insurance."
+          }
+        ]
+      },
+      {
+        "categoryId": "alternative",
+        "categoryName": "Alternative Medicine",
+        "benefits": [
+          {
+            "name": "Complementary Therapy",
+            "value": "AED 2,500 20% co-insurance.",
+            "covered": true,
+            "description": "AED 2,500 20% co-insurance.",
+            "limit": "AED 2,500 20% co-insurance."
+          },
+          {
+            "name": "Alternative Medicine",
+            "value": "AED 2,500 20% co-insurance.",
+            "covered": true,
+            "description": "AED 2,500 20% co-insurance.",
+            "limit": "AED 2,500 20% co-insurance."
+          }
+        ]
+      },
+      {
+        "categoryId": "emergency",
+        "categoryName": "Emergency Services",
+        "benefits": [
+          {
+            "name": "Personal Accident",
+            "value": "AED 125,000",
+            "covered": true,
+            "description": "AED 125,000",
+            "limit": "AED 125,000"
+          }
+        ]
+      },
+      {
+        "categoryId": "diagnostics",
+        "categoryName": "Diagnostic Services",
+        "benefits": [
+          {
+            "name": "Health Screening",
+            "value": "AED 3,000",
+            "covered": true,
+            "description": "AED 3,000",
+            "limit": "AED 3,000"
+          }
+        ]
+      },
+      {
+        "categoryId": "other-coverage",
+        "categoryName": "Other Coverage Details",
+        "benefits": [
+          {
+            "name": "Geographical Coverage",
+            "value": "Worldwide excluding USA",
+            "covered": true,
+            "description": "Worldwide excluding USA",
+            "limit": "Worldwide excluding USA"
+          },
+          {
+            "name": "Annual Limit",
+            "value": "AED 7,500,000",
+            "covered": true,
+            "description": "AED 7,500,000",
+            "limit": "AED 7,500,000"
+          },
+          {
+            "name": "Outside Coverage Area",
+            "value": "Worldwide up to AED 750,000",
+            "covered": true,
+            "description": "Worldwide up to AED 750,000",
+            "limit": "Worldwide up to AED 750,000"
+          },
+          {
+            "name": "Pre-existing Conditions (UAE)",
+            "value": "AED 7,500,000",
+            "covered": true,
+            "description": "AED 7,500,000",
+            "limit": "AED 7,500,000"
+          },
+          {
+            "name": "Pre-existing Conditions (Outside UAE)",
+            "value": "AED 7,500,000",
+            "covered": true,
+            "description": "AED 7,500,000",
+            "limit": "AED 7,500,000"
+          },
+          {
+            "name": "Psychiatric Treatment",
+            "value": "AED 15,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+            "covered": true,
+            "description": "AED 15,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+            "limit": "AED 15,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)"
+          },
+          {
+            "name": "Medical Equipment",
+            "value": "AED 1,000",
+            "covered": true,
+            "description": "AED 1,000",
+            "limit": "AED 1,000"
+          }
+        ]
+      }
+    ],
+    "exclusions": [
+      "Subject to policy terms and conditions"
+    ],
+    "lineOfBusiness": "medical",
+    "lobSpecificData": {},
+    "isAvailable": true,
+    "isSelected": false,
+    "isRecommended": false,
+    "fetchRequestId": "",
+    "source": "rpa",
+    "rawPlanData": {
+      "plan_name": "Smart Health- Global-DXB & NE",
+      "premium": "AED 15511.0",
+      "coverage_limit": "7500000.0",
+      "coverage_details": {
+        "Geographical Coverage": "Worldwide excluding USA",
+        "Annual Limit": "AED 7,500,000",
+        "Outside Coverage Area": "Worldwide up to AED 750,000",
+        "Inpatient Network": "A.1",
+        "Complementary Therapy": "AED 2,500 20% co-insurance.",
+        "Alternative Medicine": "AED 2,500 20% co-insurance.",
+        "Per Visit Deductible": "10%",
+        "Outpatient Network": "A.1",
+        "Health Screening": "AED 3,000",
+        "healthScreenAmount": 3000.0,
+        "Pre-existing Conditions (UAE)": "AED 7,500,000",
+        "preexistingConditionsWithinUAEAmount": 7500000.0,
+        "Pre-existing Conditions (Outside UAE)": "AED 7,500,000",
+        "preexistingConditionsOutsideUAEAmount": 7500000.0,
+        "Optical Coverage": "AED 1,500 20% co-insurance.",
+        "opticalCoInsurance": 20.0,
+        "Psychiatric Treatment": "AED 15,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+        "psychiatricTreatmentAmount": 15000.0,
+        "Maternity Outpatient": "Included",
+        "Maternity Coverage": "AED 25,000",
+        "Dental Coverage": "AED 4,000, A co-insurance of 20% applies to this benefit",
+        "Medical Equipment": "AED 1,000",
+        "ancillaryEquipmentAmount": 1000.0,
+        "Personal Accident": "AED 125,000",
+        "personalAccidentAmount": 125000.0,
+        "Teleconsultation": "Included"
+      },
+      "full_data": {
+        "index": 1,
+        "raw_text": "Smart Health- Global-DXB & NE\nAED15,511\n\nYearly\n\nArea Of Cover\nWorldwide excluding USA\nYearly Maximum\nAED 7,500,000\nOutside Area of Cover\nWorldwide up to AED 750,000\nApplicable In-patient direct billing network\nA.1\nComplementary Therapy (includes courses of Chiropractic treatment and Osteopathy/alternative treatment)\nAED 2,500 20% co-insurance.\nA Homeopathy and Ayurvedic treatment\nAED 2,500 20% co-insurance.\nPer visit deductible applicable to all out-patient claims. This applies before any co-insurance.\n10%\nApplicable Out-patient direct billing network\nA.1\nHealth Screen\nAED 3,000\nPre-existing conditions( including preexisting chronic conditions) – Within UAE (overall limit inclusive of outside UAE shall not exceed this limit)\nAED 7,500,000\nPre-existing conditions (including preexisting chronic conditions) – Outside UAE restricted to\nAED 5,000\nOptical\nAED 1,500 20% co-insurance.\nPsychiatric Treatment\nAED 15,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)\nMaternity out-patient\nIncluded\nNormal Pregnancy, Childbirth (Delivery) and medically necessary Caesarean section\nAED 25,000\nRoutine dental care\nAED 4,000, A co-insurance of 20% applies to this benefit\nAncillary equipment\nAED 1,000\nPersonal accident\nAED 125,000\nTele-consultation\nIncluded\nAdd to compare\nBUY NOW",
+        "plan_name": "Smart Health- Global-DXB & NE",
+        "premium": 15511.0
+      },
+      "original_coverage_details": {
+        "areaOfCover": "Worldwide excluding USA",
+        "yearlyMaximum": "AED 7,500,000",
+        "outsideAreaOfCover": "Worldwide up to AED 750,000",
+        "inpatientDirectBillingNetwork": "A.1",
+        "complementaryTherapy": "AED 2,500 20% co-insurance.",
+        "homeopathyAyurvedicTreatment": "AED 2,500 20% co-insurance.",
+        "perVisitDeductible": "10%",
+        "outpatientDirectBillingNetwork": "A.1",
+        "healthScreen": "AED 3,000",
+        "healthScreenAmount": 3000.0,
+        "preexistingConditionsWithinUAE": "AED 7,500,000",
+        "preexistingConditionsWithinUAEAmount": 7500000.0,
+        "preexistingConditionsOutsideUAE": "AED 7,500,000",
+        "preexistingConditionsOutsideUAEAmount": 7500000.0,
+        "optical": "AED 1,500 20% co-insurance.",
+        "opticalCoInsurance": 20.0,
+        "psychiatricTreatment": "AED 15,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+        "psychiatricTreatmentAmount": 15000.0,
+        "maternityOutpatient": "Included",
+        "normalPregnancyChildbirth": "AED 25,000",
+        "routineDentalCare": "AED 4,000, A co-insurance of 20% applies to this benefit",
+        "ancillaryEquipment": "AED 1,000",
+        "ancillaryEquipmentAmount": 1000.0,
+        "personalAccident": "AED 125,000",
+        "personalAccidentAmount": 125000.0,
+        "teleConsultation": "Included"
+      }
+    }
+  },
+  {
+    "id": "plan-c77688a1-487e-4c16-948b-41f1098b3888",
+    "type": "plan",
+    "leadId": "test-gig-20260130-122524",
+    "vendorId": "vendor-gig-gulf",
+    "fetchedAt": "2026-01-30T12:27:34.560177",
+    "vendorName": "GIG Gulf Insurance",
+    "vendorCode": "GIG",
+    "planName": "Privilege-DXB",
+    "planCode": "GIG-PLA-PrivilegeDXB",
+    "planType": "standard",
+    "annualPremium": 17833.0,
+    "monthlyPremium": 1486.08,
+    "currency": "AED",
+    "annualLimit": 25000000.0,
+    "inpatientLimit": 0,
+    "outpatientLimit": 0,
+    "maternityLimit": 60000.0,
+    "emergencyLimit": 0,
+    "pharmacyLimit": 0,
+    "dentalLimit": 9000.0,
+    "opticalLimit": 1500.0,
+    "deductible": 0,
+    "deductibleMetric": "AED",
+    "coInsurance": 20.0,
+    "coInsuranceMetric": "%",
+    "copays": {},
+    "waitingPeriod": 0,
+    "waitingPeriodMetric": "days",
+    "waitingPeriods": {
+      "general": 0
+    },
+    "benefits": [
+      {
+        "categoryId": "network",
+        "categoryName": "Network",
+        "benefits": [
+          {
+            "name": "Network",
+            "description": "OP@ A.1 Plus / IP@ A.1 Plus",
+            "covered": true,
+            "limit": "OP@ A.1 Plus / IP@ A.1 Plus",
+            "benefitId": "1"
+          }
+        ]
+      },
+      {
+        "categoryId": "outpatient",
+        "categoryName": "Outpatient Benefits",
+        "benefits": [
+          {
+            "name": "Per Visit Deductible",
+            "value": "Nil",
+            "covered": false,
+            "description": "Nil",
+            "limit": "Nil"
+          },
+          {
+            "name": "Teleconsultation",
+            "value": "Included",
+            "covered": true,
+            "description": "Included",
+            "limit": "Included"
+          },
+          {
+            "name": "Tests and Treatments for non-pre-existing conditions",
+            "description": "10% co insurance",
+            "covered": true,
+            "limit": "10% co insurance",
+            "value": "10% co insurance"
+          },
+          {
+            "name": "Pharmacy for non-pre-existing conditions",
+            "description": "Covered subject to pre authorization",
+            "covered": true,
+            "limit": "Covered subject to pre authorization",
+            "value": "Covered subject to pre authorization"
+          },
+          {
+            "name": "Physiotherapy",
+            "description": "Covered subject to pre authorization with 10% co insurance",
+            "covered": true,
+            "limit": "Covered subject to pre authorization with 10% co insurance",
+            "value": "Covered subject to pre authorization with 10% co insurance"
+          }
+        ]
+      },
+      {
+        "categoryId": "maternity",
+        "categoryName": "Maternity Benefits",
+        "benefits": [
+          {
+            "name": "Maternity Outpatient",
+            "value": "Included",
+            "covered": true,
+            "description": "Included",
+            "limit": "Included"
+          },
+          {
+            "name": "Maternity Coverage",
+            "value": "AED 60,000",
+            "covered": true,
+            "description": "AED 60,000",
+            "limit": "AED 60,000"
+          },
+          {
+            "name": "Normal Delivery",
+            "description": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
+            "covered": true,
+            "limit": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
+            "value": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment"
+          },
+          {
+            "name": "Cesarian Section",
+            "description": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
+            "covered": true,
+            "limit": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
+            "value": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment"
+          },
+          {
+            "name": "Miscarriage/Legal abortion",
+            "description": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
+            "covered": true,
+            "limit": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
+            "value": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment"
+          },
+          {
+            "name": "Inside UAE outside the network",
+            "description": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
+            "covered": true,
+            "limit": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
+            "value": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment"
+          },
+          {
+            "name": "Co Insurance",
+            "description": "10% co insurance on all maternity services",
+            "covered": true,
+            "limit": "10% co insurance on all maternity services",
+            "value": "10% co insurance on all maternity services"
+          },
+          {
+            "name": "Waiting Period",
+            "description": "NIL",
+            "covered": true,
+            "limit": "NIL",
+            "value": "NIL"
+          },
+          {
+            "name": "Outpatient Services",
+            "description": "All Outpatient services provided in relation to maternity would be covered from the policy limit subject to pre authorization",
+            "covered": true,
+            "limit": "All Outpatient services provided in relation to maternity would be covered from the policy limit subject to pre authorization",
+            "value": "All Outpatient services provided in relation to maternity would be covered from the policy limit subject to pre authorization"
+          }
+        ]
+      },
+      {
+        "categoryId": "dental",
+        "categoryName": "Dental Coverage",
+        "benefits": [
+          {
+            "name": "Dental Coverage",
+            "value": "AED 9,000, A co-insurance of 20% applies to this benefit",
+            "covered": true,
+            "description": "AED 9,000, A co-insurance of 20% applies to this benefit",
+            "limit": "AED 9,000, A co-insurance of 20% applies to this benefit"
+          },
+          {
+            "name": "Dental",
+            "description": "Covered up to AED 4000 with 20% co insurance & 9 months waiting period (Dental Consultation, Tooth Extraction, Amalgam & Composite filling, Root Canal Treatment (R.C.T), Scaling, Bridgework, Crown at a grade appropriate to restore function only, treatment of gum disease)",
+            "covered": true,
+            "limit": "Covered up to AED 4000 with 20% co insurance & 9 months waiting period (Dental Consultation, Tooth Extraction, Amalgam & Composite filling, Root Canal Treatment (R.C.T), Scaling, Bridgework, Crown at a grade appropriate to restore function only, treatment of gum disease)",
+            "value": "Covered up to AED 4000 with 20% co insurance & 9 months waiting period (Dental Consultation, Tooth Extraction, Amalgam & Composite filling, Root Canal Treatment (R.C.T), Scaling, Bridgework, Crown at a grade appropriate to restore function only, treatment of gum disease)"
+          }
+        ]
+      },
+      {
+        "categoryId": "optical",
+        "categoryName": "Optical Coverage",
+        "benefits": [
+          {
+            "name": "Optical Coverage",
+            "value": "AED 1,500 20% co-insurance.",
+            "covered": true,
+            "description": "AED 1,500 20% co-insurance.",
+            "limit": "AED 1,500 20% co-insurance."
+          },
+          {
+            "name": "Optical",
+            "description": "Covered up to AED 1500 with 20% co insurance (This includes routine optical services carried out by a qualified and registered opthalmologist or optometrist; and costs of prescribed spectacles and corrective lenses for refractive errors)",
+            "covered": true,
+            "limit": "Covered up to AED 1500 with 20% co insurance (This includes routine optical services carried out by a qualified and registered opthalmologist or optometrist; and costs of prescribed spectacles and corrective lenses for refractive errors)",
+            "value": "Covered up to AED 1500 with 20% co insurance (This includes routine optical services carried out by a qualified and registered opthalmologist or optometrist; and costs of prescribed spectacles and corrective lenses for refractive errors)"
+          }
+        ]
+      },
+      {
+        "categoryId": "alternative",
+        "categoryName": "Alternative Medicine",
+        "benefits": [
+          {
+            "name": "Complementary Therapy",
+            "value": "AED 7,500 in aggregate",
+            "covered": true,
+            "description": "AED 7,500 in aggregate",
+            "limit": "AED 7,500 in aggregate"
+          },
+          {
+            "name": "Alternatives Medicines",
+            "description": "Covered up to AED 5000 on reimbursement basis (Includes courses of chiropractic treatment and osteopathy/alternative treatment)",
+            "covered": true,
+            "limit": "Covered up to AED 5000 on reimbursement basis (Includes courses of chiropractic treatment and osteopathy/alternative treatment)",
+            "value": "Covered up to AED 5000 on reimbursement basis (Includes courses of chiropractic treatment and osteopathy/alternative treatment)"
+          }
+        ]
+      },
+      {
+        "categoryId": "emergency",
+        "categoryName": "Emergency Services",
+        "benefits": [
+          {
+            "name": "Personal Accident",
+            "value": "AED 150,000",
+            "covered": true,
+            "description": "AED 150,000",
+            "limit": "AED 150,000"
+          }
+        ]
+      },
+      {
+        "categoryId": "diagnostics",
+        "categoryName": "Diagnostic Services",
+        "benefits": [
+          {
+            "name": "Health Screening",
+            "value": "AED 3,000",
+            "covered": true,
+            "description": "AED 3,000",
+            "limit": "AED 3,000"
+          }
+        ]
+      },
+      {
+        "categoryId": "other-coverage",
+        "categoryName": "Other Coverage Details",
+        "benefits": [
+          {
+            "name": "Geographical Coverage",
+            "value": "Worldwide excluding USA",
+            "covered": true,
+            "description": "Worldwide excluding USA",
+            "limit": "Worldwide excluding USA"
+          },
+          {
+            "name": "Annual Limit",
+            "value": "AED 25,000,000",
+            "covered": true,
+            "description": "AED 25,000,000",
+            "limit": "AED 25,000,000"
+          },
+          {
+            "name": "Outside Coverage Area",
+            "value": "Worldwide up to AED 750,000",
+            "covered": true,
+            "description": "Worldwide up to AED 750,000",
+            "limit": "Worldwide up to AED 750,000"
+          },
+          {
+            "name": "Psychiatric Treatment",
+            "value": "AED 15,000 30% co-insurance.(Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+            "covered": true,
+            "description": "AED 15,000 30% co-insurance.(Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+            "limit": "AED 15,000 30% co-insurance.(Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)"
+          },
+          {
+            "name": "Medical Equipment",
+            "value": "AED 15,000",
+            "covered": true,
+            "description": "AED 15,000",
+            "limit": "AED 15,000"
+          },
+          {
+            "name": "Sub Limit for Outpatient & Inpatient Treatment inside UAE",
+            "description": "Covered up to annual limit subject to pre authorization and applicable co insurance",
+            "covered": true,
+            "limit": "Covered up to annual limit subject to pre authorization and applicable co insurance",
+            "value": "Covered up to annual limit subject to pre authorization and applicable co insurance"
+          },
+          {
+            "name": "Outpatient Pharmacy",
+            "description": "Covered up to annual limit subject to pre authorization with 10% co insurance",
+            "covered": true,
+            "limit": "Covered up to annual limit subject to pre authorization with 10% co insurance",
+            "value": "Covered up to annual limit subject to pre authorization with 10% co insurance"
+          },
+          {
+            "name": "Waiting Period",
+            "description": "Pre Existing conditions are covered from the enrolment date of first scheme membership, subject to declaration at inception and individual medical underwriting",
+            "covered": true,
+            "limit": "Pre Existing conditions are covered from the enrolment date of first scheme membership, subject to declaration at inception and individual medical underwriting",
+            "value": "Pre Existing conditions are covered from the enrolment date of first scheme membership, subject to declaration at inception and individual medical underwriting"
+          },
+          {
+            "name": "Note",
+            "description": "Undeclared preexisting conditions will not be covered during the policy period and will be underwritten at renewal",
+            "covered": true,
+            "limit": "Undeclared preexisting conditions will not be covered during the policy period and will be underwritten at renewal",
+            "value": "Undeclared preexisting conditions will not be covered during the policy period and will be underwritten at renewal"
+          },
+          {
+            "name": "Pre-existing conditions outside UAE",
+            "description": "Covered up to AED 5000 with 10% co insurance on outpatient services",
+            "covered": true,
+            "limit": "Covered up to AED 5000 with 10% co insurance on outpatient services",
+            "value": "Covered up to AED 5000 with 10% co insurance on outpatient services"
+          },
+          {
+            "name": "Within Network",
+            "description": "Covered subject to pre-authorization",
+            "covered": true,
+            "limit": "Covered subject to pre-authorization",
+            "value": "Covered subject to pre-authorization"
+          },
+          {
+            "name": "Outside network within Geographical Scope",
+            "description": "Covered on reimbursement as per applicable UAE tariff rates",
+            "covered": true,
+            "limit": "Covered on reimbursement as per applicable UAE tariff rates",
+            "value": "Covered on reimbursement as per applicable UAE tariff rates"
+          }
+        ]
+      },
+      {
+        "categoryId": "inpatient",
+        "categoryName": "Inpatient Benefits",
+        "benefits": [
+          {
+            "name": "Tests and Treatments for non-pre-existing conditions",
+            "description": "Covered subject to pre authorization",
+            "covered": true,
+            "limit": "Covered subject to pre authorization",
+            "value": "Covered subject to pre authorization"
+          },
+          {
+            "name": "Room and Board",
+            "description": "Private Room",
+            "covered": true,
+            "limit": "Private Room",
+            "value": "Private Room"
+          }
+        ]
+      }
+    ],
+    "exclusions": [
+      "Subject to policy terms and conditions"
+    ],
+    "lineOfBusiness": "medical",
+    "lobSpecificData": {},
+    "isAvailable": true,
+    "isSelected": false,
+    "isRecommended": false,
+    "fetchRequestId": "",
+    "source": "rpa",
+    "rawPlanData": {
+      "plan_name": "Privilege-DXB",
+      "premium": "AED 17833.0",
+      "coverage_limit": "25000000.0",
+      "coverage_details": {
+        "Geographical Coverage": "Worldwide excluding USA",
+        "Annual Limit": "AED 25,000,000",
+        "Outside Coverage Area": "Worldwide up to AED 750,000",
+        "Inpatient Network": "A.1 Plus",
+        "Complementary Therapy": "AED 7,500 in aggregate",
+        "Per Visit Deductible": "Nil",
+        "Outpatient Network": "A.1 Plus",
+        "Health Screening": "AED 3,000",
+        "healthScreenAmount": 3000.0,
+        "Optical Coverage": "AED 1,500 20% co-insurance.",
+        "opticalCoInsurance": 20.0,
+        "Psychiatric Treatment": "AED 15,000 30% co-insurance.(Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+        "psychiatricTreatmentAmount": 15000.0,
+        "Maternity Outpatient": "Included",
+        "Maternity Coverage": "AED 60,000",
+        "Dental Coverage": "AED 9,000, A co-insurance of 20% applies to this benefit",
+        "Medical Equipment": "AED 15,000",
+        "ancillaryEquipmentAmount": 15000.0,
+        "Personal Accident": "AED 150,000",
+        "personalAccidentAmount": 150000.0,
+        "Teleconsultation": "Included"
+      },
+      "full_data": {
+        "index": 2,
+        "raw_text": "Privilege-DXB\nAED17,833\n\nYearly\n\nArea Of Cover\nWorldwide excluding USA\nYearly Maximum\nAED 25,000,000\nOutside Area of Cover\nWorldwide up to AED 750,000\nApplicable In-patient direct billing network\nA.1 Plus\nComplementary and Alternative Therapy/Homeopathy/Ayurveda\nAED 7,500 in aggregate\nPer visit deductible applicable to all out-patient claims. This applies before any co-insurance.\nNil\nApplicable Out-patient direct billing network\nA.1 Plus\nHealth Screen\nAED 3,000\nPre-existing conditions (including preexisting chronic conditions)\nAED 1,000,000 in aggregate\nOptical\nAED 1,500 20% co-insurance.\nPsychiatric Treatment\nAED 15,000 30% co-insurance.(Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)\nMaternity out-patient\nIncluded\nNormal Pregnancy, Childbirth (Delivery) and medically necessary Caesarean section\nAED 60,000\nRoutine dental care\nAED 9,000, A co-insurance of 20% applies to this benefit\nAncillary equipment\nAED 15,000\nPersonal accident\nAED 150,000\nTele-consultation\nIncluded\nAdd to compare\nBUY NOW",
+        "plan_name": "Privilege-DXB",
+        "premium": 17833.0
+      },
+      "original_coverage_details": {
+        "areaOfCover": "Worldwide excluding USA",
+        "yearlyMaximum": "AED 25,000,000",
+        "outsideAreaOfCover": "Worldwide up to AED 750,000",
+        "inpatientDirectBillingNetwork": "A.1 Plus",
+        "complementaryTherapy": "AED 7,500 in aggregate",
+        "perVisitDeductible": "Nil",
+        "outpatientDirectBillingNetwork": "A.1 Plus",
+        "healthScreen": "AED 3,000",
+        "healthScreenAmount": 3000.0,
+        "optical": "AED 1,500 20% co-insurance.",
+        "opticalCoInsurance": 20.0,
+        "psychiatricTreatment": "AED 15,000 30% co-insurance.(Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+        "psychiatricTreatmentAmount": 15000.0,
+        "maternityOutpatient": "Included",
+        "normalPregnancyChildbirth": "AED 60,000",
+        "routineDentalCare": "AED 9,000, A co-insurance of 20% applies to this benefit",
+        "ancillaryEquipment": "AED 15,000",
+        "ancillaryEquipmentAmount": 15000.0,
+        "personalAccident": "AED 150,000",
+        "personalAccidentAmount": 150000.0,
+        "teleConsultation": "Included"
+      }
+    },
+    "details": {
+      "outPatient": [
+        {
+          "testAndTreatment": "10% co insurance",
+          "heading": "Tests and Treatments for non-pre-existing conditions"
+        },
+        {
+          "Pharmacy": "Covered subject to pre authorization",
+          "heading": "Pharmacy for non-pre-existing conditions"
+        },
+        {
+          "physiotherapy": "Covered subject to pre authorization with 10% co insurance",
+          "heading": "Physiotherapy"
+        }
+      ],
+      "inPatient": [
+        {
+          "testAndTreatment": "Covered subject to pre authorization",
+          "heading": "Tests and Treatments for non-pre-existing conditions"
+        },
+        {
+          "Room and Board": "Private Room",
+          "heading": "Room and Board"
+        }
+      ],
+      "maternity": [
+        {
+          "normalDelivery": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
+          "heading": "Normal Delivery"
+        },
+        {
+          "cesarian": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
+          "heading": "Cesarian Section"
+        },
+        {
+          "mismarriage": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
+          "heading": "Miscarriage/Legal abortion"
+        },
+        {
+          "insideUAEOutsideNetwork": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
+          "heading": "Inside UAE outside the network"
+        },
+        {
+          "co-insurance": "10% co insurance on all maternity services",
+          "heading": "Co Insurance"
+        },
+        {
+          "waitingPeriod": "NIL",
+          "heading": "Waiting Period"
+        },
+        {
+          "outPatientservice": "All Outpatient services provided in relation to maternity would be covered from the policy limit subject to pre authorization",
+          "heading": "Outpatient Services"
+        }
+      ],
+      "preExistingMedicalCondition": [
+        {
+          "subLimitInpatientOutpatient": "Covered up to annual limit subject to pre authorization and applicable co insurance",
+          "heading": "Sub Limit for Outpatient & Inpatient Treatment inside UAE"
+        },
+        {
+          "outpatientPharmacy": "Covered up to annual limit subject to pre authorization with 10% co insurance",
+          "heading": "Outpatient Pharmacy"
+        },
+        {
+          "waitingPeriod": "Pre Existing conditions are covered from the enrolment date of first scheme membership, subject to declaration at inception and individual medical underwriting",
+          "heading": "Waiting Period"
+        },
+        {
+          "note": "Undeclared preexisting conditions will not be covered during the policy period and will be underwritten at renewal",
+          "heading": "Note"
+        },
+        {
+          "preexistingOutsideUAE": "Covered up to AED 5000 with 10% co insurance on outpatient services",
+          "heading": "Pre-existing conditions outside UAE"
+        }
+      ],
+      "otherBenefits": [
+        {
+          "dental": "Covered up to AED 4000 with 20% co insurance & 9 months waiting period (Dental Consultation, Tooth Extraction, Amalgam & Composite filling, Root Canal Treatment (R.C.T), Scaling, Bridgework, Crown at a grade appropriate to restore function only, treatment of gum disease)",
+          "heading": "Dental"
+        },
+        {
+          "optical": "Covered up to AED 1500 with 20% co insurance (This includes routine optical services carried out by a qualified and registered opthalmologist or optometrist; and costs of prescribed spectacles and corrective lenses for refractive errors)",
+          "heading": "Optical"
+        },
+        {
+          "alternative": "Covered up to AED 5000 on reimbursement basis (Includes courses of chiropractic treatment and osteopathy/alternative treatment)",
+          "heading": "Alternatives Medicines"
+        }
+      ],
+      "basisClaim": [
+        {
+          "withinNetwork": "Covered subject to pre-authorization",
+          "heading": "Within Network"
+        },
+        {
+          "outsideNetwork": "Covered on reimbursement as per applicable UAE tariff rates",
+          "heading": "Outside network within Geographical Scope"
+        }
+      ],
+      "area": {
+        "name": "Worldwide excluding USA and Canada",
+        "geographicalScope": "Worldwide Excluding USA"
+      },
+      "copayForTest": {
+        "name": "10% Copay"
+      },
+      "copayForConsultation": {
+        "name": "10% Copay"
+      },
+      "inpatientnetworkProvider": {
+        "networkName": "GIG - IH 1"
+      },
+      "outpatientnetworkProvider": {
+        "networkName": "GIG - IH 1"
+      },
+      "Dental Coverage": "Yes",
+      "Optical Coverage": "Yes",
+      "Wellness Coverage": "Yes",
+      "Coverage Amount": "7500000"
+    }
+  },
+  {
+    "id": "plan-ea44dfdf-86eb-4c57-9f5c-c73a7efa52e8",
+    "type": "plan",
+    "leadId": "test-gig-20260130-122524",
+    "vendorId": "vendor-gig-gulf",
+    "fetchedAt": "2026-01-30T12:27:34.599391",
+    "vendorName": "GIG Gulf Insurance",
+    "vendorCode": "GIG",
+    "planName": "Smart Health - Regional-DXB & NE",
+    "planCode": "GIG-PLA-SmartHealthRegionalDXBNE",
+    "planType": "standard",
+    "annualPremium": 9413.0,
+    "monthlyPremium": 784.42,
+    "currency": "AED",
+    "annualLimit": 2500000.0,
+    "inpatientLimit": 0,
+    "outpatientLimit": 0,
+    "maternityLimit": 20000.0,
+    "emergencyLimit": 0,
+    "pharmacyLimit": 0,
+    "dentalLimit": 2000.0,
+    "opticalLimit": 10000.0,
+    "deductible": 10.0,
+    "deductibleMetric": "%",
+    "coInsurance": 10.0,
+    "coInsuranceMetric": "%",
+    "copays": {},
+    "waitingPeriod": 0,
+    "waitingPeriodMetric": "days",
+    "waitingPeriods": {
+      "general": 0
+    },
+    "benefits": [
+      {
+        "categoryId": "network",
+        "categoryName": "Network",
+        "benefits": [
+          {
+            "name": "Network",
+            "description": "OP@ A.2 ( Selected facilities have 20% co-insurance) / IP@ A.2",
+            "covered": true,
+            "limit": "OP@ A.2 ( Selected facilities have 20% co-insurance) / IP@ A.2",
+            "benefitId": "1"
+          }
+        ]
+      },
+      {
+        "categoryId": "outpatient",
+        "categoryName": "Outpatient Benefits",
+        "benefits": [
+          {
+            "name": "Per Visit Deductible",
+            "value": "10%",
+            "covered": true,
+            "description": "10%",
+            "limit": "10%"
+          },
+          {
+            "name": "Teleconsultation",
+            "value": "Included",
+            "covered": true,
+            "description": "Included",
+            "limit": "Included"
+          }
+        ]
+      },
+      {
+        "categoryId": "maternity",
+        "categoryName": "Maternity Benefits",
+        "benefits": [
+          {
+            "name": "Maternity Outpatient",
+            "value": "Included",
+            "covered": true,
+            "description": "Included",
+            "limit": "Included"
+          },
+          {
+            "name": "Maternity Coverage",
+            "value": "AED 20,000",
+            "covered": true,
+            "description": "AED 20,000",
+            "limit": "AED 20,000"
+          }
+        ]
+      },
+      {
+        "categoryId": "dental",
+        "categoryName": "Dental Coverage",
+        "benefits": [
+          {
+            "name": "Dental Coverage",
+            "value": "AED 2,000, 20% co-insurance",
+            "covered": true,
+            "description": "AED 2,000, 20% co-insurance",
+            "limit": "AED 2,000, 20% co-insurance"
+          }
+        ]
+      },
+      {
+        "categoryId": "alternative",
+        "categoryName": "Alternative Medicine",
+        "benefits": [
+          {
+            "name": "Complementary Therapy",
+            "value": "AED 500 20% co-insurance",
+            "covered": true,
+            "description": "AED 500 20% co-insurance",
+            "limit": "AED 500 20% co-insurance"
+          },
+          {
+            "name": "Alternative Medicine",
+            "value": "AED 2,500 20% co-insurance.",
+            "covered": true,
+            "description": "AED 2,500 20% co-insurance.",
+            "limit": "AED 2,500 20% co-insurance."
+          }
+        ]
+      },
+      {
+        "categoryId": "emergency",
+        "categoryName": "Emergency Services",
+        "benefits": [
+          {
+            "name": "Personal Accident",
+            "value": "AED 75,000",
+            "covered": true,
+            "description": "AED 75,000",
+            "limit": "AED 75,000"
+          }
+        ]
+      },
+      {
+        "categoryId": "diagnostics",
+        "categoryName": "Diagnostic Services",
+        "benefits": [
+          {
+            "name": "Health Screening",
+            "value": "AED 1,000",
+            "covered": true,
+            "description": "AED 1,000",
+            "limit": "AED 1,000"
+          }
+        ]
+      },
+      {
+        "categoryId": "other-coverage",
+        "categoryName": "Other Coverage Details",
+        "benefits": [
+          {
+            "name": "Geographical Coverage",
+            "value": "G.C.C, Jordan, plus Iran, Lebanon, Syria, Egypt, Tunisia, Morocco, Algeria, India, Pakistan, Sri Lanka, Bangladesh, Korea, the Philippines, Indonesia, Nepal & Bhutan",
+            "covered": true,
+            "description": "G.C.C, Jordan, plus Iran, Lebanon, Syria, Egypt, Tunisia, Morocco, Algeria, India, Pakistan, Sri Lanka, Bangladesh, Korea, the Philippines, Indonesia, Nepal & Bhutan",
+            "limit": "G.C.C, Jordan, plus Iran, Lebanon, Syria, Egypt, Tunisia, Morocco, Algeria, India, Pakistan, Sri Lanka, Bangladesh, Korea, the Philippines, Indonesia, Nepal & Bhutan"
+          },
+          {
+            "name": "Annual Limit",
+            "value": "AED 2,500,000",
+            "covered": true,
+            "description": "AED 2,500,000",
+            "limit": "AED 2,500,000"
+          },
+          {
+            "name": "Outside Coverage Area",
+            "value": "Worldwide up to AED 250,000",
+            "covered": true,
+            "description": "Worldwide up to AED 250,000",
+            "limit": "Worldwide up to AED 250,000"
+          },
+          {
+            "name": "Pre-existing Conditions (UAE)",
+            "value": "AED 2,500,000",
+            "covered": true,
+            "description": "AED 2,500,000",
+            "limit": "AED 2,500,000"
+          },
+          {
+            "name": "Pre-existing Conditions (Outside UAE)",
+            "value": "AED 2,500,000",
+            "covered": true,
+            "description": "AED 2,500,000",
+            "limit": "AED 2,500,000"
+          },
+          {
+            "name": "Psychiatric Treatment",
+            "value": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+            "covered": true,
+            "description": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+            "limit": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)"
+          },
+          {
+            "name": "Medical Equipment",
+            "value": "AED 500",
+            "covered": true,
+            "description": "AED 500",
+            "limit": "AED 500"
+          }
+        ]
+      }
+    ],
+    "exclusions": [
+      "Subject to policy terms and conditions"
+    ],
+    "lineOfBusiness": "medical",
+    "lobSpecificData": {},
+    "isAvailable": true,
+    "isSelected": false,
+    "isRecommended": false,
+    "fetchRequestId": "",
+    "source": "rpa",
+    "rawPlanData": {
+      "plan_name": "Smart Health - Regional-DXB & NE",
+      "premium": "AED 9413.0",
+      "coverage_limit": "2500000.0",
+      "coverage_details": {
+        "Geographical Coverage": "G.C.C, Jordan, plus Iran, Lebanon, Syria, Egypt, Tunisia, Morocco, Algeria, India, Pakistan, Sri Lanka, Bangladesh, Korea, the Philippines, Indonesia, Nepal & Bhutan",
+        "Annual Limit": "AED 2,500,000",
+        "Outside Coverage Area": "Worldwide up to AED 250,000",
+        "Inpatient Network": "A.2",
+        "Complementary Therapy": "AED 500 20% co-insurance",
+        "Alternative Medicine": "AED 2,500 20% co-insurance.",
+        "Per Visit Deductible": "10%",
+        "Outpatient Network": "A.2 ( Selected facilities have 20% co-insurance)",
+        "Health Screening": "AED 1,000",
+        "healthScreenAmount": 1000.0,
+        "Pre-existing Conditions (UAE)": "AED 2,500,000",
+        "preexistingConditionsWithinUAEAmount": 2500000.0,
+        "Pre-existing Conditions (Outside UAE)": "AED 2,500,000",
+        "preexistingConditionsOutsideUAEAmount": 2500000.0,
+        "Optical Coverage": "No Benefit",
+        "Psychiatric Treatment": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+        "psychiatricTreatmentAmount": 10000.0,
+        "Maternity Outpatient": "Included",
+        "Maternity Coverage": "AED 20,000",
+        "Dental Coverage": "AED 2,000, 20% co-insurance",
+        "Medical Equipment": "AED 500",
+        "ancillaryEquipmentAmount": 500.0,
+        "Personal Accident": "AED 75,000",
+        "personalAccidentAmount": 75000.0,
+        "Teleconsultation": "Included"
+      },
+      "full_data": {
+        "index": 3,
+        "raw_text": "Smart Health - Regional-DXB & NE\nAED9,413\n\nYearly\n\nArea Of Cover\nG.C.C, Jordan, plus Iran, Lebanon, Syria, Egypt, Tunisia, Morocco, Algeria, India, Pakistan, Sri Lanka, Bangladesh, Korea, the Philippines, Indonesia, Nepal & Bhutan\nYearly Maximum\nAED 2,500,000\nOutside Area of Cover\nWorldwide up to AED 250,000\nApplicable In-patient direct billing network\nA.2\nComplementary Therapy (includes courses of Chiropractic treatment and Osteopathy/alternative treatment)\nAED 500 20% co-insurance\nA Homeopathy and Ayurvedic treatment\nAED 2,500 20% co-insurance.\nPer visit deductible applicable to all out-patient claims. This applies before any co-insurance.\n10%\nApplicable Out-patient direct billing network\nA.2 ( Selected facilities have 20% co-insurance)\nHealth Screen\nAED 1,000\nPre-existing conditions( including preexisting chronic conditions) – Within UAE (overall limit inclusive of outside UAE shall not exceed this limit)\nAED 2,500,000\nPre-existing conditions (including preexisting chronic conditions) – Outside UAE restricted to\nAED 2,500\nOptical\nNo Benefit\nPsychiatric Treatment\nAED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)\nMaternity out-patient\nIncluded\nNormal Pregnancy, Childbirth (Delivery) and medically necessary Caesarean section\nAED 20,000\nRoutine dental care\nAED 2,000, 20% co-insurance\nAncillary equipment\nAED 500\nPersonal accident\nAED 75,000\nTele-consultation\nIncluded\nAdd to compare\nBUY NOW",
+        "plan_name": "Smart Health - Regional-DXB & NE",
+        "premium": 9413.0
+      },
+      "original_coverage_details": {
+        "areaOfCover": "G.C.C, Jordan, plus Iran, Lebanon, Syria, Egypt, Tunisia, Morocco, Algeria, India, Pakistan, Sri Lanka, Bangladesh, Korea, the Philippines, Indonesia, Nepal & Bhutan",
+        "yearlyMaximum": "AED 2,500,000",
+        "outsideAreaOfCover": "Worldwide up to AED 250,000",
+        "inpatientDirectBillingNetwork": "A.2",
+        "complementaryTherapy": "AED 500 20% co-insurance",
+        "homeopathyAyurvedicTreatment": "AED 2,500 20% co-insurance.",
+        "perVisitDeductible": "10%",
+        "outpatientDirectBillingNetwork": "A.2 ( Selected facilities have 20% co-insurance)",
+        "healthScreen": "AED 1,000",
+        "healthScreenAmount": 1000.0,
+        "preexistingConditionsWithinUAE": "AED 2,500,000",
+        "preexistingConditionsWithinUAEAmount": 2500000.0,
+        "preexistingConditionsOutsideUAE": "AED 2,500,000",
+        "preexistingConditionsOutsideUAEAmount": 2500000.0,
+        "optical": "No Benefit",
+        "psychiatricTreatment": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+        "psychiatricTreatmentAmount": 10000.0,
+        "maternityOutpatient": "Included",
+        "normalPregnancyChildbirth": "AED 20,000",
+        "routineDentalCare": "AED 2,000, 20% co-insurance",
+        "ancillaryEquipment": "AED 500",
+        "ancillaryEquipmentAmount": 500.0,
+        "personalAccident": "AED 75,000",
+        "personalAccidentAmount": 75000.0,
+        "teleConsultation": "Included"
+      }
+    }
+  },
+  {
+    "id": "plan-49612b8c-6e65-4c99-9e57-c72e5c73cd78",
+    "type": "plan",
+    "leadId": "test-gig-20260130-122524",
+    "vendorId": "vendor-gig-gulf",
+    "fetchedAt": "2026-01-30T12:27:34.640977",
+    "vendorName": "GIG Gulf Insurance",
+    "vendorCode": "GIG",
+    "planName": "Smart Health - Gold-DXB & NE",
+    "planCode": "GIG-PLA-SmartHealthGoldDXBNE",
+    "planType": "standard",
+    "annualPremium": 5189.0,
+    "monthlyPremium": 432.42,
+    "currency": "AED",
+    "annualLimit": 500000.0,
+    "inpatientLimit": 0,
+    "outpatientLimit": 0,
+    "maternityLimit": 15000.0,
+    "emergencyLimit": 0,
+    "pharmacyLimit": 0,
+    "dentalLimit": 1000.0,
+    "opticalLimit": 10000.0,
+    "deductible": 10.0,
+    "deductibleMetric": "%",
+    "coInsurance": 10.0,
+    "coInsuranceMetric": "%",
+    "copays": {},
+    "waitingPeriod": 0,
+    "waitingPeriodMetric": "days",
+    "waitingPeriods": {
+      "general": 0
+    },
+    "benefits": [
+      {
+        "categoryId": "network",
+        "categoryName": "Network",
+        "benefits": [
+          {
+            "name": "Network",
+            "description": "OP@ A.4 / IP@ A.3",
+            "covered": true,
+            "limit": "OP@ A.4 / IP@ A.3",
+            "benefitId": "1"
+          }
+        ]
+      },
+      {
+        "categoryId": "outpatient",
+        "categoryName": "Outpatient Benefits",
+        "benefits": [
+          {
+            "name": "Per Visit Deductible",
+            "value": "10%",
+            "covered": true,
+            "description": "10%",
+            "limit": "10%"
+          },
+          {
+            "name": "Teleconsultation",
+            "value": "Included",
+            "covered": true,
+            "description": "Included",
+            "limit": "Included"
+          }
+        ]
+      },
+      {
+        "categoryId": "maternity",
+        "categoryName": "Maternity Benefits",
+        "benefits": [
+          {
+            "name": "Maternity Outpatient",
+            "value": "Included",
+            "covered": true,
+            "description": "Included",
+            "limit": "Included"
+          },
+          {
+            "name": "Maternity Coverage",
+            "value": "AED 15,000",
+            "covered": true,
+            "description": "AED 15,000",
+            "limit": "AED 15,000"
+          }
+        ]
+      },
+      {
+        "categoryId": "dental",
+        "categoryName": "Dental Coverage",
+        "benefits": [
+          {
+            "name": "Dental Coverage",
+            "value": "AED 1,000, A co-insurance of 20% applies to this benefit",
+            "covered": true,
+            "description": "AED 1,000, A co-insurance of 20% applies to this benefit",
+            "limit": "AED 1,000, A co-insurance of 20% applies to this benefit"
+          }
+        ]
+      },
+      {
+        "categoryId": "alternative",
+        "categoryName": "Alternative Medicine",
+        "benefits": [
+          {
+            "name": "Complementary Therapy",
+            "value": "AED 500 20% co-insurance",
+            "covered": true,
+            "description": "AED 500 20% co-insurance",
+            "limit": "AED 500 20% co-insurance"
+          },
+          {
+            "name": "Alternative Medicine",
+            "value": "AED 2,500 20% co-insurance.",
+            "covered": true,
+            "description": "AED 2,500 20% co-insurance.",
+            "limit": "AED 2,500 20% co-insurance."
+          }
+        ]
+      },
+      {
+        "categoryId": "emergency",
+        "categoryName": "Emergency Services",
+        "benefits": [
+          {
+            "name": "Personal Accident",
+            "value": "AED 40,000",
+            "covered": true,
+            "description": "AED 40,000",
+            "limit": "AED 40,000"
+          }
+        ]
+      },
+      {
+        "categoryId": "diagnostics",
+        "categoryName": "Diagnostic Services",
+        "benefits": [
+          {
+            "name": "Health Screening",
+            "value": "AED 500",
+            "covered": true,
+            "description": "AED 500",
+            "limit": "AED 500"
+          }
+        ]
+      },
+      {
+        "categoryId": "other-coverage",
+        "categoryName": "Other Coverage Details",
+        "benefits": [
+          {
+            "name": "Geographical Coverage",
+            "value": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country",
+            "covered": true,
+            "description": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country",
+            "limit": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country"
+          },
+          {
+            "name": "Annual Limit",
+            "value": "AED 500,000",
+            "covered": true,
+            "description": "AED 500,000",
+            "limit": "AED 500,000"
+          },
+          {
+            "name": "Outside Coverage Area",
+            "value": "Worldwide up to AED 50,000",
+            "covered": true,
+            "description": "Worldwide up to AED 50,000",
+            "limit": "Worldwide up to AED 50,000"
+          },
+          {
+            "name": "Pre-existing Conditions (UAE)",
+            "value": "AED 150,000",
+            "covered": true,
+            "description": "AED 150,000",
+            "limit": "AED 150,000"
+          },
+          {
+            "name": "Pre-existing Conditions (Outside UAE)",
+            "value": "AED 150,000",
+            "covered": true,
+            "description": "AED 150,000",
+            "limit": "AED 150,000"
+          },
+          {
+            "name": "Psychiatric Treatment",
+            "value": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+            "covered": true,
+            "description": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+            "limit": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)"
+          }
+        ]
+      }
+    ],
+    "exclusions": [
+      "Subject to policy terms and conditions"
+    ],
+    "lineOfBusiness": "medical",
+    "lobSpecificData": {},
+    "isAvailable": true,
+    "isSelected": false,
+    "isRecommended": false,
+    "fetchRequestId": "",
+    "source": "rpa",
+    "rawPlanData": {
+      "plan_name": "Smart Health - Gold-DXB & NE",
+      "premium": "AED 5189.0",
+      "coverage_limit": "500000.0",
+      "coverage_details": {
+        "Geographical Coverage": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country",
+        "Annual Limit": "AED 500,000",
+        "Outside Coverage Area": "Worldwide up to AED 50,000",
+        "Inpatient Network": "A.3",
+        "Complementary Therapy": "AED 500 20% co-insurance",
+        "Alternative Medicine": "AED 2,500 20% co-insurance.",
+        "Per Visit Deductible": "10%",
+        "Outpatient Network": "A.4",
+        "Health Screening": "AED 500",
+        "healthScreenAmount": 500.0,
+        "Pre-existing Conditions (UAE)": "AED 150,000",
+        "preexistingConditionsWithinUAEAmount": 150000.0,
+        "Pre-existing Conditions (Outside UAE)": "AED 150,000",
+        "preexistingConditionsOutsideUAEAmount": 150000.0,
+        "Optical Coverage": "No Benefit",
+        "Psychiatric Treatment": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+        "psychiatricTreatmentAmount": 10000.0,
+        "Maternity Outpatient": "Included",
+        "Maternity Coverage": "AED 15,000",
+        "Dental Coverage": "AED 1,000, A co-insurance of 20% applies to this benefit",
+        "Medical Equipment": "No Benefit",
+        "Personal Accident": "AED 40,000",
+        "personalAccidentAmount": 40000.0,
+        "Teleconsultation": "Included"
+      },
+      "full_data": {
+        "index": 4,
+        "raw_text": "Smart Health - Gold-DXB & NE\nAED5,189\n\nYearly\n\nArea Of Cover\nUAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country\nYearly Maximum\nAED 500,000\nOutside Area of Cover\nWorldwide up to AED 50,000\nApplicable In-patient direct billing network\nA.3\nComplementary Therapy (includes courses of Chiropractic treatment and Osteopathy/alternative treatment)\nAED 500 20% co-insurance\nA Homeopathy and Ayurvedic treatment\nAED 2,500 20% co-insurance.\nPer visit deductible applicable to all out-patient claims. This applies before any co-insurance.\n10%\nApplicable Out-patient direct billing network\nA.4\nHealth Screen\nAED 500\nPre-existing conditions( including preexisting chronic conditions) – Within UAE (overall limit inclusive of outside UAE shall not exceed this limit)\nAED 150,000\nPre-existing conditions (including preexisting chronic conditions) – Outside UAE restricted to\nAED 2,500\nOptical\nNo Benefit\nPsychiatric Treatment\nAED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)\nMaternity out-patient\nIncluded\nNormal Pregnancy, Childbirth (Delivery) and medically necessary Caesarean section\nAED 15,000\nRoutine dental care\nAED 1,000, A co-insurance of 20% applies to this benefit\nAncillary equipment\nNo Benefit\nPersonal accident\nAED 40,000\nTele-consultation\nIncluded\nAdd to compare\nBUY NOW",
+        "plan_name": "Smart Health - Gold-DXB & NE",
+        "premium": 5189.0
+      },
+      "original_coverage_details": {
+        "areaOfCover": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country",
+        "yearlyMaximum": "AED 500,000",
+        "outsideAreaOfCover": "Worldwide up to AED 50,000",
+        "inpatientDirectBillingNetwork": "A.3",
+        "complementaryTherapy": "AED 500 20% co-insurance",
+        "homeopathyAyurvedicTreatment": "AED 2,500 20% co-insurance.",
+        "perVisitDeductible": "10%",
+        "outpatientDirectBillingNetwork": "A.4",
+        "healthScreen": "AED 500",
+        "healthScreenAmount": 500.0,
+        "preexistingConditionsWithinUAE": "AED 150,000",
+        "preexistingConditionsWithinUAEAmount": 150000.0,
+        "preexistingConditionsOutsideUAE": "AED 150,000",
+        "preexistingConditionsOutsideUAEAmount": 150000.0,
+        "optical": "No Benefit",
+        "psychiatricTreatment": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+        "psychiatricTreatmentAmount": 10000.0,
+        "maternityOutpatient": "Included",
+        "normalPregnancyChildbirth": "AED 15,000",
+        "routineDentalCare": "AED 1,000, A co-insurance of 20% applies to this benefit",
+        "ancillaryEquipment": "No Benefit",
+        "personalAccident": "AED 40,000",
+        "personalAccidentAmount": 40000.0,
+        "teleConsultation": "Included"
+      }
+    }
+  },
+  {
+    "id": "plan-b874b455-48b1-4523-865c-253781be873d",
+    "type": "plan",
+    "leadId": "test-gig-20260130-122524",
+    "vendorId": "vendor-gig-gulf",
+    "fetchedAt": "2026-01-30T12:27:34.683880",
+    "vendorName": "GIG Gulf Insurance",
+    "vendorCode": "GIG",
+    "planName": "Smart Health- Silver-DXB & NE",
+    "planCode": "GIG-PLA-SmartHealthSilverDXBNE",
+    "planType": "standard",
+    "annualPremium": 3130.0,
+    "monthlyPremium": 260.83,
+    "currency": "AED",
+    "annualLimit": 250000.0,
+    "inpatientLimit": 0,
+    "outpatientLimit": 0,
+    "maternityLimit": 10000.0,
+    "emergencyLimit": 0,
+    "pharmacyLimit": 0,
+    "dentalLimit": 500.0,
+    "opticalLimit": 10000.0,
+    "deductible": 10.0,
+    "deductibleMetric": "%",
+    "coInsurance": 10.0,
+    "coInsuranceMetric": "%",
+    "copays": {},
+    "waitingPeriod": 0,
+    "waitingPeriodMetric": "days",
+    "waitingPeriods": {
+      "general": 0
+    },
+    "benefits": [
+      {
+        "categoryId": "network",
+        "categoryName": "Network",
+        "benefits": [
+          {
+            "name": "Network",
+            "description": "OP@ A.5 / IP@ A.4",
+            "covered": true,
+            "limit": "OP@ A.5 / IP@ A.4",
+            "benefitId": "1"
+          }
+        ]
+      },
+      {
+        "categoryId": "outpatient",
+        "categoryName": "Outpatient Benefits",
+        "benefits": [
+          {
+            "name": "Per Visit Deductible",
+            "value": "10%",
+            "covered": true,
+            "description": "10%",
+            "limit": "10%"
+          },
+          {
+            "name": "Teleconsultation",
+            "value": "Included",
+            "covered": true,
+            "description": "Included",
+            "limit": "Included"
+          }
+        ]
+      },
+      {
+        "categoryId": "maternity",
+        "categoryName": "Maternity Benefits",
+        "benefits": [
+          {
+            "name": "Maternity Outpatient",
+            "value": "Included",
+            "covered": true,
+            "description": "Included",
+            "limit": "Included"
+          },
+          {
+            "name": "Maternity Coverage",
+            "value": "AED 10,000",
+            "covered": true,
+            "description": "AED 10,000",
+            "limit": "AED 10,000"
+          }
+        ]
+      },
+      {
+        "categoryId": "dental",
+        "categoryName": "Dental Coverage",
+        "benefits": [
+          {
+            "name": "Dental Coverage",
+            "value": "AED 500, A co-insurance of 30% co-insurance applies to this benefit",
+            "covered": true,
+            "description": "AED 500, A co-insurance of 30% co-insurance applies to this benefit",
+            "limit": "AED 500, A co-insurance of 30% co-insurance applies to this benefit"
+          }
+        ]
+      },
+      {
+        "categoryId": "alternative",
+        "categoryName": "Alternative Medicine",
+        "benefits": [
+          {
+            "name": "Alternative Medicine",
+            "value": "AED 2,500 20% co-insurance.",
+            "covered": true,
+            "description": "AED 2,500 20% co-insurance.",
+            "limit": "AED 2,500 20% co-insurance."
+          }
+        ]
+      },
+      {
+        "categoryId": "emergency",
+        "categoryName": "Emergency Services",
+        "benefits": [
+          {
+            "name": "Personal Accident",
+            "value": "AED 25,000",
+            "covered": true,
+            "description": "AED 25,000",
+            "limit": "AED 25,000"
+          }
+        ]
+      },
+      {
+        "categoryId": "other-coverage",
+        "categoryName": "Other Coverage Details",
+        "benefits": [
+          {
+            "name": "Geographical Coverage",
+            "value": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country",
+            "covered": true,
+            "description": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country",
+            "limit": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country"
+          },
+          {
+            "name": "Annual Limit",
+            "value": "AED 250,000",
+            "covered": true,
+            "description": "AED 250,000",
+            "limit": "AED 250,000"
+          },
+          {
+            "name": "Pre-existing Conditions (UAE)",
+            "value": "AED 150,000",
+            "covered": true,
+            "description": "AED 150,000",
+            "limit": "AED 150,000"
+          },
+          {
+            "name": "Pre-existing Conditions (Outside UAE)",
+            "value": "AED 150,000",
+            "covered": true,
+            "description": "AED 150,000",
+            "limit": "AED 150,000"
+          },
+          {
+            "name": "Psychiatric Treatment",
+            "value": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+            "covered": true,
+            "description": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+            "limit": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)"
+          }
+        ]
+      }
+    ],
+    "exclusions": [
+      "Subject to policy terms and conditions"
+    ],
+    "lineOfBusiness": "medical",
+    "lobSpecificData": {},
+    "isAvailable": true,
+    "isSelected": false,
+    "isRecommended": false,
+    "fetchRequestId": "",
+    "source": "rpa",
+    "rawPlanData": {
+      "plan_name": "Smart Health- Silver-DXB & NE",
+      "premium": "AED 3130.0",
+      "coverage_limit": "250000.0",
+      "coverage_details": {
+        "Geographical Coverage": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country",
+        "Annual Limit": "AED 250,000",
+        "Outside Coverage Area": "No Benefit",
+        "Inpatient Network": "A.4",
+        "Complementary Therapy": "No Benefit",
+        "Alternative Medicine": "AED 2,500 20% co-insurance.",
+        "Per Visit Deductible": "10%",
+        "Outpatient Network": "A.5",
+        "Health Screening": "No Benefit",
+        "Pre-existing Conditions (UAE)": "AED 150,000",
+        "preexistingConditionsWithinUAEAmount": 150000.0,
+        "Pre-existing Conditions (Outside UAE)": "AED 150,000",
+        "preexistingConditionsOutsideUAEAmount": 150000.0,
+        "Optical Coverage": "No Benefit",
+        "Psychiatric Treatment": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+        "psychiatricTreatmentAmount": 10000.0,
+        "Maternity Outpatient": "Included",
+        "Maternity Coverage": "AED 10,000",
+        "Dental Coverage": "AED 500, A co-insurance of 30% co-insurance applies to this benefit",
+        "Medical Equipment": "No Benefit",
+        "Personal Accident": "AED 25,000",
+        "personalAccidentAmount": 25000.0,
+        "Teleconsultation": "Included"
+      },
+      "full_data": {
+        "index": 5,
+        "raw_text": "Smart Health- Silver-DXB & NE\nAED3,130\n\nYearly\n\nArea Of Cover\nUAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country\nYearly Maximum\nAED 250,000\nOutside Area of Cover\nNo Benefit\nApplicable In-patient direct billing network\nA.4\nComplementary Therapy (includes courses of Chiropractic treatment and Osteopathy/alternative treatment)\nNo Benefit\nA Homeopathy and Ayurvedic treatment\nAED 2,500 20% co-insurance.\nPer visit deductible applicable to all out-patient claims. This applies before any co-insurance.\n10%\nApplicable Out-patient direct billing network\nA.5\nHealth Screen\nNo Benefit\nPre-existing conditions( including preexisting chronic conditions) – Within UAE (overall limit inclusive of outside UAE shall not exceed this limit)\nAED 150,000\nPre-existing conditions (including preexisting chronic conditions) – Outside UAE restricted to\nAED 1,500\nOptical\nNo Benefit\nPsychiatric Treatment\nAED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)\nMaternity out-patient\nIncluded\nNormal Pregnancy, Childbirth (Delivery) and medically necessary Caesarean section\nAED 10,000\nRoutine dental care\nAED 500, A co-insurance of 30% co-insurance applies to this benefit\nAncillary equipment\nNo Benefit\nPersonal accident\nAED 25,000\nTele-consultation\nIncluded\nAdd to compare\nBUY NOW",
+        "plan_name": "Smart Health- Silver-DXB & NE",
+        "premium": 3130.0
+      },
+      "original_coverage_details": {
+        "areaOfCover": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country",
+        "yearlyMaximum": "AED 250,000",
+        "outsideAreaOfCover": "No Benefit",
+        "inpatientDirectBillingNetwork": "A.4",
+        "complementaryTherapy": "No Benefit",
+        "homeopathyAyurvedicTreatment": "AED 2,500 20% co-insurance.",
+        "perVisitDeductible": "10%",
+        "outpatientDirectBillingNetwork": "A.5",
+        "healthScreen": "No Benefit",
+        "preexistingConditionsWithinUAE": "AED 150,000",
+        "preexistingConditionsWithinUAEAmount": 150000.0,
+        "preexistingConditionsOutsideUAE": "AED 150,000",
+        "preexistingConditionsOutsideUAEAmount": 150000.0,
+        "optical": "No Benefit",
+        "psychiatricTreatment": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+        "psychiatricTreatmentAmount": 10000.0,
+        "maternityOutpatient": "Included",
+        "normalPregnancyChildbirth": "AED 10,000",
+        "routineDentalCare": "AED 500, A co-insurance of 30% co-insurance applies to this benefit",
+        "ancillaryEquipment": "No Benefit",
+        "personalAccident": "AED 25,000",
+        "personalAccidentAmount": 25000.0,
+        "teleConsultation": "Included"
+      }
+    }
+  },
+  {
+    "id": "plan-fceb9665-1e9e-4976-b9b7-c90f8b69ce88",
+    "type": "plan",
+    "leadId": "test-gig-20260130-122524",
+    "vendorId": "vendor-gig-gulf",
+    "fetchedAt": "2026-01-30T12:27:34.727300",
+    "vendorName": "GIG Gulf Insurance",
+    "vendorCode": "GIG",
+    "planName": "Smart Health - Bronze-DXB & NE",
+    "planCode": "GIG-PLA-SmartHealthBronzeDXBNE",
+    "planType": "standard",
+    "annualPremium": 2697.0,
+    "monthlyPremium": 224.75,
+    "currency": "AED",
+    "annualLimit": 150000.0,
+    "inpatientLimit": 0,
+    "outpatientLimit": 0,
+    "maternityLimit": 10000.0,
+    "emergencyLimit": 0,
+    "pharmacyLimit": 2500.0,
+    "dentalLimit": 500.0,
+    "opticalLimit": 10000.0,
+    "deductible": 20.0,
+    "deductibleMetric": "%",
+    "coInsurance": 20.0,
+    "coInsuranceMetric": "%",
+    "copays": {},
+    "waitingPeriod": 0,
+    "waitingPeriodMetric": "days",
+    "waitingPeriods": {
+      "general": 0
+    },
+    "benefits": [
+      {
+        "categoryId": "network",
+        "categoryName": "Network",
+        "benefits": [
+          {
+            "name": "Network",
+            "description": "OP@ A.6 / IP@ A.5 (20% coinsurance capped at AED 500 per event and AED 1000 per annum.)",
+            "covered": true,
+            "limit": "OP@ A.6 / IP@ A.5 (20% coinsurance capped at AED 500 per event and AED 1000 per annum.)",
+            "benefitId": "1"
+          }
+        ]
+      },
+      {
+        "categoryId": "outpatient",
+        "categoryName": "Outpatient Benefits",
+        "benefits": [
+          {
+            "name": "Per Visit Deductible",
+            "value": "20%",
+            "covered": true,
+            "description": "20%",
+            "limit": "20%"
+          },
+          {
+            "name": "Teleconsultation",
+            "value": "Included",
+            "covered": true,
+            "description": "Included",
+            "limit": "Included"
+          }
+        ]
+      },
+      {
+        "categoryId": "maternity",
+        "categoryName": "Maternity Benefits",
+        "benefits": [
+          {
+            "name": "Maternity Outpatient",
+            "value": "Included",
+            "covered": true,
+            "description": "Included",
+            "limit": "Included"
+          },
+          {
+            "name": "Maternity Coverage",
+            "value": "AED 10,000",
+            "covered": true,
+            "description": "AED 10,000",
+            "limit": "AED 10,000"
+          }
+        ]
+      },
+      {
+        "categoryId": "dental",
+        "categoryName": "Dental Coverage",
+        "benefits": [
+          {
+            "name": "Dental Coverage",
+            "value": "AED 500, A co-insurance of 30% co-insurance applies to this benefit",
+            "covered": true,
+            "description": "AED 500, A co-insurance of 30% co-insurance applies to this benefit",
+            "limit": "AED 500, A co-insurance of 30% co-insurance applies to this benefit"
+          }
+        ]
+      },
+      {
+        "categoryId": "alternative",
+        "categoryName": "Alternative Medicine",
+        "benefits": [
+          {
+            "name": "Alternative Medicine",
+            "value": "AED 2,500 20% co-insurance.",
+            "covered": true,
+            "description": "AED 2,500 20% co-insurance.",
+            "limit": "AED 2,500 20% co-insurance."
+          }
+        ]
+      },
+      {
+        "categoryId": "other-coverage",
+        "categoryName": "Other Coverage Details",
+        "benefits": [
+          {
+            "name": "Geographical Coverage",
+            "value": "UAE",
+            "covered": true,
+            "description": "UAE",
+            "limit": "UAE"
+          },
+          {
+            "name": "Annual Limit",
+            "value": "AED 150,000",
+            "covered": true,
+            "description": "AED 150,000",
+            "limit": "AED 150,000"
+          },
+          {
+            "name": "Pre-existing Conditions (UAE)",
+            "value": "AED 150,000 Pharmacy: AED 2,500",
+            "covered": true,
+            "description": "AED 150,000 Pharmacy: AED 2,500",
+            "limit": "AED 150,000 Pharmacy: AED 2,500"
+          },
+          {
+            "name": "Pre-existing Conditions (Outside UAE)",
+            "value": "AED 150,000 Pharmacy: AED 2,500",
+            "covered": true,
+            "description": "AED 150,000 Pharmacy: AED 2,500",
+            "limit": "AED 150,000 Pharmacy: AED 2,500"
+          },
+          {
+            "name": "Psychiatric Treatment",
+            "value": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+            "covered": true,
+            "description": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+            "limit": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)"
+          }
+        ]
+      }
+    ],
+    "exclusions": [
+      "Subject to policy terms and conditions"
+    ],
+    "lineOfBusiness": "medical",
+    "lobSpecificData": {},
+    "isAvailable": true,
+    "isSelected": false,
+    "isRecommended": false,
+    "fetchRequestId": "",
+    "source": "rpa",
+    "rawPlanData": {
+      "plan_name": "Smart Health - Bronze-DXB & NE",
+      "premium": "AED 2697.0",
+      "coverage_limit": "150000.0",
+      "coverage_details": {
+        "Geographical Coverage": "UAE",
+        "Annual Limit": "AED 150,000",
+        "Outside Coverage Area": "No Benefit",
+        "Inpatient Network": "A.5 (20% coinsurance capped at AED 500 per event and AED 1000 per annum.)",
+        "Complementary Therapy": "No Benefit",
+        "Alternative Medicine": "AED 2,500 20% co-insurance.",
+        "Per Visit Deductible": "20%",
+        "Outpatient Network": "A.6",
+        "Health Screening": "No Benefit",
+        "Pre-existing Conditions (UAE)": "AED 150,000 Pharmacy: AED 2,500",
+        "preexistingConditionsWithinUAEAmount": 150000.0,
+        "Pre-existing Conditions (Outside UAE)": "AED 150,000 Pharmacy: AED 2,500",
+        "preexistingConditionsOutsideUAEAmount": 150000.0,
+        "Optical Coverage": "No Benefit",
+        "Psychiatric Treatment": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+        "psychiatricTreatmentAmount": 10000.0,
+        "Maternity Outpatient": "Included",
+        "Maternity Coverage": "AED 10,000",
+        "Dental Coverage": "AED 500, A co-insurance of 30% co-insurance applies to this benefit",
+        "Medical Equipment": "No Benefit",
+        "Personal Accident": "No Benefit",
+        "Teleconsultation": "Included"
+      },
+      "full_data": {
+        "index": 6,
+        "raw_text": "Smart Health - Bronze-DXB & NE\nAED2,697\n\nYearly\n\nArea Of Cover\nUAE\nYearly Maximum\nAED 150,000\nOutside Area of Cover\nNo Benefit\nApplicable In-patient direct billing network\nA.5 (20% coinsurance capped at AED 500 per event and AED 1000 per annum.)\nComplementary Therapy (includes courses of Chiropractic treatment and Osteopathy/alternative treatment)\nNo Benefit\nA Homeopathy and Ayurvedic treatment\nAED 2,500 20% co-insurance.\nPer visit deductible applicable to all out-patient claims. This applies before any co-insurance.\n20%\nApplicable Out-patient direct billing network\nA.6\nHealth Screen\nNo Benefit\nPre-existing conditions( including preexisting chronic conditions) – Within UAE (overall limit inclusive of outside UAE shall not exceed this limit)\nAED 150,000 Pharmacy: AED 2,500\nPre-existing conditions (including preexisting chronic conditions) – Outside UAE restricted to\nNo Benefit\nOptical\nNo Benefit\nPsychiatric Treatment\nAED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)\nMaternity out-patient\nIncluded\nNormal Pregnancy, Childbirth (Delivery) and medically necessary Caesarean section\nAED 10,000\nRoutine dental care\nAED 500, A co-insurance of 30% co-insurance applies to this benefit\nAncillary equipment\nNo Benefit\nPersonal accident\nNo Benefit\nTele-consultation\nIncluded\nAdd to compare\nBUY NOW",
+        "plan_name": "Smart Health - Bronze-DXB & NE",
+        "premium": 2697.0
+      },
+      "original_coverage_details": {
+        "areaOfCover": "UAE",
+        "yearlyMaximum": "AED 150,000",
+        "outsideAreaOfCover": "No Benefit",
+        "inpatientDirectBillingNetwork": "A.5 (20% coinsurance capped at AED 500 per event and AED 1000 per annum.)",
+        "complementaryTherapy": "No Benefit",
+        "homeopathyAyurvedicTreatment": "AED 2,500 20% co-insurance.",
+        "perVisitDeductible": "20%",
+        "outpatientDirectBillingNetwork": "A.6",
+        "healthScreen": "No Benefit",
+        "preexistingConditionsWithinUAE": "AED 150,000 Pharmacy: AED 2,500",
+        "preexistingConditionsWithinUAEAmount": 150000.0,
+        "preexistingConditionsOutsideUAE": "AED 150,000 Pharmacy: AED 2,500",
+        "preexistingConditionsOutsideUAEAmount": 150000.0,
+        "optical": "No Benefit",
+        "psychiatricTreatment": "AED 10,000 20% co-insurance. (Includes Outpatient mental health / counselling cover of AED 800 with 30% co-insurance)",
+        "psychiatricTreatmentAmount": 10000.0,
+        "maternityOutpatient": "Included",
+        "normalPregnancyChildbirth": "AED 10,000",
+        "routineDentalCare": "AED 500, A co-insurance of 30% co-insurance applies to this benefit",
+        "ancillaryEquipment": "No Benefit",
+        "personalAccident": "No Benefit",
+        "teleConsultation": "Included"
+      }
+    }
+  }
+]

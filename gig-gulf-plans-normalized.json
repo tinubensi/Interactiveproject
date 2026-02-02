@@ -1,425 +1,29 @@
 [
   {
-    "id": "plan-f5b6ae95-4026-4e33-882f-b93b565cbe1b",
+    "id": "plan-b2873ba2-414b-4645-b560-497b3568e1e1",
     "type": "plan",
-    "leadId": "test-gig-20260127-174415",
+    "leadId": "test-gig-20260130-115158",
     "vendorId": "vendor-gig-gulf",
-    "fetchedAt": "2026-01-27T17:45:49.268569",
+    "fetchedAt": "2026-01-30T11:55:03.060098",
     "vendorName": "GIG Gulf Insurance",
     "vendorCode": "GIG",
-    "planName": "Smart Health - Global-AUH",
-    "planCode": "GIG-PLA-SmartHealthGlobalAUH",
+    "planName": "Unknown Plan",
+    "planCode": "GIG-PLA-XX",
     "planType": "standard",
-    "annualPremium": 14808.0,
-    "monthlyPremium": 1234.0,
+    "annualPremium": 0,
+    "monthlyPremium": 0,
     "currency": "AED",
-    "annualLimit": 7500000.0,
+    "annualLimit": 0,
     "inpatientLimit": 0,
     "outpatientLimit": 0,
-    "maternityLimit": 25000.0,
+    "maternityLimit": 0,
     "emergencyLimit": 0,
     "pharmacyLimit": 0,
-    "dentalLimit": 4000.0,
-    "opticalLimit": 1500.0,
-    "deductible": 50.0,
-    "deductibleMetric": "AED",
-    "coInsurance": 20.0,
-    "coInsuranceMetric": "%",
-    "copays": {},
-    "waitingPeriod": 360,
-    "waitingPeriodMetric": "days",
-    "waitingPeriods": {
-      "general": 360
-    },
-    "benefits": [
-      {
-        "categoryId": "network",
-        "categoryName": "Network",
-        "benefits": [
-          {
-            "name": "Network",
-            "description": "OP@ A.1 / IP@ A.1",
-            "covered": true,
-            "limit": "OP@ A.1 / IP@ A.1",
-            "benefitId": "1"
-          }
-        ]
-      },
-      {
-        "categoryId": "outpatient",
-        "categoryName": "Outpatient Benefits",
-        "benefits": [
-          {
-            "name": "Per Visit Deductible",
-            "value": "AED 50 applicable to all outpatient consultations",
-            "covered": true,
-            "description": "AED 50 applicable to all outpatient consultations",
-            "limit": "AED 50 applicable to all outpatient consultations"
-          },
-          {
-            "name": "Teleconsultation",
-            "value": "Included",
-            "covered": true,
-            "description": "Included",
-            "limit": "Included"
-          }
-        ]
-      },
-      {
-        "categoryId": "maternity",
-        "categoryName": "Maternity Benefits",
-        "benefits": [
-          {
-            "name": "Maternity Coverage",
-            "value": "AED 25,000 (12 months waiting period)",
-            "covered": true,
-            "description": "AED 25,000 (12 months waiting period)",
-            "limit": "AED 25,000 (12 months waiting period)"
-          }
-        ]
-      },
-      {
-        "categoryId": "dental",
-        "categoryName": "Dental Coverage",
-        "benefits": [
-          {
-            "name": "Dental Coverage",
-            "value": "AED 4,000, 20% co-insurance",
-            "covered": true,
-            "description": "AED 4,000, 20% co-insurance",
-            "limit": "AED 4,000, 20% co-insurance"
-          }
-        ]
-      },
-      {
-        "categoryId": "optical",
-        "categoryName": "Optical Coverage",
-        "benefits": [
-          {
-            "name": "Optical Coverage",
-            "value": "AED 1,500 20% co-insurance",
-            "covered": true,
-            "description": "AED 1,500 20% co-insurance",
-            "limit": "AED 1,500 20% co-insurance"
-          }
-        ]
-      },
-      {
-        "categoryId": "alternative",
-        "categoryName": "Alternative Medicine",
-        "benefits": [
-          {
-            "name": "Complementary Therapy",
-            "value": "Included",
-            "covered": true,
-            "description": "Included",
-            "limit": "Included"
-          }
-        ]
-      },
-      {
-        "categoryId": "emergency",
-        "categoryName": "Emergency Services",
-        "benefits": [
-          {
-            "name": "Personal Accident",
-            "value": "AED 125,000",
-            "covered": true,
-            "description": "AED 125,000",
-            "limit": "AED 125,000"
-          }
-        ]
-      },
-      {
-        "categoryId": "diagnostics",
-        "categoryName": "Diagnostic Services",
-        "benefits": [
-          {
-            "name": "Health Screening",
-            "value": "AED 3,000",
-            "covered": true,
-            "description": "AED 3,000",
-            "limit": "AED 3,000"
-          }
-        ]
-      },
-      {
-        "categoryId": "other-coverage",
-        "categoryName": "Other Coverage Details",
-        "benefits": [
-          {
-            "name": "Geographical Coverage",
-            "value": "Worldwide excluding USA",
-            "covered": true,
-            "description": "Worldwide excluding USA",
-            "limit": "Worldwide excluding USA"
-          },
-          {
-            "name": "Annual Limit",
-            "value": "AED 7,500,000",
-            "covered": true,
-            "description": "AED 7,500,000",
-            "limit": "AED 7,500,000"
-          },
-          {
-            "name": "Outside Coverage Area",
-            "value": "Worldwide, Up to AED 750,000",
-            "covered": true,
-            "description": "Worldwide, Up to AED 750,000",
-            "limit": "Worldwide, Up to AED 750,000"
-          },
-          {
-            "name": "Pre-existing Conditions (UAE)",
-            "value": "AED 7,500,000",
-            "covered": true,
-            "description": "AED 7,500,000",
-            "limit": "AED 7,500,000"
-          },
-          {
-            "name": "Pre-existing Conditions (Outside UAE)",
-            "value": "AED 5,000",
-            "covered": true,
-            "description": "AED 5,000",
-            "limit": "AED 5,000"
-          },
-          {
-            "name": "Psychiatric Treatment",
-            "value": "AED 15,000 30% co-insurance",
-            "covered": true,
-            "description": "AED 15,000 30% co-insurance",
-            "limit": "AED 15,000 30% co-insurance"
-          },
-          {
-            "name": "Medical Equipment",
-            "value": "AED 1,000",
-            "covered": true,
-            "description": "AED 1,000",
-            "limit": "AED 1,000"
-          }
-        ]
-      }
-    ],
-    "exclusions": [
-      "Subject to policy terms and conditions"
-    ],
-    "lineOfBusiness": "medical",
-    "lobSpecificData": {},
-    "isAvailable": true,
-    "isSelected": false,
-    "isRecommended": false,
-    "fetchRequestId": "",
-    "source": "rpa",
-    "rawPlanData": {
-      "plan_name": "Smart Health - Global-AUH",
-      "premium": "AED 14808.0",
-      "coverage_limit": null,
-      "coverage_details": {
-        "Geographical Coverage": "Worldwide excluding USA",
-        "Annual Limit": "AED 7,500,000",
-        "Outside Coverage Area": "Worldwide, Up to AED 750,000",
-        "Inpatient Network": "A.1",
-        "Complementary Therapy": "Included",
-        "Per Visit Deductible": "AED 50 applicable to all outpatient consultations",
-        "Outpatient Network": "A.1",
-        "Health Screening": "AED 3,000",
-        "healthScreenAmount": 3000.0,
-        "Pre-existing Conditions (UAE)": "AED 7,500,000",
-        "preexistingConditionsWithinUAEAmount": 7500000.0,
-        "Pre-existing Conditions (Outside UAE)": "AED 5,000",
-        "preexistingConditionsOutsideUAEAmount": 5000.0,
-        "Optical Coverage": "AED 1,500 20% co-insurance",
-        "opticalCoInsurance": 20.0,
-        "Psychiatric Treatment": "AED 15,000 30% co-insurance",
-        "psychiatricTreatmentAmount": 15000.0,
-        "Maternity Coverage": "AED 25,000 (12 months waiting period)",
-        "Dental Coverage": "AED 4,000, 20% co-insurance",
-        "Medical Equipment": "AED 1,000",
-        "ancillaryEquipmentAmount": 1000.0,
-        "Personal Accident": "AED 125,000",
-        "personalAccidentAmount": 125000.0,
-        "Teleconsultation": "Included"
-      },
-      "full_data": {
-        "index": 1,
-        "raw_text": "Smart Health - Global-AUH\nAED14,808\n\nYearly\n\nArea Of Cover\nWorldwide excluding USA\nYearly Maximum\nAED 7,500,000\nOutside Area of Cover\nWorldwide, Up to AED 750,000\nIn-Patient direct billing Network *\nA.1\nComplementary and Alternative Therapy/Homeopathy/Ayurveda\nIncluded\nPer visit co-insurance\nAED 50 applicable to all outpatient consultations\nApplicable Out-patient direct billing network\nA.1\nHealth Screen\nAED 3,000\nPre-existing conditions (including preexisting chronic conditions) and chronic conditions – Within Abu Dhabi\nAED 7,500,000\nPre-existing conditions (including preexisting chronic conditions) and chronic conditions – Outside Abu Dhabi\nAED 5,000\nOptical\nAED 1,500 20% co-insurance\nTreatment of transient mental disorder or acute reaction to stress within the Emirate of Abu Dhabi\nAED 250,000\nPsychiatric treatment outside Abu Dhabi (30% co-insurance)\nAED 15,000 30% co-insurance\nWithin the Emirate of Abu Dhabi: Pre and post-natal complications\nIncluded (Nil Waiting period)\nOutside the Emirate of Abu Dhabi: Pre and post-natal complications\nIncluded (12 months waiting period)\nWithin the Emirate of Abu Dhabi: Pregnancy and Delivery up to\nAED 250,000\nOutside the Emirate of Abu Dhabi: Normal Pregnancy, Childbirth (Delivery) and medically necessary Caesarean section\nAED 25,000 (12 months waiting period)\nVaccinations for children up to 6 years old\nAED 3,000\nRoutine dental care\nAED 4,000, 20% co-insurance\nAncillary equipment\nAED 1,000\nPersonal accident\nAED 125,000\nWork related injuries\nAED 250,000\nLife threatening congenital conditions (Life-threatening birth defects, deformities and congenital diseases for new born children only)\nAED 250,000\nTele-consultation\nIncluded\nAdd to compare\nBUY NOW",
-        "plan_name": "Smart Health - Global-AUH",
-        "premium": 14808.0
-      },
-      "original_coverage_details": {
-        "areaOfCover": "Worldwide excluding USA",
-        "yearlyMaximum": "AED 7,500,000",
-        "outsideAreaOfCover": "Worldwide, Up to AED 750,000",
-        "inpatientDirectBillingNetwork": "A.1",
-        "complementaryTherapy": "Included",
-        "perVisitDeductible": "AED 50 applicable to all outpatient consultations",
-        "outpatientDirectBillingNetwork": "A.1",
-        "healthScreen": "AED 3,000",
-        "healthScreenAmount": 3000.0,
-        "preexistingConditionsWithinUAE": "AED 7,500,000",
-        "preexistingConditionsWithinUAEAmount": 7500000.0,
-        "preexistingConditionsOutsideUAE": "AED 5,000",
-        "preexistingConditionsOutsideUAEAmount": 5000.0,
-        "optical": "AED 1,500 20% co-insurance",
-        "opticalCoInsurance": 20.0,
-        "psychiatricTreatment": "AED 15,000 30% co-insurance",
-        "psychiatricTreatmentAmount": 15000.0,
-        "normalPregnancyChildbirth": "AED 25,000 (12 months waiting period)",
-        "routineDentalCare": "AED 4,000, 20% co-insurance",
-        "ancillaryEquipment": "AED 1,000",
-        "ancillaryEquipmentAmount": 1000.0,
-        "personalAccident": "AED 125,000",
-        "personalAccidentAmount": 125000.0,
-        "teleConsultation": "Included"
-      }
-    },
-    "details": {
-      "outPatient": [
-        {
-          "testAndTreatment": "10% co insurance",
-          "heading": "Tests and Treatments for non-pre-existing conditions"
-        },
-        {
-          "Pharmacy": "Covered subject to pre authorization",
-          "heading": "Pharmacy for non-pre-existing conditions"
-        },
-        {
-          "physiotherapy": "Covered subject to pre authorization with 10% co insurance",
-          "heading": "Physiotherapy"
-        }
-      ],
-      "inPatient": [
-        {
-          "testAndTreatment": "Covered subject to pre authorization",
-          "heading": "Tests and Treatments for non-pre-existing conditions"
-        },
-        {
-          "Room and Board": "Private Room",
-          "heading": "Room and Board"
-        }
-      ],
-      "maternity": [
-        {
-          "normalDelivery": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Normal Delivery"
-        },
-        {
-          "cesarian": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Cesarian Section"
-        },
-        {
-          "mismarriage": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Miscarriage/Legal abortion"
-        },
-        {
-          "insideUAEOutsideNetwork": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Inside UAE outside the network"
-        },
-        {
-          "co-insurance": "10% co insurance on all maternity services",
-          "heading": "Co Insurance"
-        },
-        {
-          "waitingPeriod": "NIL",
-          "heading": "Waiting Period"
-        },
-        {
-          "outPatientservice": "All Outpatient services provided in relation to maternity would be covered from the policy limit subject to pre authorization",
-          "heading": "Outpatient Services"
-        }
-      ],
-      "preExistingMedicalCondition": [
-        {
-          "subLimitInpatientOutpatient": "Covered up to annual limit subject to pre authorization and applicable co insurance",
-          "heading": "Sub Limit for Outpatient & Inpatient Treatment inside UAE"
-        },
-        {
-          "outpatientPharmacy": "Covered up to annual limit subject to pre authorization with 10% co insurance",
-          "heading": "Outpatient Pharmacy"
-        },
-        {
-          "waitingPeriod": "Pre Existing conditions are covered from the enrolment date of first scheme membership, subject to declaration at inception and individual medical underwriting",
-          "heading": "Waiting Period"
-        },
-        {
-          "note": "Undeclared preexisting conditions will not be covered during the policy period and will be underwritten at renewal",
-          "heading": "Note"
-        },
-        {
-          "preexistingOutsideUAE": "Covered up to AED 5000 with 10% co insurance on outpatient services",
-          "heading": "Pre-existing conditions outside UAE"
-        }
-      ],
-      "otherBenefits": [
-        {
-          "dental": "Covered up to AED 4000 with 20% co insurance & 9 months waiting period (Dental Consultation, Tooth Extraction, Amalgam & Composite filling, Root Canal Treatment (R.C.T), Scaling, Bridgework, Crown at a grade appropriate to restore function only, treatment of gum disease)",
-          "heading": "Dental"
-        },
-        {
-          "optical": "Covered up to AED 1500 with 20% co insurance (This includes routine optical services carried out by a qualified and registered opthalmologist or optometrist; and costs of prescribed spectacles and corrective lenses for refractive errors)",
-          "heading": "Optical"
-        },
-        {
-          "alternative": "Covered up to AED 5000 on reimbursement basis (Includes courses of chiropractic treatment and osteopathy/alternative treatment)",
-          "heading": "Alternatives Medicines"
-        }
-      ],
-      "basisClaim": [
-        {
-          "withinNetwork": "Covered subject to pre-authorization",
-          "heading": "Within Network"
-        },
-        {
-          "outsideNetwork": "Covered on reimbursement as per applicable UAE tariff rates",
-          "heading": "Outside network within Geographical Scope"
-        }
-      ],
-      "area": {
-        "name": "Worldwide excluding USA and Canada",
-        "geographicalScope": "Worldwide Excluding USA"
-      },
-      "copayForTest": {
-        "name": "10% Copay"
-      },
-      "copayForConsultation": {
-        "name": "10% Copay"
-      },
-      "inpatientnetworkProvider": {
-        "networkName": "GIG - IH 1"
-      },
-      "outpatientnetworkProvider": {
-        "networkName": "GIG - IH 1"
-      },
-      "Dental Coverage": "Yes",
-      "Optical Coverage": "Yes",
-      "Wellness Coverage": "Yes",
-      "Coverage Amount": "7500000"
-    }
-  },
-  {
-    "id": "plan-ed7fc410-6cb3-41fd-aa0c-88364aed014b",
-    "type": "plan",
-    "leadId": "test-gig-20260127-174415",
-    "vendorId": "vendor-gig-gulf",
-    "fetchedAt": "2026-01-27T17:45:49.312910",
-    "vendorName": "GIG Gulf Insurance",
-    "vendorCode": "GIG",
-    "planName": "Privilege-AUH",
-    "planCode": "GIG-PLA-PrivilegeAUH",
-    "planType": "standard",
-    "annualPremium": 17030.0,
-    "monthlyPremium": 1419.17,
-    "currency": "AED",
-    "annualLimit": 25000000.0,
-    "inpatientLimit": 0,
-    "outpatientLimit": 0,
-    "maternityLimit": 60000.0,
-    "emergencyLimit": 0,
-    "pharmacyLimit": 0,
-    "dentalLimit": 9000.0,
-    "opticalLimit": 1500.0,
+    "dentalLimit": 0,
+    "opticalLimit": 0,
     "deductible": 0,
     "deductibleMetric": "AED",
-    "coInsurance": 20.0,
+    "coInsurance": 0,
     "coInsuranceMetric": "%",
     "copays": {},
     "waitingPeriod": 0,
@@ -429,154 +33,15 @@
     },
     "benefits": [
       {
-        "categoryId": "network",
-        "categoryName": "Network",
+        "categoryId": "standard",
+        "categoryName": "Standard Benefits",
         "benefits": [
           {
-            "name": "Network",
-            "description": "OP@ A.1 Plus / IP@ A.1 Plus",
+            "name": "Basic Health Coverage",
+            "value": "Basic health coverage as per policy terms",
             "covered": true,
-            "limit": "OP@ A.1 Plus / IP@ A.1 Plus",
-            "benefitId": "1"
-          }
-        ]
-      },
-      {
-        "categoryId": "outpatient",
-        "categoryName": "Outpatient Benefits",
-        "benefits": [
-          {
-            "name": "Per Visit Deductible",
-            "value": "Nil",
-            "covered": false,
-            "description": "Nil",
-            "limit": "Nil"
-          },
-          {
-            "name": "Teleconsultation",
-            "value": "Included",
-            "covered": true,
-            "description": "Included",
-            "limit": "Included"
-          }
-        ]
-      },
-      {
-        "categoryId": "maternity",
-        "categoryName": "Maternity Benefits",
-        "benefits": [
-          {
-            "name": "Maternity Coverage",
-            "value": "AED 60,000 Nil waiting period",
-            "covered": true,
-            "description": "AED 60,000 Nil waiting period",
-            "limit": "AED 60,000 Nil waiting period"
-          }
-        ]
-      },
-      {
-        "categoryId": "dental",
-        "categoryName": "Dental Coverage",
-        "benefits": [
-          {
-            "name": "Dental Coverage",
-            "value": "AED 9,000 20% co-insurance",
-            "covered": true,
-            "description": "AED 9,000 20% co-insurance",
-            "limit": "AED 9,000 20% co-insurance"
-          }
-        ]
-      },
-      {
-        "categoryId": "optical",
-        "categoryName": "Optical Coverage",
-        "benefits": [
-          {
-            "name": "Optical Coverage",
-            "value": "AED 1,500 20% co-insurance",
-            "covered": true,
-            "description": "AED 1,500 20% co-insurance",
-            "limit": "AED 1,500 20% co-insurance"
-          }
-        ]
-      },
-      {
-        "categoryId": "alternative",
-        "categoryName": "Alternative Medicine",
-        "benefits": [
-          {
-            "name": "Complementary Therapy",
-            "value": "AED 7,500 in aggregate",
-            "covered": true,
-            "description": "AED 7,500 in aggregate",
-            "limit": "AED 7,500 in aggregate"
-          }
-        ]
-      },
-      {
-        "categoryId": "emergency",
-        "categoryName": "Emergency Services",
-        "benefits": [
-          {
-            "name": "Personal Accident",
-            "value": "AED 150,000",
-            "covered": true,
-            "description": "AED 150,000",
-            "limit": "AED 150,000"
-          }
-        ]
-      },
-      {
-        "categoryId": "diagnostics",
-        "categoryName": "Diagnostic Services",
-        "benefits": [
-          {
-            "name": "Health Screening",
-            "value": "AED 3,000",
-            "covered": true,
-            "description": "AED 3,000",
-            "limit": "AED 3,000"
-          }
-        ]
-      },
-      {
-        "categoryId": "other-coverage",
-        "categoryName": "Other Coverage Details",
-        "benefits": [
-          {
-            "name": "Geographical Coverage",
-            "value": "Worldwide excluding USA",
-            "covered": true,
-            "description": "Worldwide excluding USA",
-            "limit": "Worldwide excluding USA"
-          },
-          {
-            "name": "Annual Limit",
-            "value": "AED 25,000,000",
-            "covered": true,
-            "description": "AED 25,000,000",
-            "limit": "AED 25,000,000"
-          },
-          {
-            "name": "Outside Coverage Area",
-            "value": "Worldwide, Up to AED 750,000",
-            "covered": true,
-            "description": "Worldwide, Up to AED 750,000",
-            "limit": "Worldwide, Up to AED 750,000"
-          },
-          {
-            "name": "Psychiatric Treatment",
-            "value": "AED 15,000 30% co-insurance",
-            "covered": true,
-            "description": "AED 15,000 30% co-insurance",
-            "limit": "AED 15,000 30% co-insurance"
-          },
-          {
-            "name": "Medical Equipment",
-            "value": "AED 15,000",
-            "covered": true,
-            "description": "AED 15,000",
-            "limit": "AED 15,000"
+            "description": "Basic health coverage as per policy terms",
+            "limit": "As per policy"
           }
         ]
       }
@@ -592,1245 +57,204 @@
     "fetchRequestId": "",
     "source": "rpa",
     "rawPlanData": {
-      "plan_name": "Privilege-AUH",
-      "premium": "AED 17030.0",
+      "plan_name": null,
+      "premium": null,
       "coverage_limit": null,
-      "coverage_details": {
-        "Geographical Coverage": "Worldwide excluding USA",
-        "Annual Limit": "AED 25,000,000",
-        "Outside Coverage Area": "Worldwide, Up to AED 750,000",
-        "Inpatient Network": "A.1 Plus",
-        "Complementary Therapy": "AED 7,500 in aggregate",
-        "Per Visit Deductible": "Nil",
-        "Outpatient Network": "A.1 Plus",
-        "Health Screening": "AED 3,000",
-        "healthScreenAmount": 3000.0,
-        "Optical Coverage": "AED 1,500 20% co-insurance",
-        "opticalCoInsurance": 20.0,
-        "Psychiatric Treatment": "AED 15,000 30% co-insurance",
-        "psychiatricTreatmentAmount": 15000.0,
-        "Maternity Coverage": "AED 60,000 Nil waiting period",
-        "Dental Coverage": "AED 9,000 20% co-insurance",
-        "Medical Equipment": "AED 15,000",
-        "ancillaryEquipmentAmount": 15000.0,
-        "Personal Accident": "AED 150,000",
-        "personalAccidentAmount": 150000.0,
-        "Teleconsultation": "Included"
-      },
+      "coverage_details": {},
       "full_data": {
-        "index": 2,
-        "raw_text": "Privilege-AUH\nAED17,030\n\nYearly\n\nArea Of Cover\nWorldwide excluding USA\nYearly Maximum\nAED 25,000,000\nOutside Area of Cover\nWorldwide, Up to AED 750,000\nIn-Patient direct billing Network *\nA.1 Plus\nComplementary and Alternative Therapy/Homeopathy/Ayurveda\nAED 7,500 in aggregate\nPer visit co-insurance\nNil\nApplicable Out-patient direct billing network\nA.1 Plus\nHealth Screen\nAED 3,000\nPre-existing conditions (including preexisting chronic conditions)\nAED 1,000,000 in aggregate\nOptical\nAED 1,500 20% co-insurance\nTreatment of transient mental disorder or acute reaction to stress within the Emirate of Abu Dhabi\nAED 250,000\nPsychiatric treatment outside Abu Dhabi (30% co-insurance)\nAED 15,000 30% co-insurance\nWithin the Emirate of Abu Dhabi: Pre and post-natal complications\nIncluded Nil Waiting period\nOutside the Emirate of Abu Dhabi: Pre and post-natal complications\nIncluded Nil waiting period\nWithin the Emirate of Abu Dhabi: Pregnancy and Delivery up to\nAED 250,000\nOutside the Emirate of Abu Dhabi: Normal Pregnancy, Childbirth (Delivery) and medically necessary Caesarean section\nAED 60,000 Nil waiting period\nVaccinations for children up to 6 years old\nIncluded\nRoutine dental care\nAED 9,000 20% co-insurance\nAncillary equipment\nAED 15,000\nPersonal accident\nAED 150,000\nWork related injuries\nAED 250,000\nLife threatening congenital conditions (Life-threatening birth defects, deformities and congenital diseases for new born children only)\nAED 250,000\nTele-consultation\nIncluded\nAdd to compare\nBUY NOW",
-        "plan_name": "Privilege-AUH",
-        "premium": 17030.0
-      },
-      "original_coverage_details": {
-        "areaOfCover": "Worldwide excluding USA",
-        "yearlyMaximum": "AED 25,000,000",
-        "outsideAreaOfCover": "Worldwide, Up to AED 750,000",
-        "inpatientDirectBillingNetwork": "A.1 Plus",
-        "complementaryTherapy": "AED 7,500 in aggregate",
-        "perVisitDeductible": "Nil",
-        "outpatientDirectBillingNetwork": "A.1 Plus",
-        "healthScreen": "AED 3,000",
-        "healthScreenAmount": 3000.0,
-        "optical": "AED 1,500 20% co-insurance",
-        "opticalCoInsurance": 20.0,
-        "psychiatricTreatment": "AED 15,000 30% co-insurance",
-        "psychiatricTreatmentAmount": 15000.0,
-        "normalPregnancyChildbirth": "AED 60,000 Nil waiting period",
-        "routineDentalCare": "AED 9,000 20% co-insurance",
-        "ancillaryEquipment": "AED 15,000",
-        "ancillaryEquipmentAmount": 15000.0,
-        "personalAccident": "AED 150,000",
-        "personalAccidentAmount": 150000.0,
-        "teleConsultation": "Included"
-      }
-    },
-    "details": {
-      "outPatient": [
-        {
-          "testAndTreatment": "10% co insurance",
-          "heading": "Tests and Treatments for non-pre-existing conditions"
-        },
-        {
-          "Pharmacy": "Covered subject to pre authorization",
-          "heading": "Pharmacy for non-pre-existing conditions"
-        },
-        {
-          "physiotherapy": "Covered subject to pre authorization with 10% co insurance",
-          "heading": "Physiotherapy"
-        }
-      ],
-      "inPatient": [
-        {
-          "testAndTreatment": "Covered subject to pre authorization",
-          "heading": "Tests and Treatments for non-pre-existing conditions"
-        },
-        {
-          "Room and Board": "Private Room",
-          "heading": "Room and Board"
-        }
-      ],
-      "maternity": [
-        {
-          "normalDelivery": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Normal Delivery"
-        },
-        {
-          "cesarian": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Cesarian Section"
-        },
-        {
-          "mismarriage": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Miscarriage/Legal abortion"
-        },
-        {
-          "insideUAEOutsideNetwork": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Inside UAE outside the network"
-        },
-        {
-          "co-insurance": "10% co insurance on all maternity services",
-          "heading": "Co Insurance"
-        },
-        {
-          "waitingPeriod": "NIL",
-          "heading": "Waiting Period"
-        },
-        {
-          "outPatientservice": "All Outpatient services provided in relation to maternity would be covered from the policy limit subject to pre authorization",
-          "heading": "Outpatient Services"
-        }
-      ],
-      "preExistingMedicalCondition": [
-        {
-          "subLimitInpatientOutpatient": "Covered up to annual limit subject to pre authorization and applicable co insurance",
-          "heading": "Sub Limit for Outpatient & Inpatient Treatment inside UAE"
-        },
-        {
-          "outpatientPharmacy": "Covered up to annual limit subject to pre authorization with 10% co insurance",
-          "heading": "Outpatient Pharmacy"
-        },
-        {
-          "waitingPeriod": "Pre Existing conditions are covered from the enrolment date of first scheme membership, subject to declaration at inception and individual medical underwriting",
-          "heading": "Waiting Period"
-        },
-        {
-          "note": "Undeclared preexisting conditions will not be covered during the policy period and will be underwritten at renewal",
-          "heading": "Note"
-        },
-        {
-          "preexistingOutsideUAE": "Covered up to AED 5000 with 10% co insurance on outpatient services",
-          "heading": "Pre-existing conditions outside UAE"
-        }
-      ],
-      "otherBenefits": [
-        {
-          "dental": "Covered up to AED 4000 with 20% co insurance & 9 months waiting period (Dental Consultation, Tooth Extraction, Amalgam & Composite filling, Root Canal Treatment (R.C.T), Scaling, Bridgework, Crown at a grade appropriate to restore function only, treatment of gum disease)",
-          "heading": "Dental"
-        },
-        {
-          "optical": "Covered up to AED 1500 with 20% co insurance (This includes routine optical services carried out by a qualified and registered opthalmologist or optometrist; and costs of prescribed spectacles and corrective lenses for refractive errors)",
-          "heading": "Optical"
-        },
-        {
-          "alternative": "Covered up to AED 5000 on reimbursement basis (Includes courses of chiropractic treatment and osteopathy/alternative treatment)",
-          "heading": "Alternatives Medicines"
-        }
-      ],
-      "basisClaim": [
-        {
-          "withinNetwork": "Covered subject to pre-authorization",
-          "heading": "Within Network"
-        },
-        {
-          "outsideNetwork": "Covered on reimbursement as per applicable UAE tariff rates",
-          "heading": "Outside network within Geographical Scope"
-        }
-      ],
-      "area": {
-        "name": "Worldwide excluding USA and Canada",
-        "geographicalScope": "Worldwide Excluding USA"
-      },
-      "copayForTest": {
-        "name": "10% Copay"
-      },
-      "copayForConsultation": {
-        "name": "10% Copay"
-      },
-      "inpatientnetworkProvider": {
-        "networkName": "GIG - IH 1"
-      },
-      "outpatientnetworkProvider": {
-        "networkName": "GIG - IH 1"
-      },
-      "Dental Coverage": "Yes",
-      "Optical Coverage": "Yes",
-      "Wellness Coverage": "Yes",
-      "Coverage Amount": "7500000"
-    }
-  },
-  {
-    "id": "plan-a385ab34-8e3c-4643-ad9e-b249d87590e0",
-    "type": "plan",
-    "leadId": "test-gig-20260127-174415",
-    "vendorId": "vendor-gig-gulf",
-    "fetchedAt": "2026-01-27T17:45:49.355090",
-    "vendorName": "GIG Gulf Insurance",
-    "vendorCode": "GIG",
-    "planName": "Smart Health - Regional-AUH",
-    "planCode": "GIG-PLA-SmartHealthRegionalAUH",
-    "planType": "standard",
-    "annualPremium": 9985.0,
-    "monthlyPremium": 832.08,
-    "currency": "AED",
-    "annualLimit": 2500000.0,
-    "inpatientLimit": 0,
-    "outpatientLimit": 0,
-    "maternityLimit": 20000.0,
-    "emergencyLimit": 0,
-    "pharmacyLimit": 0,
-    "dentalLimit": 2000.0,
-    "opticalLimit": 0,
-    "deductible": 50.0,
-    "deductibleMetric": "AED",
-    "coInsurance": 20.0,
-    "coInsuranceMetric": "%",
-    "copays": {},
-    "waitingPeriod": 360,
-    "waitingPeriodMetric": "days",
-    "waitingPeriods": {
-      "general": 360
-    },
-    "benefits": [
-      {
-        "categoryId": "network",
-        "categoryName": "Network",
+        "index": 29,
+        "raw_text": "\n                                                \n\n                                                    Salary Currency\n\n                                                    Select Currency Select Currency\n                                                            ADA\n                                                        \n                                                            AED\n                                                        \n                                                            AFN\n                                                        \n                                                            ALL\n                                                        \n                                                            AMD\n                                                        \n                                                            ANG\n                                                        \n                                                            AOA\n                                                        \n                                                            ARS\n                                                        \n                                                            AUD\n                                                        \n                                                            AWG\n                                                        \n                                                            AZN\n                                                        \n                                                            BAM\n                                                        \n                                                            BBD\n                                                        \n                                                            BCH\n                                                        \n                                                            BDT\n                                                        \n                                                            BGN\n                                                        \n                                                            BHD\n                                                        \n                                                            BIF\n                                                        \n                                                            BMD\n                                                        \n                                                            BND\n                                                        \n                                                            BOB\n                                                        \n                                                            BRL\n                                                        \n                                                            BSD\n                                                        \n                                                            BTC\n                                                        \n                                                            BTN\n                                                        \n                                                            BWP\n                                                        \n                                                            BYR\n                                                        \n                                                            BZD\n                                                        \n                                                            CAD\n                                                        \n                                                            CDF\n                                                        \n                                                            CHF\n                                                        \n                                                            CLF\n                                                        \n                                                            CLP\n                                                        \n                                                            CNH\n                                                        \n                                                            CNY\n                                                        \n                                                            COP\n                                                        \n                                                            CRC\n                                                        \n                                                            CUC\n                                                        \n                                                            CUP\n                                                        \n                                                            CVE\n                                                        \n                                                            CZK\n                                                        \n                                                            DJF\n                                                        \n                                                            DKK\n                                                        \n                                                            DOGE\n                                                        \n                                                            DOP\n                                                        \n                                                            DOT\n                                                        \n                                                            DZD\n                                                        \n                                                            EGP\n                                                        \n                                                            ERN\n                                                        \n                                                            ETB\n                                                        \n                                                            ETH\n                                                        \n                                                            EUR\n                                                        \n                                                            FJD\n                                                        \n                                                            FKP\n                                                        \n                                                            GBP\n                                                        \n                                                            GEL\n                                                        \n                                                            GGP\n                                                        \n                                                            GHS\n                                                        \n                                                            GIP\n                                                        \n                                                            GMD\n                                                        \n                                                            GNF\n                                                        \n                                                            GTQ\n                                                        \n                                                            GYD\n                                                        \n                                                            HKD\n                                                        \n                                                            HNL\n                                                        \n                                                            HTG\n                                                        \n                                                            HUF\n                                                        \n                                                            IDR\n                                                        \n                                                            ILS\n                                                        \n                                                            IMP\n                                                        \n                                                            INR\n                                                        \n                                                            IQD\n                                                        \n                                                            IRR\n                                                        \n                                                            ISK\n                                                        \n                                                            JEP\n                                                        \n                                                            JMD\n                                                        \n                                                            JOD\n                                                        \n                                                            JPY\n                                                        \n                                                            KES\n                                                        \n                                                            KGS\n                                                        \n                                                            KHR\n                                                        \n                                                            KMF\n                                                        \n                                                            KPW\n                                                        \n                                                            KRW\n                                                        \n                                                            KWD\n                                                        \n                                                            KYD\n                                                        \n                                                            KZT\n                                                        \n                                                            LAK\n                                                        \n                                                            LBP\n                                                        \n                                                            LINK\n                                                        \n                                                            LKR\n                                                        \n                                                            LRD\n                                                        \n                                                            LSL\n                                                        \n                                                            LTC\n                                                        \n                                                            LUNA\n                                                        \n                                                            LYD\n                                                        \n                                                            MAD\n                                                        \n                                                            MDL\n                                                        \n                                                            MGA\n                                                        \n                                                            MKD\n                                                        \n                                                            MMK\n                                                        \n                                                            MNT\n                                                        \n                                                            MOP\n                                                        \n                                                            MRO\n                                                        \n                                                            MUR\n                                                        \n                                                            MVR\n                                                        \n                                                            MWK\n                                                        \n                                                            MXN\n                                                        \n                                                            MXV\n                                                        \n                                                            MYR\n                                                        \n                                                            MZN\n                                                        \n                                                            NAD\n                                                        \n                                                            NGN\n                                                        \n                                                            NIO\n                                                        \n                                                            NOK\n                                                        \n                                                            NPR\n                                                        \n                                                            NZD\n                                                        \n                                                            OMR\n                                                        \n                                                            PAB\n                                                        \n                                                            PEN\n                                                        \n                                                            PGK\n                                                        \n                                                            PHP\n                                                        \n                                                            PKR\n                                                        \n                                                            PLN\n                                                        \n                                                            PYG\n                                                        \n                                                            QAR\n                                                        \n                                                            RON\n                                                        \n                                                            RSD\n                                                        \n                                                            RUB\n                                                        \n                                                            RWF\n                                                        \n                                                            SAR\n                                                        \n                                                            SBD\n                                                        \n                                                            SCR\n                                                        \n                                                            SDG\n                                                        \n                                                            SEK\n                                                        \n                                                            SGD\n                                                        \n                                                            SHP\n                                                        \n                                                            SLE\n                                                        \n                                                            SLL\n                                                        \n                                                            SOS\n                                                        \n                                                            SPL\n                                                        \n                                                            SRD\n                                                        \n                                                            SSP\n                                                        \n                                                            STD\n                                                        \n                                                            SVC\n                                                        \n                                                            SYP\n                                                        \n                                                            SZL\n                                                        \n                                                            THB\n                                                        \n                                                            TJS\n                                                        \n                                                            TMT\n                                                        \n                                                            TND\n                                                        \n                                                            TOP\n                                                        \n                                                            TRY\n                                                        \n                                                            TTD\n                                                        \n                                                            TVD\n                                                        \n                                                            TWD\n                                                        \n                                                            TZS\n                                                        \n                                                            UAH\n                                                        \n                                                            UGX\n                                                        \n                                                            UNI\n                                                        \n                                                            USD\n                                                        \n                                                            UYU\n                                                        \n                                                            UZS\n                                                        \n                                                            VED\n                                                        \n                                                            VEF\n                                                        \n                                                            VES\n                                                        \n                                                            VND\n                                                        \n                                                            VUV\n                                                        \n                                                            WST\n                                                        \n                                                            XAF\n                                                        \n                                                            XAG\n                                                        \n                                                            XAU\n                                                        \n                                                            XBT\n                                                        \n                                                            XCD\n                                                        \n                                                            XDR\n                                                        \n                                                            XLM\n                                                        \n                                                            XOF\n                                                        \n                                                            XPD\n                                                        \n                                                            XPF\n                                                        \n                                                            XPT\n                                                        \n                                                            XRP\n                                                        \n                                                            YER\n                                                        \n                                                            ZAR\n                                                        \n                                                            ZMW\n                                                        \n                                                            ZWD\n                                                        \n                                                            ZWL\n                                                        \n                                                        Select Currency\n                                                        \n                                                            ADA\n                                                        \n                                                            AED\n                                                        \n                                                            AFN\n                                                        \n                                                            ALL\n                                                        \n                                                            AMD\n                                                        \n                                                            ANG\n                                                        \n                                                            AOA\n                                                        \n                                                            ARS\n                                                        \n                                                            AUD\n                                                        \n                                                            AWG\n                                                        \n                                                            AZN\n                                                        \n                                                            BAM\n                                                        \n                                                            BBD\n                                                        \n                                                            BCH\n                                                        \n                                                            BDT\n                                                        \n                                                            BGN\n                                                        \n                                                            BHD\n                                                        \n                                                            BIF\n                                                        \n                                                            BMD\n                                                        \n                                                            BND\n                                                        \n                                                            BOB\n                                                        \n                                                            BRL\n                                                        \n                                                            BSD\n                                                        \n                                                            BTC\n                                                        \n                                                            BTN\n                                                        \n                                                            BWP\n                                                        \n                                                            BYR\n                                                        \n                                                            BZD\n                                                        \n                                                            CAD\n                                                        \n                                                            CDF\n                                                        \n                                                            CHF\n                                                        \n                                                            CLF\n                                                        \n                                                            CLP\n                                                        \n                                                            CNH\n                                                        \n                                                            CNY\n                                                        \n                                                            COP\n                                                        \n                                                            CRC\n                                                        \n                                                            CUC\n                                                        \n                                                            CUP\n                                                        \n                                                            CVE\n                                                        \n                                                            CZK\n                                                        \n                                                            DJF\n                                                        \n                                                            DKK\n                                                        \n                                                            DOGE\n                                                        \n                                                            DOP\n                                                        \n                                                            DOT\n                                                        \n                                                            DZD\n                                                        \n                                                            EGP\n                                                        \n                                                            ERN\n                                                        \n                                                            ETB\n                                                        \n                                                            ETH\n                                                        \n                                                            EUR\n                                                        \n                                                            FJD\n                                                        \n                                                            FKP\n                                                        \n                                                            GBP\n                                                        \n                                                            GEL\n                                                        \n                                                            GGP\n                                                        \n                                                            GHS\n                                                        \n                                                            GIP\n                                                        \n                                                            GMD\n                                                        \n                                                            GNF\n                                                        \n                                                            GTQ\n                                                        \n                                                            GYD\n                                                        \n                                                            HKD\n                                                        \n                                                            HNL\n                                                        \n                                                            HTG\n                                                        \n                                                            HUF\n                                                        \n                                                            IDR\n                                                        \n                                                            ILS\n                                                        \n                                                            IMP\n                                                        \n                                                            INR\n                                                        \n                                                            IQD\n                                                        \n                                                            IRR\n                                                        \n                                                            ISK\n                                                        \n                                                            JEP\n                                                        \n                                                            JMD\n                                                        \n                                                            JOD\n                                                        \n                                                            JPY\n                                                        \n                                                            KES\n                                                        \n                                                            KGS\n                                                        \n                                                            KHR\n                                                        \n                                                            KMF\n                                                        \n                                                            KPW\n                                                        \n                                                            KRW\n                                                        \n                                                            KWD\n                                                        \n                                                            KYD\n                                                        \n                                                            KZT\n                                                        \n                                                            LAK\n                                                        \n                                                            LBP\n                                                        \n                                                            LINK\n                                                        \n                                                            LKR\n                                                        \n                                                            LRD\n                                                        \n                                                            LSL\n                                                        \n                                                            LTC\n                                                        \n                                                            LUNA\n                                                        \n                                                            LYD\n                                                        \n                                                            MAD\n                                                        \n                                                            MDL\n                                                        \n                                                            MGA\n                                                        \n                                                            MKD\n                                                        \n                                                            MMK\n                                                        \n                                                            MNT\n                                                        \n                                                            MOP\n                                                        \n                                                            MRO\n                                                        \n                                                            MUR\n                                                        \n                                                            MVR\n                                                        \n                                                            MWK\n                                                        \n                                                            MXN\n                                                        \n                                                            MXV\n                                                        \n                                                            MYR\n                                                        \n                                                            MZN\n                                                        \n                                                            NAD\n                                                        \n                                                            NGN\n                                                        \n                                                            NIO\n                                                        \n                                                            NOK\n                                                        \n                                                            NPR\n                                                        \n                                                            NZD\n                                                        \n                                                            OMR\n                                                        \n                                                            PAB\n                                                        \n                                                            PEN\n                                                        \n                                                            PGK\n                                                        \n                                                            PHP\n                                                        \n                                                            PKR\n                                                        \n                                                            PLN\n                                                        \n                                                            PYG\n                                                        \n                                                            QAR\n                                                        \n                                                            RON\n                                                        \n                                                            RSD\n                                                        \n                                                            RUB\n                                                        \n                                                            RWF\n                                                        \n                                                            SAR\n                                                        \n                                                            SBD\n                                                        \n                                                            SCR\n                                                        \n                                                            SDG\n                                                        \n                                                            SEK\n                                                        \n                                                            SGD\n                                                        \n                                                            SHP\n                                                        \n                                                            SLE\n                                                        \n                                                            SLL\n                                                        \n                                                            SOS\n                                                        \n                                                            SPL\n                                                        \n                                                            SRD\n                                                        \n                                                            SSP\n                                                        \n                                                            STD\n                                                        \n                                                            SVC\n                                                        \n                                                            SYP\n                                                        \n                                                            SZL\n                                                        \n                                                            THB\n                                                        \n                                                            TJS\n                                                        \n                                                            TMT\n                                                        \n                                                            TND\n                                                        \n                                                            TOP\n                                                        \n                                                            TRY\n                                                        \n                                                            TTD\n                                                        \n                                                            TVD\n                                                        \n                                                            TWD\n                                                        \n                                                            TZS\n                                                        \n                                                            UAH\n                                                        \n                                                            UGX\n                                                        \n                                                            UNI\n                                                        \n                                                            USD\n                                                        \n                                                            UYU\n                                                        \n                                                            UZS\n                                                        \n                                                            VED\n                                                        \n                                                            VEF\n                                                        \n                                                            VES\n                                                        \n                                                            VND\n                                                        \n                                                            VUV\n                                                        \n                                                            WST\n                                                        \n                                                            XAF\n                                                        \n                                                            XAG\n                                                        \n                                                            XAU\n                                                        \n                                                            XBT\n                                                        \n                                                            XCD\n                                                        \n                                                            XDR\n                                                        \n                                                            XLM\n                                                        \n                                                            XOF\n                                                        \n                                                            XPD\n                                                        \n                                                            XPF\n                                                        \n                                                            XPT\n                                                        \n                                                            XRP\n                                                        \n                                                            YER\n                                                        \n                                                            ZAR\n                                                        \n                                                            ZMW\n                                                        \n                                                            ZWD\n                                                        \n                                                            ZWL\n                                                        \n\n                                                    \n\n                                                    Currency is required.\n\n                                                \n                                            ",
         "benefits": [
-          {
-            "name": "Network",
-            "description": "OP@ A.2 (selected facilities have 20% co-insurance) / IP@ A.2",
-            "covered": true,
-            "limit": "OP@ A.2 (selected facilities have 20% co-insurance) / IP@ A.2",
-            "benefitId": "1"
-          }
+          "Select Currency",
+          "ADA",
+          "AED",
+          "AFN",
+          "ALL",
+          "AMD",
+          "ANG",
+          "AOA",
+          "ARS",
+          "AUD",
+          "AWG",
+          "AZN",
+          "BAM",
+          "BBD",
+          "BCH",
+          "BDT",
+          "BGN",
+          "BHD",
+          "BIF",
+          "BMD",
+          "BND",
+          "BOB",
+          "BRL",
+          "BSD",
+          "BTC",
+          "BTN",
+          "BWP",
+          "BYR",
+          "BZD",
+          "CAD",
+          "CDF",
+          "CHF",
+          "CLF",
+          "CLP",
+          "CNH",
+          "CNY",
+          "COP",
+          "CRC",
+          "CUC",
+          "CUP",
+          "CVE",
+          "CZK",
+          "DJF",
+          "DKK",
+          "DOGE",
+          "DOP",
+          "DOT",
+          "DZD",
+          "EGP",
+          "ERN",
+          "ETB",
+          "ETH",
+          "EUR",
+          "FJD",
+          "FKP",
+          "GBP",
+          "GEL",
+          "GGP",
+          "GHS",
+          "GIP",
+          "GMD",
+          "GNF",
+          "GTQ",
+          "GYD",
+          "HKD",
+          "HNL",
+          "HTG",
+          "HUF",
+          "IDR",
+          "ILS",
+          "IMP",
+          "INR",
+          "IQD",
+          "IRR",
+          "ISK",
+          "JEP",
+          "JMD",
+          "JOD",
+          "JPY",
+          "KES",
+          "KGS",
+          "KHR",
+          "KMF",
+          "KPW",
+          "KRW",
+          "KWD",
+          "KYD",
+          "KZT",
+          "LAK",
+          "LBP",
+          "LINK",
+          "LKR",
+          "LRD",
+          "LSL",
+          "LTC",
+          "LUNA",
+          "LYD",
+          "MAD",
+          "MDL",
+          "MGA",
+          "MKD",
+          "MMK",
+          "MNT",
+          "MOP",
+          "MRO",
+          "MUR",
+          "MVR",
+          "MWK",
+          "MXN",
+          "MXV",
+          "MYR",
+          "MZN",
+          "NAD",
+          "NGN",
+          "NIO",
+          "NOK",
+          "NPR",
+          "NZD",
+          "OMR",
+          "PAB",
+          "PEN",
+          "PGK",
+          "PHP",
+          "PKR",
+          "PLN",
+          "PYG",
+          "QAR",
+          "RON",
+          "RSD",
+          "RUB",
+          "RWF",
+          "SAR",
+          "SBD",
+          "SCR",
+          "SDG",
+          "SEK",
+          "SGD",
+          "SHP",
+          "SLE",
+          "SLL",
+          "SOS",
+          "SPL",
+          "SRD",
+          "SSP",
+          "STD",
+          "SVC",
+          "SYP",
+          "SZL",
+          "THB",
+          "TJS",
+          "TMT",
+          "TND",
+          "TOP",
+          "TRY",
+          "TTD",
+          "TVD",
+          "TWD",
+          "TZS",
+          "UAH",
+          "UGX",
+          "UNI",
+          "USD",
+          "UYU",
+          "UZS",
+          "VED",
+          "VEF",
+          "VES",
+          "VND",
+          "VUV",
+          "WST",
+          "XAF",
+          "XAG",
+          "XAU",
+          "XBT",
+          "XCD",
+          "XDR",
+          "XLM",
+          "XOF",
+          "XPD",
+          "XPF",
+          "XPT",
+          "XRP",
+          "YER",
+          "ZAR",
+          "ZMW",
+          "ZWD",
+          "ZWL"
         ]
       },
-      {
-        "categoryId": "outpatient",
-        "categoryName": "Outpatient Benefits",
-        "benefits": [
-          {
-            "name": "Per Visit Deductible",
-            "value": "AED 50 applicable to all outpatient consultations",
-            "covered": true,
-            "description": "AED 50 applicable to all outpatient consultations",
-            "limit": "AED 50 applicable to all outpatient consultations"
-          },
-          {
-            "name": "Teleconsultation",
-            "value": "Included",
-            "covered": true,
-            "description": "Included",
-            "limit": "Included"
-          }
-        ]
-      },
-      {
-        "categoryId": "maternity",
-        "categoryName": "Maternity Benefits",
-        "benefits": [
-          {
-            "name": "Maternity Coverage",
-            "value": "AED 20,000 (12 month waiting period)",
-            "covered": true,
-            "description": "AED 20,000 (12 month waiting period)",
-            "limit": "AED 20,000 (12 month waiting period)"
-          }
-        ]
-      },
-      {
-        "categoryId": "dental",
-        "categoryName": "Dental Coverage",
-        "benefits": [
-          {
-            "name": "Dental Coverage",
-            "value": "AED 2,000, 20% co-insurance",
-            "covered": true,
-            "description": "AED 2,000, 20% co-insurance",
-            "limit": "AED 2,000, 20% co-insurance"
-          }
-        ]
-      },
-      {
-        "categoryId": "alternative",
-        "categoryName": "Alternative Medicine",
-        "benefits": [
-          {
-            "name": "Complementary Therapy",
-            "value": "AED 3,000 in aggregate",
-            "covered": true,
-            "description": "AED 3,000 in aggregate",
-            "limit": "AED 3,000 in aggregate"
-          }
-        ]
-      },
-      {
-        "categoryId": "emergency",
-        "categoryName": "Emergency Services",
-        "benefits": [
-          {
-            "name": "Personal Accident",
-            "value": "AED 75,000",
-            "covered": true,
-            "description": "AED 75,000",
-            "limit": "AED 75,000"
-          }
-        ]
-      },
-      {
-        "categoryId": "diagnostics",
-        "categoryName": "Diagnostic Services",
-        "benefits": [
-          {
-            "name": "Health Screening",
-            "value": "AED 1,000",
-            "covered": true,
-            "description": "AED 1,000",
-            "limit": "AED 1,000"
-          }
-        ]
-      },
-      {
-        "categoryId": "other-coverage",
-        "categoryName": "Other Coverage Details",
-        "benefits": [
-          {
-            "name": "Geographical Coverage",
-            "value": "G.C.C, Jordan, plus Iran, Lebanon, Syria, Egypt, Tunisia, Morocco, Algeria, India, Pakistan, Sri Lanka, Bangladesh, Korea, the Philippines, Indonesia, Nepal & Bhutan",
-            "covered": true,
-            "description": "G.C.C, Jordan, plus Iran, Lebanon, Syria, Egypt, Tunisia, Morocco, Algeria, India, Pakistan, Sri Lanka, Bangladesh, Korea, the Philippines, Indonesia, Nepal & Bhutan",
-            "limit": "G.C.C, Jordan, plus Iran, Lebanon, Syria, Egypt, Tunisia, Morocco, Algeria, India, Pakistan, Sri Lanka, Bangladesh, Korea, the Philippines, Indonesia, Nepal & Bhutan"
-          },
-          {
-            "name": "Annual Limit",
-            "value": "AED 2,500,000",
-            "covered": true,
-            "description": "AED 2,500,000",
-            "limit": "AED 2,500,000"
-          },
-          {
-            "name": "Outside Coverage Area",
-            "value": "Worldwide, Up to AED 250,000",
-            "covered": true,
-            "description": "Worldwide, Up to AED 250,000",
-            "limit": "Worldwide, Up to AED 250,000"
-          },
-          {
-            "name": "Pre-existing Conditions (UAE)",
-            "value": "AED 2,500,000",
-            "covered": true,
-            "description": "AED 2,500,000",
-            "limit": "AED 2,500,000"
-          },
-          {
-            "name": "Pre-existing Conditions (Outside UAE)",
-            "value": "AED 2,500",
-            "covered": true,
-            "description": "AED 2,500",
-            "limit": "AED 2,500"
-          },
-          {
-            "name": "Psychiatric Treatment",
-            "value": "AED 10,000 30% co-insurance",
-            "covered": true,
-            "description": "AED 10,000 30% co-insurance",
-            "limit": "AED 10,000 30% co-insurance"
-          },
-          {
-            "name": "Medical Equipment",
-            "value": "AED 500",
-            "covered": true,
-            "description": "AED 500",
-            "limit": "AED 500"
-          }
-        ]
-      }
-    ],
-    "exclusions": [
-      "Subject to policy terms and conditions"
-    ],
-    "lineOfBusiness": "medical",
-    "lobSpecificData": {},
-    "isAvailable": true,
-    "isSelected": false,
-    "isRecommended": false,
-    "fetchRequestId": "",
-    "source": "rpa",
-    "rawPlanData": {
-      "plan_name": "Smart Health - Regional-AUH",
-      "premium": "AED 9985.0",
-      "coverage_limit": null,
-      "coverage_details": {
-        "Geographical Coverage": "G.C.C, Jordan, plus Iran, Lebanon, Syria, Egypt, Tunisia, Morocco, Algeria, India, Pakistan, Sri Lanka, Bangladesh, Korea, the Philippines, Indonesia, Nepal & Bhutan",
-        "Annual Limit": "AED 2,500,000",
-        "Outside Coverage Area": "Worldwide, Up to AED 250,000",
-        "Inpatient Network": "A.2",
-        "Complementary Therapy": "AED 3,000 in aggregate",
-        "Per Visit Deductible": "AED 50 applicable to all outpatient consultations",
-        "Outpatient Network": "A.2 (selected facilities have 20% co-insurance)",
-        "Health Screening": "AED 1,000",
-        "healthScreenAmount": 1000.0,
-        "Pre-existing Conditions (UAE)": "AED 2,500,000",
-        "preexistingConditionsWithinUAEAmount": 2500000.0,
-        "Pre-existing Conditions (Outside UAE)": "AED 2,500",
-        "preexistingConditionsOutsideUAEAmount": 2500.0,
-        "Optical Coverage": "No Benefit",
-        "Psychiatric Treatment": "AED 10,000 30% co-insurance",
-        "psychiatricTreatmentAmount": 10000.0,
-        "Maternity Coverage": "AED 20,000 (12 month waiting period)",
-        "Dental Coverage": "AED 2,000, 20% co-insurance",
-        "Medical Equipment": "AED 500",
-        "ancillaryEquipmentAmount": 500.0,
-        "Personal Accident": "AED 75,000",
-        "personalAccidentAmount": 75000.0,
-        "Teleconsultation": "Included"
-      },
-      "full_data": {
-        "index": 3,
-        "raw_text": "Smart Health - Regional-AUH\nAED9,985\n\nYearly\n\nArea Of Cover\nG.C.C, Jordan, plus Iran, Lebanon, Syria, Egypt, Tunisia, Morocco, Algeria, India, Pakistan, Sri Lanka, Bangladesh, Korea, the Philippines, Indonesia, Nepal & Bhutan\nYearly Maximum\nAED 2,500,000\nOutside Area of Cover\nWorldwide, Up to AED 250,000\nIn-Patient direct billing Network *\nA.2\nComplementary and Alternative Therapy/Homeopathy/Ayurveda\nAED 3,000 in aggregate\nPer visit co-insurance\nAED 50 applicable to all outpatient consultations\nApplicable Out-patient direct billing network\nA.2 (selected facilities have 20% co-insurance)\nHealth Screen\nAED 1,000\nPre-existing conditions (including preexisting chronic conditions) and chronic conditions – Within Abu Dhabi\nAED 2,500,000\nPre-existing conditions (including preexisting chronic conditions) and chronic conditions – Outside Abu Dhabi\nAED 2,500\nOptical\nNo Benefit\nTreatment of transient mental disorder or acute reaction to stress within the Emirate of Abu Dhabi\nAED 250,000\nPsychiatric treatment outside Abu Dhabi (30% co-insurance)\nAED 10,000 30% co-insurance\nWithin the Emirate of Abu Dhabi: Pre and post-natal complications\nIncluded (Nil Waiting period)\nOutside the Emirate of Abu Dhabi: Pre and post-natal complications\nIncluded (12 month waiting period)\nWithin the Emirate of Abu Dhabi: Pregnancy and Delivery up to\nAED 250,000\nOutside the Emirate of Abu Dhabi: Normal Pregnancy, Childbirth (Delivery) and medically necessary Caesarean section\nAED 20,000 (12 month waiting period)\nVaccinations for children up to 6 years old\nAED 2,000\nRoutine dental care\nAED 2,000, 20% co-insurance\nAncillary equipment\nAED 500\nPersonal accident\nAED 75,000\nWork related injuries\nAED 250,000\nLife threatening congenital conditions (Life-threatening birth defects, deformities and congenital diseases for new born children only)\nAED 250,000\nTele-consultation\nIncluded\nAdd to compare\nBUY NOW",
-        "plan_name": "Smart Health - Regional-AUH",
-        "premium": 9985.0
-      },
-      "original_coverage_details": {
-        "areaOfCover": "G.C.C, Jordan, plus Iran, Lebanon, Syria, Egypt, Tunisia, Morocco, Algeria, India, Pakistan, Sri Lanka, Bangladesh, Korea, the Philippines, Indonesia, Nepal & Bhutan",
-        "yearlyMaximum": "AED 2,500,000",
-        "outsideAreaOfCover": "Worldwide, Up to AED 250,000",
-        "inpatientDirectBillingNetwork": "A.2",
-        "complementaryTherapy": "AED 3,000 in aggregate",
-        "perVisitDeductible": "AED 50 applicable to all outpatient consultations",
-        "outpatientDirectBillingNetwork": "A.2 (selected facilities have 20% co-insurance)",
-        "healthScreen": "AED 1,000",
-        "healthScreenAmount": 1000.0,
-        "preexistingConditionsWithinUAE": "AED 2,500,000",
-        "preexistingConditionsWithinUAEAmount": 2500000.0,
-        "preexistingConditionsOutsideUAE": "AED 2,500",
-        "preexistingConditionsOutsideUAEAmount": 2500.0,
-        "optical": "No Benefit",
-        "psychiatricTreatment": "AED 10,000 30% co-insurance",
-        "psychiatricTreatmentAmount": 10000.0,
-        "normalPregnancyChildbirth": "AED 20,000 (12 month waiting period)",
-        "routineDentalCare": "AED 2,000, 20% co-insurance",
-        "ancillaryEquipment": "AED 500",
-        "ancillaryEquipmentAmount": 500.0,
-        "personalAccident": "AED 75,000",
-        "personalAccidentAmount": 75000.0,
-        "teleConsultation": "Included"
-      }
-    },
-    "details": {
-      "outPatient": [
-        {
-          "testAndTreatment": "10% co insurance",
-          "heading": "Tests and Treatments for non-pre-existing conditions"
-        },
-        {
-          "Pharmacy": "Covered subject to pre authorization",
-          "heading": "Pharmacy for non-pre-existing conditions"
-        },
-        {
-          "physiotherapy": "Covered subject to pre authorization with 10% co insurance",
-          "heading": "Physiotherapy"
-        }
-      ],
-      "inPatient": [
-        {
-          "testAndTreatment": "Covered subject to pre authorization",
-          "heading": "Tests and Treatments for non-pre-existing conditions"
-        },
-        {
-          "Room and Board": "Private Room",
-          "heading": "Room and Board"
-        }
-      ],
-      "maternity": [
-        {
-          "normalDelivery": "Covered up to a of AED 20,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Normal Delivery"
-        },
-        {
-          "cesarian": "Covered up to a of AED 20,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Cesarian Section"
-        },
-        {
-          "mismarriage": "Covered up to a of AED 20,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Miscarriage/Legal abortion"
-        },
-        {
-          "insideUAEOutsideNetwork": "Covered up to a of AED 20,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Inside UAE outside the network"
-        },
-        {
-          "co-insurance": "10% co insurance on all maternity services",
-          "heading": "Co Insurance"
-        },
-        {
-          "waitingPeriod": "NIL",
-          "heading": "Waiting Period"
-        },
-        {
-          "outPatientservice": "All Outpatient services provided in relation to maternity would be covered from the policy limit subject to pre authorization",
-          "heading": "Outpatient Services"
-        }
-      ],
-      "preExistingMedicalCondition": [
-        {
-          "subLimitInpatientOutpatient": "Covered up to annual limit subject to pre authorization and applicable co insurance",
-          "heading": "Sub Limit for Outpatient & Inpatient Treatment inside UAE"
-        },
-        {
-          "outpatientPharmacy": "Covered up to annual limit subject to pre authorization with 10% co insurance",
-          "heading": "Outpatient Pharmacy"
-        },
-        {
-          "waitingPeriod": "Pre Existing conditions are covered from the enrolment date of first scheme membership, subject to declaration at inception and individual medical underwriting",
-          "heading": "Waiting Period"
-        },
-        {
-          "note": "Undeclared preexisting conditions will not be covered during the policy period and will be underwritten at renewal",
-          "heading": "Note"
-        },
-        {
-          "preexistingOutsideUAE": "Covered up to AED 2500 with 10% co insurance on outpatient services",
-          "heading": "Pre-existing conditions outside UAE"
-        }
-      ],
-      "otherBenefits": [
-        {
-          "dental": "Covered up to AED 2000 with 20% co insurance & 9 months waiting period (Dental Consultation, Tooth Extraction, Amalgam & Composite filling, Root Canal Treatment (R.C.T), Scaling, Bridgework, Crown at a grade appropriate to restore function only, treatment of gum disease)",
-          "heading": "Dental"
-        },
-        {
-          "optical": "No Benefit",
-          "heading": "Optical"
-        },
-        {
-          "alternative": "Covered up to AED 3000 on reimbursement basis (Includes courses of chiropractic treatment and osteopathy/alternative treatment)",
-          "heading": "Alternatives Medicines"
-        }
-      ],
-      "basisClaim": [
-        {
-          "withinNetwork": "Covered subject to pre-authorization",
-          "heading": "Within Network"
-        },
-        {
-          "outsideNetwork": "Covered on reimbursement as per applicable UAE tariff rates",
-          "heading": "Outside network within Geographical Scope"
-        }
-      ],
-      "area": {
-        "name": "UAE and Regional",
-        "geographicalScope": "A.G.C.C: Arabian Gulf Co-operation Council member countries being Saudi Arabia, Kuwait, Bahrain, Qatar, UAE, Oman and Jordan, plus Iran, Lebanon, Syria, Egypt, Tunisia, Morocco, Algeria, India, Pakistan, Sri Lanka, Bangladesh, Korea, the Philippines, Indonesia, Nepal & Bhutan"
-      },
-      "copayForTest": {
-        "name": "10% Copay"
-      },
-      "copayForConsultation": {
-        "name": "10% Copay"
-      },
-      "inpatientnetworkProvider": {
-        "networkName": "GIG - IH 2"
-      },
-      "outpatientnetworkProvider": {
-        "networkName": "GIG - IH 2"
-      },
-      "Dental Coverage": "Yes",
-      "Optical Coverage": "No",
-      "Wellness Coverage": "Yes",
-      "Coverage Amount": "2500000"
-    }
-  },
-  {
-    "id": "plan-8ec9b91c-ef97-435f-95db-b03539afb139",
-    "type": "plan",
-    "leadId": "test-gig-20260127-174415",
-    "vendorId": "vendor-gig-gulf",
-    "fetchedAt": "2026-01-27T17:45:49.390359",
-    "vendorName": "GIG Gulf Insurance",
-    "vendorCode": "GIG",
-    "planName": "Smart Health - Gold-AUH",
-    "planCode": "GIG-PLA-SmartHealthGoldAUH",
-    "planType": "standard",
-    "annualPremium": 5011.0,
-    "monthlyPremium": 417.58,
-    "currency": "AED",
-    "annualLimit": 500000.0,
-    "inpatientLimit": 0,
-    "outpatientLimit": 0,
-    "maternityLimit": 15000.0,
-    "emergencyLimit": 0,
-    "pharmacyLimit": 0,
-    "dentalLimit": 1000.0,
-    "opticalLimit": 0,
-    "deductible": 50.0,
-    "deductibleMetric": "AED",
-    "coInsurance": 30.0,
-    "coInsuranceMetric": "%",
-    "copays": {},
-    "waitingPeriod": 360,
-    "waitingPeriodMetric": "days",
-    "waitingPeriods": {
-      "general": 360
-    },
-    "benefits": [
-      {
-        "categoryId": "network",
-        "categoryName": "Network",
-        "benefits": [
-          {
-            "name": "Network",
-            "description": "OP@ A.4 / IP@ A.3",
-            "covered": true,
-            "limit": "OP@ A.4 / IP@ A.3",
-            "benefitId": "1"
-          }
-        ]
-      },
-      {
-        "categoryId": "outpatient",
-        "categoryName": "Outpatient Benefits",
-        "benefits": [
-          {
-            "name": "Per Visit Deductible",
-            "value": "AED 50 applicable to all outpatient consultations",
-            "covered": true,
-            "description": "AED 50 applicable to all outpatient consultations",
-            "limit": "AED 50 applicable to all outpatient consultations"
-          },
-          {
-            "name": "Teleconsultation",
-            "value": "Included",
-            "covered": true,
-            "description": "Included",
-            "limit": "Included"
-          }
-        ]
-      },
-      {
-        "categoryId": "maternity",
-        "categoryName": "Maternity Benefits",
-        "benefits": [
-          {
-            "name": "Maternity Coverage",
-            "value": "AED 15,000 (12 month waiting period)",
-            "covered": true,
-            "description": "AED 15,000 (12 month waiting period)",
-            "limit": "AED 15,000 (12 month waiting period)"
-          }
-        ]
-      },
-      {
-        "categoryId": "dental",
-        "categoryName": "Dental Coverage",
-        "benefits": [
-          {
-            "name": "Dental Coverage",
-            "value": "AED 1,000, 20% co-insurance",
-            "covered": true,
-            "description": "AED 1,000, 20% co-insurance",
-            "limit": "AED 1,000, 20% co-insurance"
-          }
-        ]
-      },
-      {
-        "categoryId": "alternative",
-        "categoryName": "Alternative Medicine",
-        "benefits": [
-          {
-            "name": "Complementary Therapy",
-            "value": "AED 3,000 in aggregate",
-            "covered": true,
-            "description": "AED 3,000 in aggregate",
-            "limit": "AED 3,000 in aggregate"
-          }
-        ]
-      },
-      {
-        "categoryId": "emergency",
-        "categoryName": "Emergency Services",
-        "benefits": [
-          {
-            "name": "Personal Accident",
-            "value": "AED 40,000",
-            "covered": true,
-            "description": "AED 40,000",
-            "limit": "AED 40,000"
-          }
-        ]
-      },
-      {
-        "categoryId": "diagnostics",
-        "categoryName": "Diagnostic Services",
-        "benefits": [
-          {
-            "name": "Health Screening",
-            "value": "AED 500",
-            "covered": true,
-            "description": "AED 500",
-            "limit": "AED 500"
-          }
-        ]
-      },
-      {
-        "categoryId": "other-coverage",
-        "categoryName": "Other Coverage Details",
-        "benefits": [
-          {
-            "name": "Geographical Coverage",
-            "value": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country",
-            "covered": true,
-            "description": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country",
-            "limit": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country"
-          },
-          {
-            "name": "Annual Limit",
-            "value": "AED 500,000",
-            "covered": true,
-            "description": "AED 500,000",
-            "limit": "AED 500,000"
-          },
-          {
-            "name": "Outside Coverage Area",
-            "value": "Worldwide, Up to AED 50,000",
-            "covered": true,
-            "description": "Worldwide, Up to AED 50,000",
-            "limit": "Worldwide, Up to AED 50,000"
-          },
-          {
-            "name": "Pre-existing Conditions (UAE)",
-            "value": "AED 250,000",
-            "covered": true,
-            "description": "AED 250,000",
-            "limit": "AED 250,000"
-          },
-          {
-            "name": "Pre-existing Conditions (Outside UAE)",
-            "value": "AED 2,500",
-            "covered": true,
-            "description": "AED 2,500",
-            "limit": "AED 2,500"
-          },
-          {
-            "name": "Psychiatric Treatment",
-            "value": "AED 5,000 30% co-insurance",
-            "covered": true,
-            "description": "AED 5,000 30% co-insurance",
-            "limit": "AED 5,000 30% co-insurance"
-          }
-        ]
-      }
-    ],
-    "exclusions": [
-      "Subject to policy terms and conditions"
-    ],
-    "lineOfBusiness": "medical",
-    "lobSpecificData": {},
-    "isAvailable": true,
-    "isSelected": false,
-    "isRecommended": false,
-    "fetchRequestId": "",
-    "source": "rpa",
-    "rawPlanData": {
-      "plan_name": "Smart Health - Gold-AUH",
-      "premium": "AED 5011.0",
-      "coverage_limit": null,
-      "coverage_details": {
-        "Geographical Coverage": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country",
-        "Annual Limit": "AED 500,000",
-        "Outside Coverage Area": "Worldwide, Up to AED 50,000",
-        "Inpatient Network": "A.3",
-        "Complementary Therapy": "AED 3,000 in aggregate",
-        "Per Visit Deductible": "AED 50 applicable to all outpatient consultations",
-        "Outpatient Network": "A.4",
-        "Health Screening": "AED 500",
-        "healthScreenAmount": 500.0,
-        "Pre-existing Conditions (UAE)": "AED 250,000",
-        "preexistingConditionsWithinUAEAmount": 250000.0,
-        "Pre-existing Conditions (Outside UAE)": "AED 2,500",
-        "preexistingConditionsOutsideUAEAmount": 2500.0,
-        "Optical Coverage": "No Benefit",
-        "Psychiatric Treatment": "AED 5,000 30% co-insurance",
-        "psychiatricTreatmentAmount": 5000.0,
-        "Maternity Coverage": "AED 15,000 (12 month waiting period)",
-        "Dental Coverage": "AED 1,000, 20% co-insurance",
-        "Medical Equipment": "No benefit",
-        "Personal Accident": "AED 40,000",
-        "personalAccidentAmount": 40000.0,
-        "Teleconsultation": "Included"
-      },
-      "full_data": {
-        "index": 4,
-        "raw_text": "Smart Health - Gold-AUH\nAED5,011\n\nYearly\n\nArea Of Cover\nUAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country\nYearly Maximum\nAED 500,000\nOutside Area of Cover\nWorldwide, Up to AED 50,000\nIn-Patient direct billing Network *\nA.3\nComplementary and Alternative Therapy/Homeopathy/Ayurveda\nAED 3,000 in aggregate\nPer visit co-insurance\nAED 50 applicable to all outpatient consultations\nApplicable Out-patient direct billing network\nA.4\nHealth Screen\nAED 500\nPre-existing conditions (including preexisting chronic conditions) and chronic conditions – Within Abu Dhabi\nAED 250,000\nPre-existing conditions (including preexisting chronic conditions) and chronic conditions – Outside Abu Dhabi\nAED 2,500\nOptical\nNo Benefit\nTreatment of transient mental disorder or acute reaction to stress within the Emirate of Abu Dhabi\nAED 250,000\nPsychiatric treatment outside Abu Dhabi (30% co-insurance)\nAED 5,000 30% co-insurance\nWithin the Emirate of Abu Dhabi: Pre and post-natal complications\nIncluded (Nil Waiting period)\nOutside the Emirate of Abu Dhabi: Pre and post-natal complications\nIncluded (12 month waiting period)\nWithin the Emirate of Abu Dhabi: Pregnancy and Delivery up to\nAED 250,000\nOutside the Emirate of Abu Dhabi: Normal Pregnancy, Childbirth (Delivery) and medically necessary Caesarean section\nAED 15,000 (12 month waiting period)\nVaccinations for children up to 6 years old\nAED 1,000\nRoutine dental care\nAED 1,000, 20% co-insurance\nAncillary equipment\nNo benefit\nPersonal accident\nAED 40,000\nWork related injuries\nAED 250,000\nLife threatening congenital conditions (Life-threatening birth defects, deformities and congenital diseases for new born children only)\nAED 250,000\nTele-consultation\nIncluded\nAdd to compare\nBUY NOW",
-        "plan_name": "Smart Health - Gold-AUH",
-        "premium": 5011.0
-      },
-      "original_coverage_details": {
-        "areaOfCover": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country",
-        "yearlyMaximum": "AED 500,000",
-        "outsideAreaOfCover": "Worldwide, Up to AED 50,000",
-        "inpatientDirectBillingNetwork": "A.3",
-        "complementaryTherapy": "AED 3,000 in aggregate",
-        "perVisitDeductible": "AED 50 applicable to all outpatient consultations",
-        "outpatientDirectBillingNetwork": "A.4",
-        "healthScreen": "AED 500",
-        "healthScreenAmount": 500.0,
-        "preexistingConditionsWithinUAE": "AED 250,000",
-        "preexistingConditionsWithinUAEAmount": 250000.0,
-        "preexistingConditionsOutsideUAE": "AED 2,500",
-        "preexistingConditionsOutsideUAEAmount": 2500.0,
-        "optical": "No Benefit",
-        "psychiatricTreatment": "AED 5,000 30% co-insurance",
-        "psychiatricTreatmentAmount": 5000.0,
-        "normalPregnancyChildbirth": "AED 15,000 (12 month waiting period)",
-        "routineDentalCare": "AED 1,000, 20% co-insurance",
-        "ancillaryEquipment": "No benefit",
-        "personalAccident": "AED 40,000",
-        "personalAccidentAmount": 40000.0,
-        "teleConsultation": "Included"
-      }
-    },
-    "details": {
-      "outPatient": [
-        {
-          "testAndTreatment": "10% co insurance",
-          "heading": "Tests and Treatments for non-pre-existing conditions"
-        },
-        {
-          "Pharmacy": "Covered subject to pre authorization",
-          "heading": "Pharmacy for non-pre-existing conditions"
-        },
-        {
-          "physiotherapy": "Covered subject to pre authorization with 10% co insurance",
-          "heading": "Physiotherapy"
-        }
-      ],
-      "inPatient": [
-        {
-          "testAndTreatment": "Covered subject to pre authorization",
-          "heading": "Tests and Treatments for non-pre-existing conditions"
-        },
-        {
-          "Room and Board": "Private Room",
-          "heading": "Room and Board"
-        }
-      ],
-      "maternity": [
-        {
-          "normalDelivery": "Covered up to a of AED 15,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Normal Delivery"
-        },
-        {
-          "cesarian": "Covered up to a of AED 15,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Cesarian Section"
-        },
-        {
-          "mismarriage": "Covered up to a of AED 15,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Miscarriage/Legal abortion"
-        },
-        {
-          "insideUAEOutsideNetwork": "Covered up to a of AED 15,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Inside UAE outside the network"
-        },
-        {
-          "co-insurance": "10% co insurance on all maternity services",
-          "heading": "Co Insurance"
-        },
-        {
-          "waitingPeriod": "NIL",
-          "heading": "Waiting Period"
-        },
-        {
-          "outPatientservice": "All Outpatient services provided in relation to maternity would be covered from the policy limit subject to pre authorization",
-          "heading": "Outpatient Services"
-        }
-      ],
-      "preExistingMedicalCondition": [
-        {
-          "subLimitInpatientOutpatient": "Covered up to a sub limit of AED 150,000",
-          "heading": "Sub Limit for Outpatient & Inpatient Treatment inside UAE"
-        },
-        {
-          "outpatientPharmacy": "Covered up to sub limit subject to pre authorization with 10% co insurance",
-          "heading": "Outpatient Pharmacy"
-        },
-        {
-          "waitingPeriod": "Pre Existing conditions are covered from the enrolment date of first scheme membership, subject to declaration at inception and individual medical underwriting",
-          "heading": "Waiting Period"
-        },
-        {
-          "note": "Undeclared preexisting conditions will not be covered during the policy period and will be underwritten at renewal",
-          "heading": "Note"
-        },
-        {
-          "preexistingOutsideUAE": "Covered up to AED 2500 with 10% co insurance on outpatient services",
-          "heading": "Pre-existing conditions outside UAE"
-        }
-      ],
-      "otherBenefits": [
-        {
-          "dental": "Covered up to AED 1000 with 20% co insurance & 9 months waiting period (Dental Consultation, Tooth Extraction, Amalgam & Composite filling, Root Canal Treatment (R.C.T), Scaling, Bridgework, Crown at a grade appropriate to restore function only, treatment of gum disease)",
-          "heading": "Dental"
-        },
-        {
-          "optical": "No Benefit",
-          "heading": "Optical"
-        },
-        {
-          "alternative": "Covered up to AED 3000 on reimbursement basis (Includes courses of chiropractic treatment and osteopathy/alternative treatment)",
-          "heading": "Alternatives Medicines"
-        }
-      ],
-      "basisClaim": [
-        {
-          "withinNetwork": "Covered subject to pre-authorization",
-          "heading": "Within Network"
-        },
-        {
-          "outsideNetwork": "Covered on reimbursement as per applicable UAE tariff rates",
-          "heading": "Outside network within Geographical Scope"
-        }
-      ],
-      "area": {
-        "name": "UAE and Regional",
-        "geographicalScope": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country"
-      },
-      "copayForTest": {
-        "name": "10% Copay"
-      },
-      "copayForConsultation": {
-        "name": "10% Copay"
-      },
-      "inpatientnetworkProvider": {
-        "networkName": "GIG - IH 3 for IP IH 4 for OP"
-      },
-      "outpatientnetworkProvider": {
-        "networkName": "GIG - IH 3 for IP IH 4 for OP"
-      },
-      "Dental Coverage": "Yes",
-      "Optical Coverage": "No",
-      "Wellness Coverage": "Yes",
-      "Coverage Amount": "500000"
-    }
-  },
-  {
-    "id": "plan-217bcd2d-9e67-4aa2-a38f-9363b068ddf8",
-    "type": "plan",
-    "leadId": "test-gig-20260127-174415",
-    "vendorId": "vendor-gig-gulf",
-    "fetchedAt": "2026-01-27T17:45:49.427420",
-    "vendorName": "GIG Gulf Insurance",
-    "vendorCode": "GIG",
-    "planName": "Smart Health - Silver-AUH",
-    "planCode": "GIG-PLA-SmartHealthSilverAUH",
-    "planType": "standard",
-    "annualPremium": 2878.0,
-    "monthlyPremium": 239.83,
-    "currency": "AED",
-    "annualLimit": 250000.0,
-    "inpatientLimit": 0,
-    "outpatientLimit": 0,
-    "maternityLimit": 0,
-    "emergencyLimit": 0,
-    "pharmacyLimit": 0,
-    "dentalLimit": 0,
-    "opticalLimit": 0,
-    "deductible": 25.0,
-    "deductibleMetric": "AED",
-    "coInsurance": 30.0,
-    "coInsuranceMetric": "%",
-    "copays": {},
-    "waitingPeriod": 360,
-    "waitingPeriodMetric": "days",
-    "waitingPeriods": {
-      "general": 360
-    },
-    "benefits": [
-      {
-        "categoryId": "network",
-        "categoryName": "Network",
-        "benefits": [
-          {
-            "name": "Network",
-            "description": "OP@ A.5 / IP@ A.4",
-            "covered": true,
-            "limit": "OP@ A.5 / IP@ A.4",
-            "benefitId": "1"
-          }
-        ]
-      },
-      {
-        "categoryId": "outpatient",
-        "categoryName": "Outpatient Benefits",
-        "benefits": [
-          {
-            "name": "Per Visit Deductible",
-            "value": "AED 25 applicable to all outpatient consultations",
-            "covered": true,
-            "description": "AED 25 applicable to all outpatient consultations",
-            "limit": "AED 25 applicable to all outpatient consultations"
-          },
-          {
-            "name": "Teleconsultation",
-            "value": "Included",
-            "covered": true,
-            "description": "Included",
-            "limit": "Included"
-          }
-        ]
-      },
-      {
-        "categoryId": "emergency",
-        "categoryName": "Emergency Services",
-        "benefits": [
-          {
-            "name": "Personal Accident",
-            "value": "AED 25,000",
-            "covered": true,
-            "description": "AED 25,000",
-            "limit": "AED 25,000"
-          }
-        ]
-      },
-      {
-        "categoryId": "other-coverage",
-        "categoryName": "Other Coverage Details",
-        "benefits": [
-          {
-            "name": "Geographical Coverage",
-            "value": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country",
-            "covered": true,
-            "description": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country",
-            "limit": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country"
-          },
-          {
-            "name": "Annual Limit",
-            "value": "AED 250,000",
-            "covered": true,
-            "description": "AED 250,000",
-            "limit": "AED 250,000"
-          },
-          {
-            "name": "Pre-existing Conditions (UAE)",
-            "value": "AED 250,000",
-            "covered": true,
-            "description": "AED 250,000",
-            "limit": "AED 250,000"
-          },
-          {
-            "name": "Pre-existing Conditions (Outside UAE)",
-            "value": "AED 1,500",
-            "covered": true,
-            "description": "AED 1,500",
-            "limit": "AED 1,500"
-          },
-          {
-            "name": "Psychiatric Treatment",
-            "value": "AED 5,000 30% co-insurance",
-            "covered": true,
-            "description": "AED 5,000 30% co-insurance",
-            "limit": "AED 5,000 30% co-insurance"
-          }
-        ]
-      }
-    ],
-    "exclusions": [
-      "Subject to policy terms and conditions"
-    ],
-    "lineOfBusiness": "medical",
-    "lobSpecificData": {},
-    "isAvailable": true,
-    "isSelected": false,
-    "isRecommended": false,
-    "fetchRequestId": "",
-    "source": "rpa",
-    "rawPlanData": {
-      "plan_name": "Smart Health - Silver-AUH",
-      "premium": "AED 2878.0",
-      "coverage_limit": null,
-      "coverage_details": {
-        "Geographical Coverage": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country",
-        "Annual Limit": "AED 250,000",
-        "Outside Coverage Area": "No Benefit",
-        "Inpatient Network": "A.4",
-        "Complementary Therapy": "No Benefit",
-        "Per Visit Deductible": "AED 25 applicable to all outpatient consultations",
-        "Outpatient Network": "A.5",
-        "Health Screening": "No Benefit",
-        "Pre-existing Conditions (UAE)": "AED 250,000",
-        "preexistingConditionsWithinUAEAmount": 250000.0,
-        "Pre-existing Conditions (Outside UAE)": "AED 1,500",
-        "preexistingConditionsOutsideUAEAmount": 1500.0,
-        "Optical Coverage": "No Benefit",
-        "Psychiatric Treatment": "AED 5,000 30% co-insurance",
-        "psychiatricTreatmentAmount": 5000.0,
-        "Maternity Coverage": "No Benefit",
-        "Dental Coverage": "No benefit",
-        "Medical Equipment": "No benefit",
-        "Personal Accident": "AED 25,000",
-        "personalAccidentAmount": 25000.0,
-        "Teleconsultation": "Included"
-      },
-      "full_data": {
-        "index": 5,
-        "raw_text": "Smart Health - Silver-AUH\nAED2,878\n\nYearly\n\nArea Of Cover\nUAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country\nYearly Maximum\nAED 250,000\nOutside Area of Cover\nNo Benefit\nIn-Patient direct billing Network *\nA.4\nComplementary and Alternative Therapy/Homeopathy/Ayurveda\nNo Benefit\nPer visit co-insurance\nAED 25 applicable to all outpatient consultations\nApplicable Out-patient direct billing network\nA.5\nHealth Screen\nNo Benefit\nPre-existing conditions (including preexisting chronic conditions) and chronic conditions – Within Abu Dhabi\nAED 250,000\nPre-existing conditions (including preexisting chronic conditions) and chronic conditions – Outside Abu Dhabi\nAED 1,500\nOptical\nNo Benefit\nTreatment of transient mental disorder or acute reaction to stress within the Emirate of Abu Dhabi\nAED 250,000\nPsychiatric treatment outside Abu Dhabi (30% co-insurance)\nAED 5,000 30% co-insurance\nWithin the Emirate of Abu Dhabi: Pre and post-natal complications\nIncluded (Nil Waiting period)\nOutside the Emirate of Abu Dhabi: Pre and post-natal complications\nIncluded (12 month waiting period)\nWithin the Emirate of Abu Dhabi: Pregnancy and Delivery up to\nAED 250,000\nOutside the Emirate of Abu Dhabi: Normal Pregnancy, Childbirth (Delivery) and medically necessary Caesarean section\nNo Benefit\nVaccinations for children up to 6 years old\nNo benefit\nRoutine dental care\nNo benefit\nAncillary equipment\nNo benefit\nPersonal accident\nAED 25,000\nWork related injuries\nAED 250,000\nLife threatening congenital conditions (Life-threatening birth defects, deformities and congenital diseases for new born children only)\nAED 250,000\nTele-consultation\nIncluded\nAdd to compare\nBUY NOW",
-        "plan_name": "Smart Health - Silver-AUH",
-        "premium": 2878.0
-      },
-      "original_coverage_details": {
-        "areaOfCover": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country",
-        "yearlyMaximum": "AED 250,000",
-        "outsideAreaOfCover": "No Benefit",
-        "inpatientDirectBillingNetwork": "A.4",
-        "complementaryTherapy": "No Benefit",
-        "perVisitDeductible": "AED 25 applicable to all outpatient consultations",
-        "outpatientDirectBillingNetwork": "A.5",
-        "healthScreen": "No Benefit",
-        "preexistingConditionsWithinUAE": "AED 250,000",
-        "preexistingConditionsWithinUAEAmount": 250000.0,
-        "preexistingConditionsOutsideUAE": "AED 1,500",
-        "preexistingConditionsOutsideUAEAmount": 1500.0,
-        "optical": "No Benefit",
-        "psychiatricTreatment": "AED 5,000 30% co-insurance",
-        "psychiatricTreatmentAmount": 5000.0,
-        "normalPregnancyChildbirth": "No Benefit",
-        "routineDentalCare": "No benefit",
-        "ancillaryEquipment": "No benefit",
-        "personalAccident": "AED 25,000",
-        "personalAccidentAmount": 25000.0,
-        "teleConsultation": "Included"
-      }
-    },
-    "details": {
-      "outPatient": [
-        {
-          "testAndTreatment": "10% co insurance",
-          "heading": "Tests and Treatments for non-pre-existing conditions"
-        },
-        {
-          "Pharmacy": "Covered subject to pre authorization",
-          "heading": "Pharmacy for non-pre-existing conditions"
-        },
-        {
-          "physiotherapy": "Covered subject to pre authorization with 10% co insurance",
-          "heading": "Physiotherapy"
-        }
-      ],
-      "inPatient": [
-        {
-          "testAndTreatment": "Covered subject to pre authorization",
-          "heading": "Tests and Treatments for non-pre-existing conditions"
-        },
-        {
-          "Room and Board": "Private Room",
-          "heading": "Room and Board"
-        }
-      ],
-      "maternity": [
-        {
-          "normalDelivery": "Covered up to a of AED 10,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Normal Delivery"
-        },
-        {
-          "cesarian": "Covered up to a of AED 10,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Cesarian Section"
-        },
-        {
-          "mismarriage": "Covered up to a of AED 10,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Miscarriage/Legal abortion"
-        },
-        {
-          "insideUAEOutsideNetwork": "Covered up to a of AED 10,000/- for inpatient treatment in aggregate to all inpatient & outpatient maternity treatment",
-          "heading": "Inside UAE outside the network"
-        },
-        {
-          "co-insurance": "10% co insurance on all maternity services",
-          "heading": "Co Insurance"
-        },
-        {
-          "waitingPeriod": "NIL",
-          "heading": "Waiting Period"
-        },
-        {
-          "outPatientservice": "All Outpatient services provided in relation to maternity would be covered from the policy limit subject to pre authorization",
-          "heading": "Outpatient Services"
-        }
-      ],
-      "preExistingMedicalCondition": [
-        {
-          "subLimitInpatientOutpatient": "Covered up to a sub limit of AED 150,000",
-          "heading": "Sub Limit for Outpatient & Inpatient Treatment inside UAE"
-        },
-        {
-          "outpatientPharmacy": "Covered up to sub limit subject to pre authorization with 10% co insurance",
-          "heading": "Outpatient Pharmacy"
-        },
-        {
-          "waitingPeriod": "Pre Existing conditions are covered from the enrolment date of first scheme membership, subject to declaration at inception and individual medical underwriting",
-          "heading": "Waiting Period"
-        },
-        {
-          "note": "Undeclared preexisting conditions will not be covered during the policy period and will be underwritten at renewal",
-          "heading": "Note"
-        },
-        {
-          "preexistingOutsideUAE": "Covered up to AED 1500 with 10% co insurance on outpatient services",
-          "heading": "Pre-existing conditions outside UAE"
-        }
-      ],
-      "otherBenefits": [
-        {
-          "dental": "No Benefit",
-          "heading": "Dental"
-        },
-        {
-          "optical": "No Benefit",
-          "heading": "Optical"
-        },
-        {
-          "alternative": "No Benefit",
-          "heading": "Alternatives Medicines"
-        }
-      ],
-      "basisClaim": [
-        {
-          "withinNetwork": "Covered subject to pre-authorization",
-          "heading": "Within Network"
-        },
-        {
-          "outsideNetwork": "Covered on reimbursement as per applicable UAE tariff rates",
-          "heading": "Outside network within Geographical Scope"
-        }
-      ],
-      "area": {
-        "name": "UAE and Regional",
-        "geographicalScope": "UAE plus any one of India, Pakistan, Sri Lanka, Bangladesh, the Philippines, Nepal & Bhutan being your home country"
-      },
-      "copayForTest": {
-        "name": "10% Copay"
-      },
-      "copayForConsultation": {
-        "name": "10% Copay"
-      },
-      "inpatientnetworkProvider": {
-        "networkName": "GIG  - IH 4 for IP IH 5 for OP"
-      },
-      "outpatientnetworkProvider": {
-        "networkName": "GIG  - IH 4 for IP IH 5 for OP"
-      },
-      "Dental Coverage": "No",
-      "Optical Coverage": "No",
-      "Wellness Coverage": "Yes",
-      "Coverage Amount": "250000"
+      "original_coverage_details": {}
     }
   }
 ]
