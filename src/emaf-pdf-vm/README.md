@@ -8,9 +8,9 @@ This service handles PDF generation using Playwright/Chromium, running as a Node
 
 ## Architecture
 
-- **Express API** on port 8080
+- **Express API** on port 8081 (configurable via PORT env var)
 - **pm2** process manager
-- **nginx** reverse proxy (routes `/api/pdf/*` to localhost:8080)
+- **nginx** reverse proxy (routes `/api/pdf/*` to localhost:8081)
 - **Playwright** for HTML-to-PDF conversion
 
 ## Quick Start
