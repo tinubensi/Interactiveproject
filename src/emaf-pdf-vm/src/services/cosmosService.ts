@@ -94,6 +94,40 @@ class CosmosService {
     
     return resource as EmafSubmission;
   }
+
+  /**
+   * Get lead by ID from Cosmos DB
+   * Note: This assumes leads are stored in a container accessible via the same connection
+   * Adjust container name based on your Cosmos DB structure
+   */
+  async getLeadById(leadId: string, lineOfBusiness: string): Promise<any | null> {
+    await this.initialize();
+
+    try {
+      // Try to access leads container (adjust container name if different)
+      const leadsContainer = this.database!.container('lead-service-db');
+      
+      const querySpec = {
+        query: 'SELECT * FROM c WHERE c.id = @id AND c.lineOfBusiness = @lob',
+        parameters: [
+          { name: '@id', value: leadId },
+          { name: '@lob', value: lineOfBusiness }
+        ]
+      };
+
+      const { resources } = await leadsContainer.items.query(querySpec).fetchAll();
+      
+      if (resources && resources.length > 0) {
+        return resources[0];
+      }
+      
+      return null;
+    } catch (error: any) {
+      // If leads container doesn't exist or query fails, return null
+      console.error('Error fetching lead from Cosmos DB:', error.message);
+      return null;
+    }
+  }
 }
 
 export const cosmosService = new CosmosService();

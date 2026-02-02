@@ -27,6 +27,43 @@ app.get('/health', (req, res) => {
 });
 
 /**
+ * PDF proxy endpoint - serves PDFs through our domain instead of blob storage
+ * GET /api/pdf/:leadId/:submissionId/prefilled.pdf
+ */
+app.get('/api/pdf/:leadId/:submissionId/prefilled.pdf', async (req, res) => {
+  try {
+    const { leadId, submissionId } = req.params;
+    
+    // Construct blob path
+    const blobPath = `emaf-pdfs/${leadId}/${submissionId}/prefilled.pdf`;
+    
+    console.log(`📥 PDF download request: ${blobPath}`);
+    
+    // Download PDF from blob storage
+    const pdfBuffer = await blobService.downloadPdf(blobPath);
+    
+    // Set security headers and serve PDF
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="prefilled.pdf"');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline';");
+    
+    res.send(pdfBuffer);
+    
+    console.log(`✅ PDF served successfully: ${pdfBuffer.length} bytes`);
+  } catch (error: any) {
+    console.error('❌ PDF download failed:', error);
+    res.status(404).json({
+      success: false,
+      error: 'PDF not found',
+      details: error.message
+    });
+  }
+});
+
+/**
  * PDF generation endpoint
  * POST /api/generate-pdf
  * Body: { submissionId: string, leadId: string }
@@ -102,7 +139,7 @@ app.post('/api/generate-pdf', async (req, res) => {
     
     res.json({
       success: true,
-      pdfUrl: sasUrl,
+      pdfUrl: sasUrl, // Return SAS URL - works everywhere
       blobPath,
       duration: `${duration}s`
     });

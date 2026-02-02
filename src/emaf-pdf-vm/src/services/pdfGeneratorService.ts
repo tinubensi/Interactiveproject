@@ -8,6 +8,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { EmafSubmission, EmafTemplate } from '../models/emafTypes';
 import { templateRenderer } from './templateRenderer';
+import { cosmosService } from './cosmosService';
 
 class PdfGeneratorService {
   private browser: Browser | null = null;
@@ -106,27 +107,77 @@ class PdfGeneratorService {
         );
       }
       
-      console.log('   Step 1: Loading static HTML template (NO DATA PREFILL)...');
-      // Temporarily read template as static HTML for pixel-perfect testing
-      const normalizedVendorCode = template.vendorCode.toLowerCase();
-      const templatePath = join(__dirname, '../../templates/vendors', `${normalizedVendorCode}-emaf.hbs`);
-      const html = readFileSync(templatePath, 'utf-8');
-      console.log(`   ✓ Static HTML loaded (${html.length} characters)`);
-
-      // ORIGINAL CODE (commented out for now):
-      // const html = await templateRenderer.renderTemplate(
-      //   template.vendorCode,
-      //   submission.formData
-      // );
+      // Fetch lead data for salary information (use HTTP API - leads are in different database)
+      let leadData: any = null;
+      
+      try {
+        const leadServiceUrl = process.env.LEAD_SERVICE_URL || process.env.LEAD_SERVICE_BASE_URL || 'https://lead-service.azurewebsites.net';
+        console.log(`   Fetching lead data for salary: ${submission.leadId}`);
+        console.log(`   Service URL: ${leadServiceUrl}/api/leads/get/${submission.leadId}`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch(
+          `${leadServiceUrl}/api/leads/get/${submission.leadId}?lineOfBusiness=medical`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-service-key': process.env.INTERNAL_SERVICE_KEY || process.env.AUTH_SERVICE_KEY || '',
+            },
+            signal: controller.signal,
+          }
+        );
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          const result: any = await response.json();
+          leadData = result.data?.lead || result.lead || result;
+          console.log(`   ✓ Lead data fetched successfully`);
+          console.log(`   Lead has lobData:`, !!leadData?.lobData);
+          console.log(`   Salary field:`, leadData?.lobData?.salary || leadData?.lobData?.salaryRange || 'NOT FOUND');
+        } else {
+          const errorText = await response.text().catch(() => '');
+          console.log(`   ⚠️ HTTP fetch failed (status: ${response.status})`);
+          if (errorText) {
+            console.log(`   Error details: ${errorText.substring(0, 200)}`);
+          }
+        }
+      } catch (error: any) {
+        if (error.name === 'AbortError') {
+          console.log(`   ⚠️ Lead fetch timeout after 5 seconds`);
+        } else {
+          console.log(`   ⚠️ Lead fetch error: ${error.message || String(error)}`);
+        }
+      }
+      
+      if (!leadData) {
+        console.log(`   ⚠️ No lead data available - salary will not be prefilled from lead`);
+      }
+      
+      console.log('   Step 1b: Rendering template with form data...');
+      const html = await templateRenderer.renderTemplate(
+        template.vendorCode,
+        submission.formData,
+        leadData
+      );
+      console.log(`   ✓ Template rendered with data (${html.length} characters)`);
       
       console.log('   Step 2: Launching browser...');
       const browser = await this.getBrowser();
-      const page = await browser.newPage();
-      console.log('   ✓ Browser page created');
+      
+      // Create context with JavaScript disabled for security
+      const context = await browser.newContext({
+        javaScriptEnabled: false,
+      });
+      const page = await context.newPage();
+      console.log('   ✓ Browser page created (JavaScript disabled for security)');
       
       console.log('   Step 3: Loading HTML content...');
       await page.setContent(html, {
-        waitUntil: 'networkidle',
+        waitUntil: 'domcontentloaded', // Changed from networkidle since JS is disabled
         timeout: 30000
       });
       console.log('   ✓ HTML content loaded');
@@ -135,12 +186,17 @@ class PdfGeneratorService {
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
-        preferCSSPageSize: true
+        preferCSSPageSize: true,
+        // Disable PDF features that could be flagged as dangerous
+        displayHeaderFooter: false,
+        // Print tagged PDF for accessibility and security
+        tagged: true,
         // Removed margin option to respect CSS @page { margin: 0; }
       });
       console.log(`   ✓ PDF generated (${pdfBuffer.length} bytes)`);
       
       await page.close();
+      await context.close();
       
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
       console.log(`\n✅ PDF generation completed in ${duration}s`);

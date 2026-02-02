@@ -184,8 +184,14 @@ export interface EmafSubmission {
   customerEmail: string;
   customerPhone: string;
   
-  // Form data
+  // Form data (LEGACY - kept for backward compatibility)
   formData: Record<string, any>;
+  
+  // NEW: Canonical format (single source of truth)
+  canonicalData?: import('./canonicalEmafTypes').UnifiedEmafData;
+  
+  // Migration tracking
+  dataFormat?: 'legacy' | 'canonical' | 'dual';
   
   // Document uploads
   uploadedDocuments: UploadedDocument[];
