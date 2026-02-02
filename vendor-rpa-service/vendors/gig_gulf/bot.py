@@ -504,11 +504,112 @@ class Gig_gulfBot(InsuranceBot):
             await page1.get_by_role("listbox").get_by_role("option", name=work_location).click()
             await asyncio.sleep(0.5)
             
-            # Select Occupation
+            # Select Occupation - use more robust selector similar to visa type
             occupation = form_data.get('occupation', 'Accountant')
-            await page1.get_by_role("button", name="Select Occupation   ").click()
+            self.logger.debug(f"Selecting Occupation: {occupation}")
+            
+            # Ensure no dropdowns are open before clicking occupation button
+            try:
+                open_dropdowns = await page1.locator('div.dropdown-menu.open').count()
+                if open_dropdowns > 0:
+                    self.logger.debug("Closing any open dropdowns before opening occupation...")
+                    await page1.keyboard.press('Escape')
+                    await asyncio.sleep(0.5)
+            except:
+                pass
+            
+            occupation_button = page1.get_by_role("button", name="Select Occupation   ")
+            await occupation_button.click()
+            await asyncio.sleep(0.5)  # Wait for dropdown to open
+            
+            # Wait for the occupation dropdown to be visible
+            try:
+                await page1.wait_for_selector('div.dropdown-menu.open ul[role="listbox"]', state='visible', timeout=5000)
+            except:
+                try:
+                    await page1.wait_for_selector('ul[role="listbox"]', state='visible', timeout=3000)
+                except:
+                    self.logger.debug("Dropdown might already be visible, proceeding...")
+            
             await asyncio.sleep(0.3)
-            await page1.get_by_role("listbox").get_by_role("option", name=occupation).click()
+            
+            # Find the occupation option - search through all listboxes
+            listboxes = []
+            try:
+                listboxes = await page1.locator('div.dropdown-menu.open ul[role="listbox"]').all()
+            except:
+                pass
+            
+            if len(listboxes) == 0:
+                listboxes = await page1.locator('ul[role="listbox"]').all()
+            
+            option_found = False
+            
+            # Search through listboxes to find the one with occupation option
+            for listbox in listboxes:
+                try:
+                    options = await listbox.locator('a[role="option"]').all()
+                    if len(options) == 0:
+                        continue
+                    
+                    # Check if this listbox contains the occupation option
+                    for opt in options:
+                        # Get text from span.text if available, otherwise inner_text
+                        try:
+                            text_span = opt.locator('span.text')
+                            if await text_span.count() > 0:
+                                opt_text = await text_span.inner_text()
+                            else:
+                                opt_text = await opt.inner_text()
+                        except:
+                            opt_text = await opt.inner_text()
+                        
+                        opt_text = opt_text.strip()
+                        
+                        # Try exact match (case-insensitive)
+                        if opt_text.lower() == occupation.lower():
+                            await opt.click()
+                            option_found = True
+                            self.logger.info(f"✓ Occupation selected (exact match): {opt_text}")
+                            break
+                        # Try partial match
+                        elif occupation.lower() in opt_text.lower() or opt_text.lower() in occupation.lower():
+                            await opt.click()
+                            option_found = True
+                            self.logger.info(f"✓ Occupation selected (partial match): {opt_text}")
+                            break
+                    
+                    if option_found:
+                        break
+                except Exception as e:
+                    self.logger.debug(f"Error checking listbox for occupation: {e}")
+                    continue
+            
+            if not option_found:
+                # Last resort: try scoped search within occupation button's parent
+                try:
+                    occupation_button_parent = occupation_button.locator('xpath=ancestor::div[contains(@class, "btn-group") or contains(@class, "form-group")]')
+                    if await occupation_button_parent.count() > 0:
+                        parent_listbox = occupation_button_parent.locator('ul[role="listbox"]')
+                        if await parent_listbox.count() > 0:
+                            await parent_listbox.get_by_role("option").filter(
+                                lambda opt: occupation.lower() in opt.inner_text().lower() or opt.inner_text().lower() in occupation.lower()
+                            ).first.click()
+                            option_found = True
+                            self.logger.info(f"✓ Occupation selected (scoped search): {occupation}")
+                except Exception as e:
+                    self.logger.debug(f"Scoped search failed: {e}")
+                
+                if not option_found:
+                    self.logger.error(f"Could not find occupation option '{occupation}' - trying fallback 'Accountant'")
+                    # Fallback to default occupation
+                    try:
+                        await page1.get_by_role("listbox").get_by_role("option", name="Accountant").click()
+                        self.logger.warning(f"✓ Using fallback occupation: Accountant")
+                    except Exception as e2:
+                        self.logger.error(f"Fallback occupation also failed: {e2}")
+                        raise Exception(f"Failed to select occupation: {occupation}. No matching option found.")
+            
             await asyncio.sleep(0.5)
             
             # Fill Email

@@ -43,7 +43,7 @@ class AlsagrBot(InsuranceBot):
                 raise ValueError("Login URL not found in config")
             
             self.logger.info(f"Navigating to login page: {login_url}")
-            await self.page.goto(login_url, wait_until='networkidle')
+            await self.page.goto(login_url, wait_until='domcontentloaded', timeout=60000)
             
             # Wait for login form to be visible
             await self.page.wait_for_selector('input', timeout=10000)
@@ -79,7 +79,7 @@ class AlsagrBot(InsuranceBot):
             
             if current_url != "https://miportal.alsagrins.ae/quotationsearch":
                 self.logger.debug("Explicitly navigating to quotation search page...")
-                await self.page.goto("https://miportal.alsagrins.ae/quotationsearch", wait_until='networkidle')
+                await self.page.goto("https://miportal.alsagrins.ae/quotationsearch", wait_until='domcontentloaded', timeout=30000)
                 await asyncio.sleep(1)  # Wait for page to stabilize
             
             self.logger.info("Alsagr login successful")
@@ -111,28 +111,45 @@ class AlsagrBot(InsuranceBot):
             
             if self.page.url != search_url:
                 self.logger.debug(f"Navigating to search page explicitly...")
-                await self.page.goto(search_url, wait_until='networkidle')
-                await asyncio.sleep(1)  # Extra wait for page to stabilize
+                try:
+                    await self.page.goto(search_url, wait_until='domcontentloaded', timeout=30000)
+                    # Try to wait for networkidle, but don't fail if it times out
+                    try:
+                        await self.page.wait_for_load_state('networkidle', timeout=10000)
+                    except:
+                        self.logger.debug("  networkidle timeout (OK - page may have background activity)")
+                    await asyncio.sleep(1)
+                except Exception as e:
+                    self.logger.warning(f"Navigation issue: {e}, continuing anyway...")
             else:
                 self.logger.debug("Already on search page, waiting for stability...")
-                await self.page.wait_for_load_state('networkidle')
+                try:
+                    await self.page.wait_for_load_state('networkidle', timeout=10000)
+                except:
+                    self.logger.debug("  networkidle timeout (OK - page may have background activity)")
                 await asyncio.sleep(1)
             
-            # Click "Generate Quick Quotation" button - try multiple variations
-            # (Working script has special character, try multiple methods)
-            self.logger.debug("Clicking Generate Quick Quotation button...")
+            # Click "Generate Quick Quotation" button if it exists (optional - not always present)
+            self.logger.debug("Looking for Generate Quick Quotation button...")
             try:
                 # Try with leading space (matching working script line 41)
-                await self.page.get_by_role("button", name=" Generate Quick Quotation").click()
+                await self.page.get_by_role("button", name=" Generate Quick Quotation").click(timeout=5000)
+                self.logger.debug("✓ Clicked Generate Quick Quotation button")
             except Exception as e1:
                 try:
                     # Try without leading space
                     self.logger.debug("  Retry without leading space...")
-                    await self.page.get_by_role("button", name="Generate Quick Quotation").click()
+                    await self.page.get_by_role("button", name="Generate Quick Quotation").click(timeout=5000)
+                    self.logger.debug("✓ Clicked Generate Quick Quotation button")
                 except Exception as e2:
                     # Try with text locator as fallback
-                    self.logger.debug("  Retry with text locator...")
-                    await self.page.locator("button:has-text('Generate Quick Quotation')").click()
+                    try:
+                        self.logger.debug("  Retry with text locator...")
+                        await self.page.locator("button:has-text('Generate Quick Quotation')").click(timeout=5000)
+                        self.logger.debug("✓ Clicked Generate Quick Quotation button")
+                    except Exception as e3:
+                        # Button not found - that's OK, form might be directly accessible
+                        self.logger.debug("  Generate Quick Quotation button not found (OK - form may be directly accessible)")
             await asyncio.sleep(1)
             
             # Fill form fields
@@ -192,15 +209,51 @@ class AlsagrBot(InsuranceBot):
             # Visa Type dropdown (ONLY for Abu Dhabi and Al Ain)
             # IMPORTANT: Visa Type field only appears for emirates 11 (Abu Dhabi) and 313 (Al Ain)
             if visa_emirate_code in ['11', '313']:
-                visa_type = form_data.get('visaType', '141')  # Default to Employee (141)
-                self.logger.info(f"Selecting visa type: {visa_type} (required for emirate {visa_emirate_code})")
+                visa_type_code = form_data.get('visaType', '141')  # Default to Employee (141)
+                self.logger.info(f"Visa type code from adapter: {visa_type_code} (required for emirate {visa_emirate_code})")
+                
+                # Map code to text for selection (CORRECTED based on portal HTML)
+                visa_type_mapping = {
+                    '281': 'Self Dependent',
+                    '142': 'Employee',      # FIXED: was 'Domestic Visa Holder'
+                    '141': 'Investor',      # FIXED: was 'Employee'
+                    '143': 'Self Dependent' # appears to be duplicate
+                }
+                visa_type_text = visa_type_mapping.get(visa_type_code, 'Employee')
+                self.logger.info(f"Selecting visa type by text: '{visa_type_text}'")
+                
                 try:
                     visa_type_dropdown = self.page.locator("#visaType")
                     await visa_type_dropdown.wait_for(state="visible", timeout=5000)
-                    await visa_type_dropdown.select_option(visa_type, timeout=5000)
-                    self.logger.info(f"✅ Successfully selected visa type: {visa_type}")
+                    
+                    # DEBUG: Log available options
+                    try:
+                        options = await visa_type_dropdown.locator('option').all_text_contents()
+                        self.logger.debug(f"Available visa type options: {options}")
+                    except:
+                        pass
+                    
+                    # Select by LABEL (text) instead of value - more reliable
+                    await visa_type_dropdown.select_option(label=visa_type_text, timeout=5000)
+                    self.logger.info(f"✅ Successfully selected visa type: {visa_type_text} (code: {visa_type_code})")
+                    
+                    # Verify selection
+                    try:
+                        selected_value = await visa_type_dropdown.input_value()
+                        selected_text = await visa_type_dropdown.locator(f'option[value="{selected_value}"]').inner_text()
+                        self.logger.debug(f"✓ Verified visa type: {selected_text} (value: {selected_value})")
+                    except:
+                        pass
+                    
                 except Exception as e:
-                    self.logger.warning(f"Could not select visa type (may not be visible for this emirate): {e}")
+                    self.logger.error(f"❌ Could not select visa type '{visa_type_text}': {e}")
+                    # Try fallback: select by value
+                    try:
+                        self.logger.warning(f"Trying fallback: selecting by value '{visa_type_code}'...")
+                        await visa_type_dropdown.select_option(visa_type_code, timeout=5000)
+                        self.logger.info(f"✅ Selected visa type by value: {visa_type_code}")
+                    except Exception as e2:
+                        self.logger.error(f"❌ Fallback also failed: {e2}")
                 await asyncio.sleep(0.3)
             else:
                 self.logger.info(f"Visa type not required for emirate {visa_emirate_code} (only needed for Abu Dhabi and Al Ain)")
@@ -309,6 +362,26 @@ class AlsagrBot(InsuranceBot):
             has_dependents = len(dependents) > 0
             self.logger.debug(f"Single Member Policy? Has dependents: {has_dependents}")
             
+            # Wait a bit for any background processes to settle
+            self.logger.info("⏳ Waiting for form to stabilize before Single Member Policy...")
+            await asyncio.sleep(3)  # Give form time to settle
+            
+            # Check if loading overlay exists and try to wait for it, but don't block
+            try:
+                is_loading_visible = await self.page.locator(".loading-progress-overlay").is_visible()
+                if is_loading_visible:
+                    self.logger.info("⏳ Loading overlay detected, waiting up to 10s...")
+                    try:
+                        await self.page.wait_for_selector(".loading-progress-overlay", state="hidden", timeout=10000)
+                        self.logger.info("✓ Loading overlay hidden")
+                        await asyncio.sleep(1)
+                    except:
+                        self.logger.warning("⚠️ Loading overlay still visible after 10s, will use force click")
+                else:
+                    self.logger.info("✓ No loading overlay blocking")
+            except:
+                pass
+            
             # Set "Single Member Policy" - try buttons first (most common), then radio buttons
             if has_dependents:
                 # Has dependents - select "No" to reveal dependent fields
@@ -356,23 +429,36 @@ class AlsagrBot(InsuranceBot):
             else:
                 # No dependents - select "Yes"
                 try:
-                    self.logger.debug("Selecting 'Yes' for Single Member Policy (no dependents)...")
-                    # Try button first
-                    await self.page.get_by_role("button", name="Yes").click(timeout=10000)
+                    self.logger.info("🔘 Selecting 'Yes' for Single Member Policy (no dependents)...")
+                    # Try button first with force click as fallback
+                    yes_button = self.page.get_by_role("button", name="Yes")
+                    try:
+                        await yes_button.click(timeout=5000)
+                        self.logger.info("✅ Clicked 'Yes' button (normal click)")
+                    except Exception as e_normal:
+                        # Force click if normal click fails
+                        self.logger.info(f"Normal click failed: {e_normal}, trying force click...")
+                        await yes_button.click(force=True, timeout=5000)
+                        self.logger.info("✅ Clicked 'Yes' button (force click)")
                     await asyncio.sleep(0.5)
                 except Exception as e:
-                    self.logger.warning(f"Could not click 'Yes' button: {e}, trying radio...")
+                    self.logger.warning(f"⚠️ Could not click 'Yes' button: {e}, trying radio...")
                     try:
-                        await self.page.get_by_role("radio", name="Yes").click(timeout=10000)
+                        await self.page.get_by_role("radio", name="Yes").click(force=True, timeout=10000)
+                        self.logger.info("✅ Clicked 'Yes' radio button")
                         await asyncio.sleep(0.5)
                     except Exception as e2:
-                        self.logger.warning(f"Could not click 'Yes' radio: {e2}, trying input selector...")
+                        self.logger.warning(f"⚠️ Could not click 'Yes' radio: {e2}, trying input selector...")
                         try:
-                            await self.page.locator('input[type="radio"][value="Yes"]').click(timeout=10000)
+                            await self.page.locator('input[type="radio"][value="Yes"]').click(force=True, timeout=10000)
+                            self.logger.info("✅ Clicked 'Yes' input radio")
                             await asyncio.sleep(0.5)
                         except Exception as e3:
-                            self.logger.error(f"All 'Yes' selectors failed. Last error: {e3}")
-                            # Continue anyway
+                            self.logger.error(f"❌ ALL 'Yes' selectors failed!")
+                            self.logger.error(f"   Button error: {e}")
+                            self.logger.error(f"   Radio name error: {e2}")
+                            self.logger.error(f"   Radio type error: {e3}")
+                            raise Exception("Failed to click Single Member Policy 'Yes' button - form cannot be submitted")
             
             # NOW handle primary member in Row 1 and dependents - AFTER setting Single Member Policy
             # CRITICAL: Row 1 (#memberFirstName1, etc.) must be filled with PRIMARY member details
@@ -605,18 +691,49 @@ class AlsagrBot(InsuranceBot):
             
             # Wait for plans to load
             self.logger.info("⏳ Waiting for page to load after Show Plans...")
-            await self.page.wait_for_load_state("networkidle", timeout=30000)
+            try:
+                await self.page.wait_for_load_state("networkidle", timeout=30000)
+            except Exception as wait_err:
+                self.logger.warning(f"⚠️ networkidle wait failed (portal slow), continuing anyway: {wait_err}")
+                # Wait a fixed time instead
+                await asyncio.sleep(5)
             
             # Check for validation errors after clicking Show Plans
+            has_validation_error = False
             try:
                 validation_errors = await self.page.locator(".alert-danger, .error, .text-danger, .invalid-feedback").all_text_contents()
                 if validation_errors:
                     self.logger.error(f"❌ VALIDATION ERRORS ON FORM: {validation_errors}")
+                    has_validation_error = True
+                
+                # Also check page text for age validation errors (these might not have specific CSS classes)
+                page_text = await self.page.inner_text("body")
+                age_error_phrases = [
+                    "cannot be less than 18",
+                    "must be at least 18",
+                    "Principal cannot be less than",
+                    "minimum age",
+                    "invalid date of birth"
+                ]
+                for phrase in age_error_phrases:
+                    if phrase.lower() in page_text.lower():
+                        self.logger.error(f"❌ AGE VALIDATION ERROR DETECTED: Found '{phrase}' in page text")
+                        has_validation_error = True
+                        break
+                
+                if has_validation_error:
                     # Take screenshot of validation errors
                     import time
                     screenshot_path = f"/tmp/alsagr_validation_error_{int(time.time())}.png"
                     await self.page.screenshot(path=screenshot_path, full_page=True)
                     self.logger.error(f"📸 Validation error screenshot: {screenshot_path}")
+                    
+                    # Check if we're still on the form page (didn't navigate to results)
+                    current_url = self.page.url
+                    if "quotationsearch" in current_url or "indicativequote" not in current_url:
+                        self.logger.error(f"⚠️  Form submission blocked by validation errors. Still on form page: {current_url}")
+                        # Continue anyway - scraper will detect no plans found
+                    
             except Exception as e:
                 self.logger.debug(f"No validation errors found (this is good): {e}")
             await asyncio.sleep(3)

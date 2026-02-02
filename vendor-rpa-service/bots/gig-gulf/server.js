@@ -19,16 +19,20 @@ app.post('/scrape', async (req, res) => {
   const startTime = Date.now();
   
   try {
-    // Spawn Python bot
+    // Spawn Python bot using venv Python if available
     const botPath = path.join(__dirname, '../../vendors/gig_gulf/cli.py');
-    const python = spawn('python3', [
+    const venvPython = path.join(__dirname, '../../venv/bin/python3');
+    const pythonPath = require('fs').existsSync(venvPython) ? venvPython : 'python3';
+    
+    const python = spawn(pythonPath, [
       botPath,
       '--lead-data', JSON.stringify(leadData)
     ], {
       env: {
         ...process.env,
         PYTHONUNBUFFERED: '1'
-      }
+      },
+      cwd: path.join(__dirname, '../../')
     });
     
     let output = '';

@@ -74,6 +74,7 @@ import {
   getWaitEventById,
   getNotificationById,
   EVENT_TO_STAGE_MAP,
+  PREDEFINED_STAGES,
 } from '../constants/predefined';
 
 // =============================================================================
@@ -699,6 +700,33 @@ async function handleEventForStep(
   log(`[EVENT MATCHING] Instance status: ${instance.status}`);
   log(`[EVENT MATCHING] Instance progress: ${instance.progressPercent}%`);
 
+  // Handle vendor.plans_ready event - advance to Plans Available on FIRST vendor success
+  if (eventType === 'vendor.plans_ready') {
+    const plansCount = (eventData as any).plansCount || 0;
+    const vendorId = (eventData as any).vendorId;
+    
+    log(`[VENDOR EVENT] Vendor ${vendorId} completed with ${plansCount} plans`);
+    
+    if (plansCount > 0 && instance.currentStageName === 'Plans Fetching') {
+      log(`[VENDOR EVENT] First vendor succeeded with ${plansCount} plans - advancing to Plans Available`);
+      
+      const plansAvailableStep = pipeline.steps.find(
+        s => s.type === 'stage' && (s as StageStep).stageName === 'Plans Available'
+      ) as StageStep | undefined;
+      
+      if (plansAvailableStep) {
+        await moveToStep(instance.instanceId, plansAvailableStep, eventType, 'completed', instance, instance.leadId);
+        const freshInstance = await getInstance(instance.instanceId);
+        await executeStageStep(freshInstance, plansAvailableStep, log);
+        return { processed: true, action: 'advanced_on_first_vendor' };
+      }
+    }
+    
+    // Already in Plans Available or Plans Refetching - just acknowledge
+    log(`[VENDOR EVENT] Lead already in "${instance.currentStageName}" - acknowledging vendor completion`);
+    return { processed: true, action: 'vendor_acknowledged' };
+  }
+
   // Handle error events - plans.fetch_failed
   if (eventType === 'plans.fetch_failed') {
     log(`[ERROR EVENT] Received plans.fetch_failed for lead ${instance.leadId}`);
@@ -728,11 +756,19 @@ async function handleEventForStep(
       // CRITICAL FIX: Stage steps advance when:
       // 1. The instance is explicitly waiting for this event (instance.waitingForEvent), OR
       // 2. The event matches the trigger event for the NEXT stage
+      // 3. SPECIAL CASE: If at "Lead Created" and receiving "plans.fetch_started", always advance
 
       log(`[STAGE] Checking if event matches waiting state or next stage trigger...`);
 
+      // SPECIAL CASE: Lead Created stage + plans.fetch_started event
+      // Always advance even if waitingForEvent wasn't set correctly (handles timing issues)
+      const stageStep = currentStep as StageStep;
+      if (stageStep.stageName === 'Lead Created' && eventType === 'plans.fetch_started') {
+        shouldAdvance = true;
+        log(`[STAGE] ✓ SPECIAL CASE: Lead Created stage + plans.fetch_started event - WILL ADVANCE`);
+      }
       // First, check if instance is explicitly waiting for this event
-      if (instance.waitingForEvent && instance.waitingForEvent === eventType) {
+      else if (instance.waitingForEvent && instance.waitingForEvent === eventType) {
         shouldAdvance = true;
         log(`[STAGE] ✓ MATCH: Event ${eventType} matches instance.waitingForEvent="${instance.waitingForEvent}" - WILL ADVANCE`);
       } else {
@@ -1003,9 +1039,9 @@ export function hasTimedOut(instance: PipelineInstance): boolean {
   }
 
   // Fallback: check if waiting for plans.fetch_completed
-  // Use 10 minutes timeout for plan fetching
+  // Use 7 minutes timeout for plan fetching (accommodates 5-minute RPA execution + 2-minute buffer)
   if (instance.waitingForEvent === 'plans.fetch_completed') {
-    const timeoutMinutes = 10;
+    const timeoutMinutes = 7;
     const startTime = instance.actionStartedAt ? new Date(instance.actionStartedAt) : new Date(instance.updatedAt);
     const timeoutDate = new Date(startTime.getTime() + timeoutMinutes * 60 * 1000);
     return new Date() > timeoutDate;
@@ -1046,9 +1082,99 @@ export async function handleTimeout(
       return { processed: true, action: 'completed_on_timeout' };
     }
 
+    // CRITICAL: For plans.fetch_completed timeout, check if plans actually exist before advancing
+    // This prevents false timeouts when plans are still being fetched
+    if (instance.waitingForEvent === 'plans.fetch_completed') {
+      log(`[TIMEOUT] Checking if plans exist for lead ${instance.leadId} before timeout handling...`);
+      log(`[TIMEOUT] After 7 minutes, checking DB for actual plans`);
+      log(`[TIMEOUT] More vendors may still be processing - they will update incrementally via vendor.plans_ready events`);
+      try {
+        const lead = await getLead(instance.leadId, instance.lineOfBusiness);
+        const plansCount = lead?.plansCount as number | undefined;
+        if (lead && plansCount !== undefined && typeof plansCount === 'number' && plansCount > 0) {
+          log(`[TIMEOUT] ⚠️ Plans exist (${plansCount} plans) but event never arrived - treating as success`);
+          log(`[TIMEOUT] Found ${plansCount} plans in DB - staying in Plans Available for late arrivals`);
+          // Plans exist, so advance to Plans Available (success path)
+          const plansAvailableStep = pipeline.steps.find(
+            s => s.type === 'stage' && (s as StageStep).stageName === 'Plans Available'
+          ) as StageStep | undefined;
+          
+          if (plansAvailableStep) {
+            log(`[TIMEOUT] Advancing to Plans Available stage (plans found)`);
+            await moveToStep(instance.instanceId, plansAvailableStep, 'system-timeout-plans-found', 'completed', instance, instance.leadId);
+            const freshInstance = await getInstance(instance.instanceId);
+            await executeStageStep(freshInstance, plansAvailableStep, log);
+            
+            // Record timeout but with success outcome
+            const historyEntry: StepHistoryEntry = {
+              stepId: instance.currentStepId,
+              stepType: instance.currentStepType,
+              stageName: instance.currentStageName,
+              stepName: currentStep.name || instance.currentStageName,
+              enteredAt: instance.actionStartedAt || instance.updatedAt,
+              exitedAt: new Date().toISOString(),
+              outcome: 'completed',
+              triggeredBy: 'system-timeout-plans-found',
+              metadata: {
+                waitingForEvent: instance.waitingForEvent,
+                timeoutReason: `Timed out after 7 minutes waiting for ${instance.waitingForEvent}, but plans were found`,
+                plansCount: plansCount,
+              },
+            };
+            instance.stepHistory.push(historyEntry);
+            
+            return {
+              processed: true,
+              instanceId: instance.instanceId,
+              action: 'timeout_advanced_to_plans_available',
+            };
+          }
+        } else {
+          log(`[TIMEOUT] No plans found - advancing to Plans Fetch Failed stage`);
+          // No plans, advance to Plans Fetch Failed
+          const failedStep = pipeline.steps.find(
+            s => s.type === 'stage' && (s as StageStep).stageName === 'Plans Fetch Failed'
+          ) as StageStep | undefined;
+          
+          if (failedStep) {
+            await moveToStep(instance.instanceId, failedStep, 'system-timeout-no-plans', 'timeout', instance, instance.leadId);
+            const freshInstance = await getInstance(instance.instanceId);
+            await executeStageStep(freshInstance, failedStep, log);
+            
+            // Record timeout with failure outcome
+            const historyEntry: StepHistoryEntry = {
+              stepId: instance.currentStepId,
+              stepType: instance.currentStepType,
+              stageName: instance.currentStageName,
+              stepName: currentStep.name || instance.currentStageName,
+              enteredAt: instance.actionStartedAt || instance.updatedAt,
+              exitedAt: new Date().toISOString(),
+              outcome: 'timeout',
+              triggeredBy: 'system-timeout-no-plans',
+              metadata: {
+                waitingForEvent: instance.waitingForEvent,
+                timeoutReason: `Timed out after 7 minutes waiting for ${instance.waitingForEvent} - no plans found`,
+              },
+            };
+            instance.stepHistory.push(historyEntry);
+            
+            return {
+              processed: true,
+              instanceId: instance.instanceId,
+              action: 'timeout_advanced_to_plans_fetch_failed',
+            };
+          }
+        }
+      } catch (leadError) {
+        log(`[TIMEOUT] ⚠️ Error checking lead for plans: ${leadError} - proceeding with default timeout handling`);
+        // Fall through to default timeout handling
+      }
+    }
+
     log(`[TIMEOUT] Auto-advancing to next step: ${nextStep.id} (${nextStep.type})`);
 
     // Record timeout in history
+    const timeoutMinutes = instance.waitingForEvent === 'plans.fetch_completed' ? 7 : 10;
     const historyEntry: StepHistoryEntry = {
       stepId: instance.currentStepId,
       stepType: instance.currentStepType,
@@ -1060,7 +1186,7 @@ export async function handleTimeout(
       triggeredBy: 'system-timeout',
       metadata: {
         waitingForEvent: instance.waitingForEvent,
-        timeoutReason: `Timed out after 10 minutes waiting for ${instance.waitingForEvent}`,
+        timeoutReason: `Timed out after ${timeoutMinutes} minutes waiting for ${instance.waitingForEvent}`,
       },
     };
 
@@ -1295,7 +1421,14 @@ async function executeStepInternal(
       log(`[STAGE EXECUTION] Next step is stage: ${nextStageStep.stageName} (${nextStageStep.stageId})`);
       log(`[STAGE EXECUTION] Trigger event for next stage: ${stageDefinition?.triggerEvent || 'NONE'}`);
 
-      if (stageDefinition?.triggerEvent) {
+      if (!stageDefinition) {
+        log(`[STAGE EXECUTION] ✗ ERROR: Stage definition not found for stageId: ${nextStageStep.stageId}`);
+        log(`[STAGE EXECUTION] Available stage IDs: ${PREDEFINED_STAGES.map(s => s.id).join(', ')}`);
+        await updateNextStepInfo(instance.instanceId, nextStep);
+        return;
+      }
+
+      if (stageDefinition.triggerEvent) {
         log(`[STAGE EXECUTION] Setting instance ${instance.instanceId} to wait for event: ${stageDefinition.triggerEvent}`);
         try {
           // Use the instance object directly - use updateInstanceStatusDirect to avoid re-querying
@@ -1307,6 +1440,22 @@ async function executeStepInternal(
           });
           log(`[STAGE EXECUTION] ✓ Instance ${updatedInstance.instanceId} is now WAITING FOR EVENT: ${stageDefinition.triggerEvent}`);
           log(`[STAGE EXECUTION] ✓ Instance state: ${updatedInstance.status}, waitingForEvent: ${updatedInstance.waitingForEvent}`);
+          
+          // CRITICAL: Verify the update was successful
+          const verifyInstance = await getInstance(instance.instanceId);
+          if (verifyInstance.waitingForEvent !== stageDefinition.triggerEvent) {
+            log(`[STAGE EXECUTION] ⚠ WARNING: Verification failed - waitingForEvent is "${verifyInstance.waitingForEvent}" but expected "${stageDefinition.triggerEvent}"`);
+            log(`[STAGE EXECUTION] Retrying update with fresh instance...`);
+            await updateInstanceStatus(instance.instanceId, 'active', {
+              waitingForEvent: stageDefinition.triggerEvent,
+              nextStepId: nextStep.id,
+              nextStepType: nextStep.type,
+              nextStageName: nextStageStep.stageName,
+              leadId: instance.leadId,
+            });
+            const verifyAgain = await getInstance(instance.instanceId);
+            log(`[STAGE EXECUTION] After retry - waitingForEvent: ${verifyAgain.waitingForEvent}`);
+          }
         } catch (error) {
           log(`[STAGE EXECUTION] ✗ Error setting waiting state for instance ${instance.instanceId}: ${error}`);
           // Retry once with a delay to allow Cosmos DB to be consistent
@@ -1333,7 +1482,8 @@ async function executeStepInternal(
           }
         }
       } else {
-        log(`[STAGE EXECUTION] ⚠ Warning: Stage ${nextStageStep.stageId} has NO trigger event defined`);
+        log(`[STAGE EXECUTION] ⚠ Warning: Stage ${nextStageStep.stageId} (${nextStageStep.stageName}) has NO trigger event defined`);
+        log(`[STAGE EXECUTION] Stage definition: ${JSON.stringify(stageDefinition, null, 2)}`);
         await updateNextStepInfo(instance.instanceId, nextStep);
       }
     }

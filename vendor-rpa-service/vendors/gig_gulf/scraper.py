@@ -35,7 +35,7 @@ class Gig_gulfScraper:
         """
         self.logger.info("🚀 Starting GIG Gulf plan extraction...")
         await self.page.wait_for_load_state("networkidle")
-        await asyncio.sleep(3)
+        await asyncio.sleep(5)  # Increased wait time
         
         # Log current URL and page title
         current_url = self.page.url
@@ -44,8 +44,15 @@ class Gig_gulfScraper:
         self.logger.info(f"Page title: {page_title}")
         
         # Verify we're on the plans page, not the dependents/form page
-        if "AdditionalFamily" in current_url:
-            self.logger.warning("⚠️ Still on AdditionalFamily page! Plans may not be available.")
+        # GIG Gulf plans page URLs can be:
+        # - QuotationHome/Index (plans page)
+        # - AdditionalFamily (dependents page)
+        # - BrokerIndividualQuotation/Index (form page)
+        is_plans_page = "QuotationHome" in current_url or "ProductPlan" in current_url
+        is_form_page = "AdditionalFamily" in current_url or "BrokerIndividualQuotation" in current_url
+        
+        if is_form_page and not is_plans_page:
+            self.logger.warning("⚠️ Still on form/dependents page! Plans may not be available.")
             self.logger.warning("⚠️ Attempting to navigate to plans page...")
             try:
                 # Try to find and click Next button
@@ -54,19 +61,103 @@ class Gig_gulfScraper:
                     await next_button.click()
                     await asyncio.sleep(5)
                     await self.page.wait_for_load_state("networkidle")
+                    await asyncio.sleep(3)  # Extra wait after navigation
                     current_url = self.page.url
                     self.logger.info(f"After clicking Next, URL: {current_url}")
+                else:
+                    self.logger.error("Next button not found - cannot navigate to plans page")
             except Exception as e:
                 self.logger.error(f"Could not navigate to plans page: {e}")
+        elif is_plans_page:
+            self.logger.info("✓ Confirmed on plans page (QuotationHome/Index)")
         
         structured_plans = []
         
         try:
+            # Wait for plans to render - try multiple strategies
+            self.logger.info("Waiting for plans to render...")
+            plans_found = False
+            
+            # Strategy 1: Wait for Angular plans
+            try:
+                await self.page.wait_for_function("""
+                    () => {
+                        const products = document.querySelectorAll('[ng-repeat*=\"Product in RegionList.Products\"]');
+                        return products.length > 0;
+                    }
+                """, timeout=30000)
+                plans_found = True
+                self.logger.info("✓ Angular-rendered plans detected")
+            except:
+                pass
+            
+            # Strategy 2: Check for tables with plan data
+            if not plans_found:
+                try:
+                    # Wait for tables to appear
+                    await self.page.wait_for_selector("table", timeout=10000)
+                    tables = await self.page.locator("table").count()
+                    if tables > 0:
+                        # Check if tables contain plan-related content
+                        for i in range(min(tables, 5)):  # Check first 5 tables
+                            table = self.page.locator("table").nth(i)
+                            table_text = await table.inner_text()
+                            if any(keyword in table_text.lower() for keyword in ['premium', 'coverage', 'plan', 'aed', 'benefit']):
+                                plans_found = True
+                                self.logger.info(f"✓ Found plan data in table {i+1}")
+                                break
+                except:
+                    pass
+            
+            # Strategy 3: Check for plan containers
+            if not plans_found:
+                try:
+                    price_containers = await self.page.locator(".price-column-container, [class*='price-table'], [class*='plan-card'], [class*='product-card']").count()
+                    if price_containers > 0:
+                        plans_found = True
+                        self.logger.info(f"✓ Found {price_containers} plan containers")
+                except:
+                    pass
+            
+            # Strategy 4: Try to extract from JavaScript/Angular scope
+            if not plans_found:
+                try:
+                    js_data = await self.page.evaluate("""
+                        () => {
+                            // Try to access Angular scope
+                            if (window.angular) {
+                                const body = document.querySelector('body');
+                                if (body) {
+                                    const scope = angular.element(body).scope();
+                                    if (scope && scope.$root) {
+                                        // Look for plan data in scope
+                                        const rootScope = scope.$root;
+                                        for (let key in rootScope) {
+                                            if (key.toLowerCase().includes('product') || key.toLowerCase().includes('plan')) {
+                                                return { found: true, key: key };
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            return { found: false };
+                        }
+                    """)
+                    if js_data and js_data.get('found'):
+                        plans_found = True
+                        self.logger.info("✓ Found plan data in Angular scope")
+                except:
+                    pass
+            
+            if not plans_found:
+                self.logger.warning("⚠️ Plans may not be loaded yet, but continuing with extraction...")
+            
             # Scroll to load all plans
             self.logger.info("Scrolling to load all plan sections...")
             await self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            await asyncio.sleep(2)
+            await asyncio.sleep(3)
             await self.page.wait_for_load_state("networkidle")
+            await asyncio.sleep(2)  # Extra wait after scroll
             self.logger.info("✓ Page scrolled to bottom")
             
             # Take a screenshot to see the plans page structure
@@ -75,8 +166,12 @@ class Gig_gulfScraper:
                 await save_screenshot(self.page, "giggulf_plans_page_full")
             
             # Try to find plan cards/containers with expanded selectors
-            # Common selectors for insurance plan displays
+            # Prioritize specific plan selectors over generic Bootstrap columns
             plan_selectors = [
+                # GIG Gulf specific selectors (highest priority)
+                "[ng-repeat*='Product in RegionList.Products']",
+                ".price-column-container",
+                "[class*='price-table']",
                 # Specific class patterns
                 "[class*='plan-card']",
                 "[class*='plan-item']",
@@ -86,19 +181,20 @@ class Gig_gulfScraper:
                 "[class*='quote-item']",
                 "[class*='package']",
                 "[class*='policy']",
-                # Generic containers that might have plans
-                ".card.shadow",
-                ".col-md-4",
-                ".col-lg-3",
-                ".col-sm-6",
-                # Data attributes
+                # Data attributes (high priority)
                 "[data-plan-id]",
                 "[data-product-id]",
                 "[data-quote-id]",
-                # Bootstrap/common patterns
+                # Generic containers (medium priority)
+                ".card.shadow",
                 ".panel",
                 ".thumbnail",
-                "[class*='grid-item']"
+                "[class*='grid-item']",
+                # Bootstrap columns (lowest priority - only if no better selector found)
+                # Filter these to exclude form fields
+                ".col-md-4:not(select):not([class*='form']):not([class*='input']):not([class*='dropdown'])",
+                ".col-lg-3:not(select):not([class*='form']):not([class*='input']):not([class*='dropdown'])",
+                ".col-sm-6:not(select):not([class*='form']):not([class*='input']):not([class*='dropdown'])"
             ]
             
             plan_elements = None
@@ -107,13 +203,73 @@ class Gig_gulfScraper:
             # Try each selector to find plan elements
             for selector in plan_selectors:
                 count = await self.page.locator(selector).count()
-                if count > 2 and count < 100:  # Reasonable number of plans (not too few, not too many)
-                    plan_elements = await self.page.locator(selector).all()
-                    selected_selector = selector
-                    self.logger.info(f"Found {count} plan elements using selector: {selector}")
-                    break
+                if count > 0:  # Changed: accept any count > 0, we'll filter better below
+                    # For generic selectors like .col-md-4, do additional filtering
+                    if selector.startswith('.col-'):
+                        # Get all elements and filter out form fields
+                        all_elements = await self.page.locator(selector).all()
+                        filtered_elements = []
+                        for elem in all_elements:
+                            # Check if it's a form field
+                            tag_name = await elem.evaluate("el => el.tagName.toLowerCase()")
+                            has_select = await elem.locator("select").count() > 0
+                            has_input = await elem.locator("input, textarea").count() > 0
+                            class_name = await elem.get_attribute("class") or ""
+                            text_content = await elem.inner_text()
+                            text_lower = text_content.lower()
+                            
+                            # Skip form fields
+                            if tag_name in ['select', 'input', 'textarea'] or has_select or has_input:
+                                continue
+                            if 'form' in class_name.lower() or 'dropdown' in class_name.lower():
+                                continue
+                            
+                            # Skip elements that are clearly form questions
+                            form_question_keywords = ['are you', 'select', 'choose', 'please', 'required', 'dob', 'date of birth', 'gender', 'marital status']
+                            if any(keyword in text_lower[:100] for keyword in form_question_keywords) and len(text_content.strip()) < 200:
+                                continue
+                            
+                            # Must have plan-related keywords to be considered a plan
+                            plan_keywords = ['premium', 'aed', 'coverage', 'plan', 'benefit', 'deductible', 'copay', 'inpatient', 'outpatient', 'maternity', 'network', 'yearly maximum', 'area of cover']
+                            has_plan_keywords = any(keyword in text_lower for keyword in plan_keywords)
+                            
+                            if not has_plan_keywords and len(text_content.strip()) < 300:
+                                continue  # Skip if no plan keywords and too short
+                            
+                            filtered_elements.append(elem)
+                        
+                        if len(filtered_elements) > 0:  # Changed: accept any filtered elements
+                            plan_elements = filtered_elements
+                            selected_selector = selector + " (filtered)"
+                            self.logger.info(f"Found {len(filtered_elements)} plan elements using selector: {selector} (filtered from {count} total)")
+                            break
+                    else:
+                        # Use selector directly for specific selectors, but still filter
+                        all_elements = await self.page.locator(selector).all()
+                        filtered_elements = []
+                        for elem in all_elements:
+                            text_content = await elem.inner_text()
+                            text_lower = text_content.lower()
+                            
+                            # Skip form questions
+                            form_question_keywords = ['are you', 'select', 'choose', 'please', 'required']
+                            if any(keyword in text_lower[:100] for keyword in form_question_keywords) and len(text_content.strip()) < 200:
+                                continue
+                            
+                            # Must have plan-related keywords
+                            plan_keywords = ['premium', 'aed', 'coverage', 'plan', 'benefit', 'deductible']
+                            has_plan_keywords = any(keyword in text_lower for keyword in plan_keywords)
+                            
+                            if has_plan_keywords or len(text_content.strip()) > 200:
+                                filtered_elements.append(elem)
+                        
+                        if len(filtered_elements) > 0:
+                            plan_elements = filtered_elements
+                            selected_selector = selector
+                            self.logger.info(f"Found {len(filtered_elements)} plan elements using selector: {selector} (from {count} total)")
+                            break
                 elif count > 0:
-                    self.logger.debug(f"Selector '{selector}' found {count} elements (skipped: not in range 3-99)")
+                    self.logger.debug(f"Selector '{selector}' found {count} elements but filtered out")
             
             if not plan_elements or len(plan_elements) == 0:
                 # Fallback: Try to extract from page content
@@ -238,17 +394,60 @@ class Gig_gulfScraper:
             text_stripped = text_content.strip()
             text_lower = text_stripped.lower()
             
+            # Debug logging for filtered elements (use INFO level so it shows in logs)
+            self.logger.info(f"  Checking element {index + 1}: length={len(text_stripped)}, preview={text_stripped[:150]}")
+            
             # Filter out quotation reference and other non-plan elements
             # Skip quotation references
             if text_lower.startswith("quotation ref") or "quotation ref #" in text_lower:
                 self.logger.debug(f"Skipping quotation reference element: {text_stripped[:50]}")
                 return None
             
-            # Skip elements that are too short (likely headers, footers, or UI elements)
-            # Real plans should have substantial content (at least 200 characters)
-            if len(text_stripped) < 200:
-                self.logger.debug(f"Skipping element with insufficient content ({len(text_stripped)} chars): {text_stripped[:50]}")
+            # Skip form fields and dropdowns FIRST (before length check)
+            # Check if element contains form controls
+            has_select = await element.locator("select, option").count() > 0
+            has_input = await element.locator("input, textarea").count() > 0
+            tag_name = await element.evaluate("el => el.tagName.toLowerCase()")
+            
+            if tag_name in ['select', 'option', 'input', 'textarea'] or has_select or has_input:
+                self.logger.debug(f"Skipping form field element: {tag_name}")
                 return None
+            
+            # Skip elements that look like currency dropdowns or form fields
+            form_field_indicators = [
+                'select currency', 'currency is required', 'select country', 'select gender',
+                'select marital status', 'select nationality', 'select state', 'select visa',
+                'select occupation', 'select work location', 'select title', 'select relation'
+            ]
+            if any(indicator in text_lower for indicator in form_field_indicators):
+                self.logger.debug(f"Skipping form field element: {text_stripped[:50]}")
+                return None
+            
+            # Skip elements that are mostly currency codes (like the extracted plan 30)
+            currency_codes = ['ada', 'aed', 'afn', 'all', 'amd', 'ang', 'aoa', 'ars', 'aud', 'usd', 'eur', 'gbp']
+            currency_count = sum(1 for code in currency_codes if code in text_lower)
+            if currency_count > 5 and 'premium' not in text_lower and 'coverage' not in text_lower:
+                self.logger.debug(f"Skipping currency dropdown element (contains {currency_count} currency codes)")
+                return None
+            
+            # Check for plan-related keywords FIRST (before length check)
+            # This allows us to accept plan cards even if they're shorter
+            plan_keywords = ['area of cover', 'yearly maximum', 'premium', 'aed', 'coverage', 'plan', 'benefit', 'deductible', 'copay', 'inpatient', 'outpatient', 'maternity', 'network']
+            has_plan_keywords = any(keyword in text_lower for keyword in plan_keywords)
+            
+            # Since we already filtered at selector level, be more lenient here
+            # Skip elements that don't contain any plan-related keywords AND are too short
+            # If it has plan keywords, accept it even if short (might be a collapsed plan card)
+            if not has_plan_keywords:
+                # Without plan keywords, require more content to ensure it's not just UI
+                if len(text_stripped) < 100:  # Reduced from 200 to be more lenient
+                    self.logger.debug(f"Skipping element without plan keywords and insufficient content ({len(text_stripped)} chars): {text_stripped[:50]}")
+                    return None
+            else:
+                # Has plan keywords - accept even if shorter (minimum 30 chars to avoid empty elements)
+                if len(text_stripped) < 30:  # Reduced from 50
+                    self.logger.debug(f"Skipping element with plan keywords but too short ({len(text_stripped)} chars): {text_stripped[:50]}")
+                    return None
             
             # Skip elements that only contain navigation/UI text without plan details
             ui_keywords = ['add to compare', 'buy now', 'next', 'previous', 'back', 'close']
@@ -257,12 +456,6 @@ class Gig_gulfScraper:
                 if 'area of cover' not in text_lower and 'yearly maximum' not in text_lower:
                     self.logger.debug(f"Skipping UI-only element: {text_stripped[:50]}")
                     return None
-            
-            # Skip elements that don't contain any plan-related keywords
-            plan_keywords = ['area of cover', 'yearly maximum', 'premium', 'aed', 'coverage', 'plan', 'benefit']
-            if not any(keyword in text_lower for keyword in plan_keywords):
-                self.logger.debug(f"Skipping element without plan keywords: {text_stripped[:50]}")
-                return None
             
             # Try to extract structured data
             plan_data = {

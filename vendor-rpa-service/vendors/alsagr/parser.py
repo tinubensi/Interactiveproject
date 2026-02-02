@@ -19,35 +19,57 @@ class AlsagrParser:
     def __init__(self):
         pass
     
-    def clean_text(self, text: str) -> str:
+    def clean_text(self, text: str, preserve_structure: bool = False) -> str:
         """
-        Removes Arabic characters, replacement characters, and extra whitespace.
-        Enhanced to fix PDF extraction artifacts.
+        Enhanced text cleaning that preserves meaning while removing artifacts.
+        
+        Args:
+            text: Raw text from PDF
+            preserve_structure: Keep newlines and spacing for structured content
+        
+        Returns:
+            Cleaned text with PDF artifacts removed but content preserved
         """
         if not text:
             return ""
         
-        # Remove Unicode replacement character (this is the main culprit)
+        # Step 1: Remove Unicode replacement characters
         text = text.replace('\ufffd', '')
         text = text.replace('�', '')
         
-        # Remove Arabic characters (Unicode ranges)
+        # Step 2: Remove Arabic characters
         text = re.sub(r'[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]+', '', text)
         
-        # Remove other non-printable characters and control characters
-        text = re.sub(r'[\x00-\x1F\x7F-\x9F]+', ' ', text)
+        # Step 3: Clean PDF formatting artifacts (Enhanced)
+        text = re.sub(r'\s*\.\s*\.\s*', ' ', text)
+        text = re.sub(r'\)\s*\.\s*', ') ', text)
+        text = re.sub(r'\(\s*\)\s*', ' ', text)  # Empty parentheses
+        text = re.sub(r'\s+\.\s+', '. ', text)   # Space-period-space → period-space
         
-        # Remove common PDF extraction artifacts
-        text = re.sub(r'\.+\s*\.', '.', text)  # Multiple dots like ". .\ufffd ."
-        text = re.sub(r'\s+\.', '.', text)  # Space before dot
-        text = re.sub(r'\.\s+\.', '. ', text)  # Dots with spaces
+        # Step 4: Clean up numbering artifacts
+        text = re.sub(r'\.\s*(\d+)\s+', r'\1. ', text)
         
-        # Remove extra spaces/newlines
-        text = re.sub(r'\s+', ' ', text).strip()
+        # Step 5: Remove control characters but preserve newlines if requested
+        if preserve_structure:
+            text = re.sub(r'[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F-\x9F]+', ' ', text)
+        else:
+            text = re.sub(r'[\x00-\x1F\x7F-\x9F]+', ' ', text)
         
-        # Clean up sentence-ending punctuation artifacts
-        text = re.sub(r'\.+$', '.', text)  # Multiple trailing dots
-        text = re.sub(r'^\.\s*', '', text)  # Leading dots
+        # Step 6: Normalize whitespace
+        if preserve_structure:
+            lines = text.split('\n')
+            text = '\n'.join(re.sub(r' +', ' ', line.strip()) for line in lines if line.strip())
+        else:
+            text = re.sub(r'\s+', ' ', text).strip()
+        
+        # Step 7: Clean sentence endings
+        text = re.sub(r'\s+([.,!?])', r'\1', text)
+        text = re.sub(r'\.{2,}', '.', text)
+        
+        # Step 8: Clean up isolated punctuation artifacts
+        text = re.sub(r'\s+\.\s+', '. ', text)
+        text = re.sub(r'\(\s+', '(', text)
+        text = re.sub(r'\s+\)', ')', text)
         
         return text
     
@@ -688,22 +710,36 @@ class AlsagrParser:
                             numeric_match = re.search(r'([\d,]+\.?\d*)', value_str.replace(",", ""))
                         numeric_value = float(numeric_match.group(1).replace(",", "")) if numeric_match else 0
                         
+                        # Determine if this is a copay (small amount) vs a limit (large amount)
+                        is_copay = numeric_value > 0 and numeric_value < 500
+                        is_limit = numeric_value >= 500
+                        
                         # Map to standard fields based on benefit type
                         if "aggregate limit" in benefit_lower or "annual limit" in benefit_lower or "overall limit" in benefit_lower:
                             plan_data["annualLimit"] = numeric_value
                         
-                        elif "inpatient" in benefit_lower:
-                            if numeric_value > 0:
+                        elif "inpatient" in benefit_lower or "in-patient" in benefit_lower or "ip " in benefit_lower or "hospitalization" in benefit_lower:
+                            # Inpatient limit extraction (improved keywords)
+                            if is_limit:
                                 plan_data["inpatientLimit"] = numeric_value
-                            # Store as text even if no numeric value
-                            if "covered" in value_str.lower() or "as per" in value_str.lower():
+                            elif "covered" in value_str.lower() or "as per" in value_str.lower():
+                                # If it says "covered" without a specific limit, use annual limit
                                 plan_data["inpatientLimit"] = plan_data.get("annualLimit", 0)
                         
-                        elif "outpatient" in benefit_lower or "op consultation" in benefit_lower:
-                            if numeric_value > 0:
+                        elif "outpatient" in benefit_lower or "out-patient" in benefit_lower or "op services" in benefit_lower:
+                            # Outpatient limit extraction - FIXED: distinguish from copays
+                            if "consultation" in benefit_lower or "consult" in benefit_lower:
+                                # This is consultation copay, NOT outpatient limit
+                                if is_copay:
+                                    # Store in copays, not outpatientLimit
+                                    if "copays" not in plan_data:
+                                        plan_data["copays"] = {}
+                                    plan_data["copays"]["opConsultation"] = f"AED {int(numeric_value)}"
+                            elif is_limit:
+                                # This is actual outpatient limit
                                 plan_data["outpatientLimit"] = numeric_value
-                            # Store as text even if no numeric value
-                            if "covered" in value_str.lower() or "as per" in value_str.lower():
+                            elif "covered" in value_str.lower() or "as per" in value_str.lower():
+                                # If it says "covered" without a specific limit, use annual limit
                                 plan_data["outpatientLimit"] = plan_data.get("annualLimit", 0)
                         
                         elif "maternity" in benefit_lower:

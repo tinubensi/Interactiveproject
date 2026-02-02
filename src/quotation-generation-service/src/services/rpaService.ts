@@ -40,6 +40,7 @@ export class RPAService {
     success: boolean;
     vendorsTriggered: string[];
     vendorsFailed: any[];
+    plans?: any[]; // 🔧 FIX: Include plans in response
     error?: string;
   }> {
     try {
@@ -63,11 +64,13 @@ export class RPAService {
       console.log(`✅ RPA triggered successfully for lead ${leadData.leadId}`);
       console.log(`   Vendors triggered: ${result.vendorsTriggered?.length || 0}`);
       console.log(`   Vendors failed: ${result.vendorsFailed?.length || 0}`);
+      console.log(`   Plans returned: ${result.plans?.length || 0}`); // 🔧 FIX: Log plan count
 
       return {
         success: true,
         vendorsTriggered: result.vendorsTriggered || [],
-        vendorsFailed: result.vendorsFailed || []
+        vendorsFailed: result.vendorsFailed || [],
+        plans: result.plans || [] // 🔧 FIX: Include plans in return value
       };
       
     } catch (error: any) {
@@ -76,6 +79,7 @@ export class RPAService {
         success: false,
         vendorsTriggered: [],
         vendorsFailed: [],
+        plans: [],
         error: error.message
       };
     }

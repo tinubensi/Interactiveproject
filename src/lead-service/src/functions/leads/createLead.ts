@@ -316,6 +316,53 @@ export async function createLead(
       eventPublished = true;
       context.log('✅ lead.created event published successfully to Event Grid');
       
+      // HTTP Fallback: ALWAYS notify Pipeline Service immediately (don't wait for Event Grid)
+      // This ensures status updates happen within seconds, not minutes
+      try {
+        const PIPELINE_SERVICE_URL = process.env.PIPELINE_SERVICE_URL || 'https://func-nectaria-pipeline-dev.azurewebsites.net';
+        const INTERNAL_SERVICE_KEY = process.env.INTERNAL_SERVICE_KEY || 'dev-internal-service-key-nectaria-2024';
+        
+        context.log(`[HTTP IMMEDIATE] Notifying Pipeline Service at ${PIPELINE_SERVICE_URL}`);
+        
+        const httpResponse = await axios.post(
+          `${PIPELINE_SERVICE_URL}/api/pipeline/process-event`,
+          {
+            eventType: 'lead.created',
+            subject: `leads/${createdLead.id}`,
+            data: {
+              leadId: createdLead.id,
+              referenceId: createdLead.referenceId,
+              customerId: createdLead.customerId,
+              lineOfBusiness: createdLead.lineOfBusiness,
+              businessType: createdLead.businessType,
+              formId: createdLead.formId,
+              formData: cleanFormDataForEventGrid,
+              lobData: createdLead.lobData,
+              assignedTo: createdLead.assignedTo,
+              createdAt: createdLead.createdAt.toISOString(),
+              firstName: createdLead.firstName,
+              lastName: createdLead.lastName,
+              email: createdLead.email,
+              phone: createdLead.phone,
+              emirate: createdLead.emirate
+            }
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'x-service-key': INTERNAL_SERVICE_KEY
+            },
+            timeout: 10000 // 10 second timeout
+          }
+        );
+        
+        httpFallbackTriggered = true;
+        context.log(`✅ [HTTP IMMEDIATE] Pipeline Service notified: ${httpResponse.status}`);
+      } catch (httpError: any) {
+        context.warn(`⚠️ [HTTP IMMEDIATE] Failed to notify Pipeline Service:`, httpError.message);
+        // Don't throw - Event Grid will still deliver the event
+      }
+      
     } catch (eventError: any) {
       context.error('❌ Failed to publish lead.created event to Event Grid:', eventError.message);
       context.error('Stack:', eventError.stack);

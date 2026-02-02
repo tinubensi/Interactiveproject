@@ -86,6 +86,15 @@ class EventGridService {
     });
   }
 
+  async publishVendorPlansReady(data: {
+    leadId: string;
+    vendorId: string;
+    plansCount: number;
+    timestamp: string;
+  }): Promise<void> {
+    await this.publishEvent('vendor.plans_ready', `plans/${data.leadId}`, data);
+  }
+
   async publishPlansFetchCompleted(data: {
     leadId: string;
     fetchRequestId: string;

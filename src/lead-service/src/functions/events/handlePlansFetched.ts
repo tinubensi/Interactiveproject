@@ -269,6 +269,38 @@ export async function handlePlansFetched(
         // Don't throw - Event Grid might still deliver the event
       }
       
+      // CRITICAL: Update lead status IMMEDIATELY after notifying pipeline
+      // Don't wait for pipeline to call us back - update directly for faster UI response
+      if (totalPlansCount > 0) {
+        try {
+          context.log(`[DIRECT UPDATE] Updating lead status to Plans Available immediately (${totalPlansCount} plans)`);
+          await cosmosService.updateLead(eventData.leadId, lead.lineOfBusiness, {
+            currentStage: 'Plans Available',
+            stageId: 'stage-2',
+            plansCount: totalPlansCount,
+            updatedAt: new Date()
+          });
+          
+          // Create timeline entry for the status change
+          await cosmosService.createTimelineEntry({
+            id: uuidv4(),
+            leadId: eventData.leadId,
+            stage: 'Plans Available',
+            previousStage: lead.currentStage,
+            stageId: 'stage-2',
+            remark: `${totalPlansCount} plans fetched from ${eventData.successfulVendors?.length || 0} vendors`,
+            changedBy: 'system',
+            changedByName: 'System',
+            timestamp: new Date()
+          });
+          
+          context.log(`✅ DIRECT UPDATE: Lead status set to Plans Available immediately`);
+        } catch (directUpdateError: any) {
+          context.warn(`⚠️ Direct update failed, relying on pipeline:`, directUpdateError.message);
+          // Continue - pipeline will still update via its own flow
+        }
+      }
+      
       return;
     }
 

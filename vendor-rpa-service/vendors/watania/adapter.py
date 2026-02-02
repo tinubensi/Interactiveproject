@@ -2,6 +2,7 @@
 Watania Takaful Adapter
 Handles data transformation for Watania Insurance portal
 """
+import sys
 from typing import Dict, Any, List
 from datetime import datetime
 from vendors.base.vendor_adapter import VendorAdapter
@@ -62,19 +63,38 @@ class WataniaAdapter(VendorAdapter):
         
         # Extract optional fields from lobData with smart defaults
         emirates_id = lob_data.get('emiratesId', '784-0000-0000000-0')
-        salary_range = lob_data.get('salaryRange', 'Less than 5000')
         visa_type = lob_data.get('visaType', 'Employment')
         marital_status = lob_data.get('maritalStatus', 'Single')
         
-        # Map salary range to Watania format
-        salary_mapping = {
-            'Less than 5000': 'Less than or equal to AED',
-            '5000-10000': 'Less than or equal to AED',
-            '10000-20000': 'From 10,001 AED to 20,000 AED',
-            '20000-50000': 'From 20,001 AED to 50,000 AED',
-            'Above 50000': 'More than 50,000 AED'
-        }
-        salary_watania = salary_mapping.get(salary_range, 'Less than or equal to AED')
+        # Check multiple possible field names for salary (prioritize new portal codes)
+        salary_range = (
+            lob_data.get('monthlySalaryRange') or 
+            form_data.get('monthlySalaryRange') or 
+            lob_data.get('salaryRange') or 
+            'Less than 5000'
+        )
+        
+        # Handle new portal codes (22, 23, 24)
+        if str(salary_range) in ['22', '23', '24']:
+            portal_code_mapping = {
+                '22': 'Less than or equal to AED',      # Less than 4,000 AED
+                '23': 'From 10,001 AED to 20,000 AED',  # 4,000 - 12,000 AED
+                '24': 'More than 50,000 AED'            # Greater than 12,000 AED
+            }
+            salary_watania = portal_code_mapping.get(str(salary_range), 'Less than or equal to AED')
+            print(f"✓ Watania: Mapped portal code {salary_range} to {salary_watania}", file=sys.stderr)
+        else:
+            # Map salary range to Watania format (old text format - backward compatibility)
+            salary_mapping = {
+                'Less than 5000': 'Less than or equal to AED',
+                '5000-10000': 'Less than or equal to AED',
+                '10000-20000': 'From 10,001 AED to 20,000 AED',
+                '20000-50000': 'From 20,001 AED to 50,000 AED',
+                'Above 50000': 'More than 50,000 AED'
+            }
+            salary_watania = salary_mapping.get(salary_range, 'Less than or equal to AED')
+            if salary_range:
+                print(f"✓ Watania: Mapped text '{salary_range}' to {salary_watania}", file=sys.stderr)
         
         # Determine member type based on nationality
         if nationality in ['United Arab Emirates', 'UAE']:

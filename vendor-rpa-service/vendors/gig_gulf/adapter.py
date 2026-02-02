@@ -2,6 +2,7 @@
 GIG Gulf Insurance Adapter
 Handles data transformation for GIG Gulf Insurance portal
 """
+import sys
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from vendors.base.vendor_adapter import VendorAdapter
@@ -209,7 +210,15 @@ class Gig_gulfAdapter(VendorAdapter):
         # - >12000 AED/month
         # - No Salary
         # - No salary-Commission only
-        salary_range_raw = lob_data.get('salaryRange', '')
+        
+        # Check multiple possible field names (prioritize new portal codes)
+        form_data = standard_lead.get('formData', {})
+        salary_range_raw = (
+            lob_data.get('monthlySalaryRange') or 
+            form_data.get('monthlySalaryRange') or 
+            lob_data.get('salaryRange') or 
+            ''
+        )
         
         # Define valid portal formats
         valid_portal_formats = [
@@ -223,8 +232,17 @@ class Gig_gulfAdapter(VendorAdapter):
         # Check if already in portal format
         if salary_range_raw in valid_portal_formats:
             salary_range = salary_range_raw
+        elif str(salary_range_raw) in ['22', '23', '24']:
+            # Handle new portal codes from frontend
+            portal_code_mapping = {
+                '22': '<=4000 AED/month',        # Less than 4,000 AED
+                '23': '>4000 and <=12000 AED/month',  # 4,000 - 12,000 AED
+                '24': '>12000 AED/month'         # Greater than 12,000 AED
+            }
+            salary_range = portal_code_mapping.get(str(salary_range_raw), '>4000 and <=12000 AED/month')
+            print(f"✓ GIG Gulf: Mapped portal code {salary_range_raw} to {salary_range}", file=sys.stderr)
         else:
-            # Apply mapping for coded formats
+            # Apply mapping for old text formats (backward compatibility)
             salary_range_mapping = {
                 'Less than 5000': '<=4000 AED/month',
                 '5000-10000': '>4000 and <=12000 AED/month',
@@ -233,9 +251,56 @@ class Gig_gulfAdapter(VendorAdapter):
                 'Above 50000': '>12000 AED/month'
             }
             salary_range = salary_range_mapping.get(salary_range_raw, '>4000 and <=12000 AED/month')
+            if salary_range_raw:
+                print(f"✓ GIG Gulf: Mapped text '{salary_range_raw}' to {salary_range}", file=sys.stderr)
         
-        # Visa type
-        visa_type = lob_data.get('visaType', 'Resident visa')
+        # Visa type mapping
+        # Map standard visa types from form to GIG Gulf portal values
+        # Form options: Employment, Residence, Investor, Self Employed
+        # Portal values: Resident visa, Investor Visa, etc.
+        visa_type_raw = lob_data.get('visaType') or form_data.get('visaType') or 'Residence'
+        
+        # Normalize input (handle case variations)
+        visa_type_normalized = str(visa_type_raw).strip() if visa_type_raw else 'Residence'
+        
+        # Mapping from form values to GIG Gulf portal values
+        visa_type_mapping = {
+            # Employment → Resident visa
+            'Employment': 'Resident visa',
+            'employment': 'Resident visa',
+            'Employee visa': 'Resident visa',
+            'Employee Visa': 'Resident visa',
+            'employee visa': 'Resident visa',
+            
+            # Residence → Resident visa
+            'Residence': 'Resident visa',
+            'residence': 'Resident visa',
+            
+            # Investor → Investor Visa
+            'Investor': 'Investor Visa',
+            'investor': 'Investor Visa',
+            
+            # Self Employed → Resident visa
+            'Self Employed': 'Resident visa',
+            'self employed': 'Resident visa',
+            'Self employed': 'Resident visa',
+            'Self Dependent': 'Resident visa',
+            'Self dependent': 'Resident visa',
+            'self dependent': 'Resident visa',
+            
+            # Legacy support (for backward compatibility)
+            'Student': 'Resident visa',
+            'student': 'Resident visa',
+            'Tourist': 'Resident visa',
+            'tourist': 'Resident visa',
+        }
+        
+        # Apply mapping if exists, otherwise default to Resident visa
+        visa_type = visa_type_mapping.get(visa_type_normalized, 'Resident visa')
+        
+        # Log the mapping for debugging
+        if visa_type_normalized != visa_type:
+            print(f"✓ GIG Gulf: Mapped visa type '{visa_type_normalized}' to '{visa_type}'", file=sys.stderr)
         
         # Extract and process dependents
         dependents_list = []

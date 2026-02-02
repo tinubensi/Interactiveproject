@@ -188,12 +188,34 @@ def transform_lead_to_alsagr_format(lead_data: Dict[str, Any]) -> Dict[str, Any]
         from datetime import datetime, timedelta
         effective_date = (datetime.now() + timedelta(days=14)).strftime('%Y-%m-%d')
     
+    # Get and validate date of birth
+    dob = lob_data.get('dateOfBirth') or form_data.get('dateOfBirth') or lead_data.get('dateOfBirth', '')
+    
+    # Validate date of birth (must be in the past and at least 18 years old)
+    if dob:
+        try:
+            from datetime import datetime, timedelta
+            dob_date = datetime.strptime(str(dob), '%Y-%m-%d')
+            today = datetime.now()
+            min_dob = today - timedelta(days=18*365)  # Minimum 18 years old
+            
+            if dob_date > today:
+                # Date is in the future - likely a data entry error
+                print(f"⚠️  WARNING: Date of birth {dob} is in the FUTURE! Using default: 2000-01-01", file=sys.stderr)
+                dob = '2000-01-01'  # Default to a valid date
+            elif dob_date > min_dob:
+                # Person is less than 18 years old
+                print(f"⚠️  WARNING: Date of birth {dob} makes person less than 18 years old! Using default: 2000-01-01", file=sys.stderr)
+                dob = '2000-01-01'  # Default to a valid date
+        except Exception as e:
+            print(f"⚠️  WARNING: Could not validate date of birth {dob}: {e}. Using as-is.", file=sys.stderr)
+    
     primary = {
         'firstName': lead_data.get('firstName') or form_data.get('firstName', ''),
         'lastName': lead_data.get('lastName') or form_data.get('lastName', ''),
-        'dateOfBirth': lob_data.get('dateOfBirth') or lead_data.get('dateOfBirth', ''),
-        'gender': map_gender(lob_data.get('gender') or lead_data.get('gender', 'Male')),
-        'maritalStatus': map_marital_status(lob_data.get('maritalStatus') or lead_data.get('maritalStatus', 'Single')),
+        'dateOfBirth': dob,
+        'gender': map_gender(lob_data.get('gender') or form_data.get('gender') or lead_data.get('gender', 'Male')),
+        'maritalStatus': map_marital_status(lob_data.get('maritalStatus') or form_data.get('maritalStatus') or lead_data.get('maritalStatus', 'Single')),
         'nationalityCode': map_nationality(nationality_raw),
         'occupationCode': map_occupation(occupation_raw),
         'effectiveDate': effective_date,
@@ -332,6 +354,10 @@ def transform_lead_to_alsagr_format(lead_data: Dict[str, Any]) -> Dict[str, Any]
     elif form_data and form_data.get('emirate'):
         emirate_name = form_data.get('emirate')
         emirate_code = map_emirate(emirate_name)
+    elif form_data and form_data.get('visaLocation'):
+        # Handle visaLocation as fallback for emirate
+        emirate_name = form_data.get('visaLocation')
+        emirate_code = map_emirate(emirate_name)
     
     # Log the mapping for debugging
     if emirate_name:
@@ -339,14 +365,31 @@ def transform_lead_to_alsagr_format(lead_data: Dict[str, Any]) -> Dict[str, Any]
     
     # Map salary band from lead data if available
     salary_band_code = '23'  # Default to 4k-12k range
-    if lob_data and lob_data.get('salaryRange'):
-        salary_band_code = map_salary_band(lob_data.get('salaryRange'))
+    
+    # Check multiple possible field names for salary (prioritize portal codes from new forms)
+    salary_value = None
+    if lob_data and lob_data.get('monthlySalaryRange'):
+        salary_value = lob_data.get('monthlySalaryRange')
+    elif form_data and form_data.get('monthlySalaryRange'):
+        salary_value = form_data.get('monthlySalaryRange')
+    elif lob_data and lob_data.get('salaryRange'):
+        salary_value = lob_data.get('salaryRange')
     elif form_data and form_data.get('salaryBand'):
-        # If already a code, use it directly
-        if str(form_data.get('salaryBand')).isdigit():
-            salary_band_code = str(form_data.get('salaryBand'))
+        salary_value = form_data.get('salaryBand')
+    
+    if salary_value:
+        # If it's a portal code (22, 23, 24), use it directly
+        if str(salary_value) in ['22', '23', '24']:
+            salary_band_code = str(salary_value)
+            print(f"✓ Using portal code directly: {salary_band_code}", file=sys.stderr)
+        # If numeric and short, assume it's a portal code
+        elif str(salary_value).isdigit() and len(str(salary_value)) <= 2:
+            salary_band_code = str(salary_value)
+            print(f"✓ Using numeric code: {salary_band_code}", file=sys.stderr)
         else:
-            salary_band_code = map_salary_band(form_data.get('salaryBand'))
+            # Parse text format (legacy support)
+            salary_band_code = map_salary_band(salary_value)
+            print(f"✓ Mapped '{salary_value}' to code: {salary_band_code}", file=sys.stderr)
     
     # Map visa type from lead data if available
     # IMPORTANT: Visa type is only required for Abu Dhabi (11) and Al Ain (313)
@@ -357,6 +400,9 @@ def transform_lead_to_alsagr_format(lead_data: Dict[str, Any]) -> Dict[str, Any]
             visa_type_code = str(form_data.get('visaType'))
         else:
             visa_type_code = map_visa_type(form_data.get('visaType'))
+    elif form_data and form_data.get('lobData.visaType'):
+        # Handle flat key format: "lobData.visaType" as a single key
+        visa_type_code = map_visa_type(form_data.get('lobData.visaType'))
     elif lob_data and lob_data.get('visaType'):
         visa_type_code = map_visa_type(lob_data.get('visaType'))
     
@@ -627,33 +673,34 @@ def map_visa_type(visa_type: str = None) -> str:
     
     IMPORTANT: Visa Type dropdown only appears for Abu Dhabi (11) and Al Ain (313) emirates.
     
-    Based on Playwright recording - portal order (top to bottom):
-    - 281 = Self Dependent (position 1)
-    - 142 = Domestic Visa Holder (position 2)
-    - 141 = Employee (position 3)
-    - 143 = Investor (position 4)
+    VERIFIED FROM PORTAL HTML (2026-01-31):
+    <option value="281">Self Dependent</option>
+    <option value="142">Employee</option>  ✓ CORRECT
+    <option value="141">Investor</option>   ✓ CORRECT
+    <option value="143">Self Dependent</option>
     
     Args:
-        visa_type: Visa type description ('Employee', 'Self Dependent', 'Domestic Visa Holder', 'Investor', etc.)
-                  If None, returns default (141 = Employee)
+        visa_type: Visa type description ('Employee', 'Self Dependent', 'Investor', etc.)
+                  If None, returns default (142 = Employee)
         
     Returns:
         Portal dropdown value code
     """
     if not visa_type:
-        return '141'  # Default to Employee
+        return '142'  # Default to Employee (FIXED: was 141 which is Investor!)
     
     # Normalize visa type (case-insensitive)
     visa_lower = visa_type.strip().lower()
     
+    # CORRECTED mapping based on actual portal HTML
     mapping = {
         'self dependent': '281',
         'self-dependent': '281',
         'selfdependent': '281',
-        'domestic visa holder': '142',
-        'domestic': '142',
-        'employee': '141',
-        'investor': '143'
+        'employee': '142',      # FIXED: was 141
+        'employment': '142',    # Also handle "Employment"
+        'investor': '141',      # FIXED: was 143
+        'invest': '141'
     }
     
     # Try exact match first
@@ -663,15 +710,13 @@ def map_visa_type(visa_type: str = None) -> str:
     # Try partial matches
     if 'self' in visa_lower and 'dependent' in visa_lower:
         return '281'
-    if 'domestic' in visa_lower:
-        return '142'
     if 'employee' in visa_lower or 'employ' in visa_lower:
-        return '141'
+        return '142'  # FIXED: was 141
     if 'investor' in visa_lower or 'invest' in visa_lower:
-        return '143'
+        return '141'  # FIXED: was 143
     
     # Default to Employee
-    return '141'
+    return '142'  # FIXED: was 141
 
 
 def map_salary_band(salary_range: str = None) -> str:
@@ -684,9 +729,12 @@ def map_salary_band(salary_range: str = None) -> str:
     - 22 = less than 4,000 AED per month (<4k)
     
     Args:
-        salary_range: Salary range description ('4k-12k', '15000', '>12k', '<4k', etc.)
-                      Can be numeric string or text description
-                      If None, returns default (23 = 4k-12k)
+        salary_range: Salary range description from frontend:
+                      - 'Less than 5000', 'Less than 4000'
+                      - '5000 - 10000', '4000 - 12000'
+                      - 'More than 15000', 'Greater than 12000'
+                      - Numeric: '15000', '8000', '3500'
+                      - Portal codes: '22', '23', '24'
         
     Returns:
         Portal dropdown value code
@@ -707,12 +755,49 @@ def map_salary_band(salary_range: str = None) -> str:
         else:
             return '23'  # 4k-12k
     
-    # Check for >12k or greater than 12k
-    if any(keyword in salary_lower for keyword in ['>12', 'greater than 12', 'more than 12', 'above 12', 'over 12']):
-        return '24'
+    # Extract numeric values from text like "Less than 5000" or "More than 15000"
+    import re
+    numbers = re.findall(r'\d+', salary_lower.replace(',', ''))
     
-    # Check for <4k or less than 4k
-    if any(keyword in salary_lower for keyword in ['<4', 'less than 4', 'below 4', 'under 4']):
+    # Handle "Less than X" or "Below X" format
+    if any(keyword in salary_lower for keyword in ['less than', 'below', 'under', 'up to']):
+        if numbers:
+            threshold = int(numbers[0])
+            if threshold <= 4000:
+                return '22'  # < 4k
+            elif threshold <= 12000:
+                return '23'  # 4k-12k (e.g., "Less than 10000")
+            else:
+                return '24'  # > 12k (e.g., "Less than 15000")
+    
+    # Handle "More than X" or "Greater than X" or "Above X" format
+    if any(keyword in salary_lower for keyword in ['more than', 'greater than', 'above', 'over']):
+        if numbers:
+            threshold = int(numbers[0])
+            if threshold >= 12000:
+                return '24'  # > 12k
+            elif threshold >= 4000:
+                return '23'  # 4k-12k
+            else:
+                return '22'  # < 4k
+    
+    # Handle range format "X - Y" or "X to Y"
+    if '-' in salary_lower or ' to ' in salary_lower:
+        if len(numbers) >= 2:
+            min_salary = int(numbers[0])
+            max_salary = int(numbers[1])
+            avg_salary = (min_salary + max_salary) / 2
+            if avg_salary > 12000:
+                return '24'  # > 12k
+            elif avg_salary < 4000:
+                return '22'  # < 4k
+            else:
+                return '23'  # 4k-12k
+    
+    # Fallback: Check for simple patterns
+    if any(keyword in salary_lower for keyword in ['>12', '>15']):
+        return '24'
+    if any(keyword in salary_lower for keyword in ['<4', '<5']):
         return '22'
     
     # Default to 4k-12k range

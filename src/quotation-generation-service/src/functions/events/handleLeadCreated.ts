@@ -202,6 +202,34 @@ async function handleLeadCreatedEvent(
         // Continue anyway - RPA can still run
       }
       
+      // HTTP Fallback: Immediately notify Pipeline Service of plans.fetch_started
+      try {
+        const PIPELINE_SERVICE_URL = process.env.PIPELINE_SERVICE_URL || 'http://localhost:7077';
+        const httpResponse = await fetch(`${PIPELINE_SERVICE_URL}/api/events/process`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-service-key': process.env.INTERNAL_SERVICE_KEY || ''
+          },
+          body: JSON.stringify({
+            eventType: 'plans.fetch_started',
+            eventData: {
+              leadId: leadId,
+              lineOfBusiness: lineOfBusiness,
+              fetchRequestId: fetchRequest.id,
+              vendorCount: rpaVendors.length
+            }
+          }),
+          signal: AbortSignal.timeout(5000)
+        });
+        
+        if (httpResponse.ok) {
+          context.log(`✅ HTTP Fallback: Pipeline Service notified of plans.fetch_started`);
+        }
+      } catch (httpError) {
+        context.warn(`⚠️ HTTP Fallback for plans.fetch_started failed:`, httpError);
+      }
+      
       // CRITICAL: Clean formData before sending to RPA bots
       // Remove all duplicate keys with different casings (firstName, firstname, Firstname, etc.)
       const cleanFormDataForRpa = cleanAndMergeFormData(
@@ -300,6 +328,41 @@ async function handleLeadCreatedEvent(
       } catch (eventError) {
         context.error('❌ CRITICAL: Failed to publish completion event:', eventError);
         throw eventError; // Re-throw to ensure pipeline gets notified of failure
+      }
+      
+      // HTTP Fallback: Immediately notify Pipeline Service (don't wait for Event Grid)
+      // This ensures status updates happen within seconds, not minutes
+      try {
+        const PIPELINE_SERVICE_URL = process.env.PIPELINE_SERVICE_URL || 'http://localhost:7077';
+        const httpResponse = await fetch(`${PIPELINE_SERVICE_URL}/api/events/process`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-service-key': process.env.INTERNAL_SERVICE_KEY || ''
+          },
+          body: JSON.stringify({
+            eventType: 'plans.fetch_completed',
+            eventData: {
+              leadId: leadId,
+              lineOfBusiness: lineOfBusiness,
+              fetchRequestId: fetchRequest.id,
+              totalPlans: totalPlans,
+              successfulVendors: successfulVendorIds,
+              failedVendors: vendorIds.filter((id: string) => !successfulVendorIds.includes(id))
+            }
+          }),
+          signal: AbortSignal.timeout(5000) // 5 second timeout
+        });
+        
+        if (httpResponse.ok) {
+          context.log(`✅ HTTP Fallback: Pipeline Service notified of plans.fetch_completed`);
+        } else {
+          const errorText = await httpResponse.text();
+          context.warn(`⚠️ HTTP Fallback failed with status ${httpResponse.status}: ${errorText}`);
+        }
+      } catch (httpError) {
+        context.warn(`⚠️ HTTP Fallback failed (Event Grid will retry):`, httpError);
+        // Don't throw - Event Grid will still deliver the event eventually
       }
       
       context.log(`✅ Successfully processed lead.created event for lead ${leadId}`);

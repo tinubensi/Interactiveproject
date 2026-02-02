@@ -138,6 +138,9 @@ class RpaVmService {
           try {
             await this.savePlansToCosmosDB(leadId, result.vendorId, result.plans);
             console.log(`[RPA VM] ✅ IMMEDIATELY saved ${result.plans.length} plans from ${result.vendorId}`);
+            
+            // NEW: Publish per-vendor completion event
+            await this.publishVendorPlansReady(leadId, result.vendorId, result.plans.length);
           } catch (saveError) {
             console.error(`[RPA VM] Failed to save plans from ${result.vendorId}:`, saveError);
             // Mark as failed if save fails
@@ -164,6 +167,38 @@ class RpaVmService {
     await Promise.allSettled(promises);
     
     return vmResults;
+  }
+
+  private async publishVendorPlansReady(leadId: string, vendorId: string, plansCount: number): Promise<void> {
+    try {
+      const { eventGridService } = await import('./eventGridService');
+      await eventGridService.publishVendorPlansReady({
+        leadId,
+        vendorId,
+        plansCount,
+        timestamp: new Date().toISOString()
+      });
+      console.log(`[RPA VM] ✅ Published vendor.plans_ready event for ${vendorId} (${plansCount} plans)`);
+    } catch (error) {
+      console.error(`[RPA VM] Failed to publish vendor.plans_ready event for ${vendorId}:`, error);
+      // Don't throw - plan save was successful, event is optional
+    }
+
+    // HTTP Fallback: Directly notify Pipeline Service
+    // This ensures the event is delivered even if Event Grid is slow or not configured
+    try {
+      const { notifyPipelineService } = await import('../utils/pipelineFallback');
+      await notifyPipelineService('vendor.plans_ready', {
+        leadId,
+        vendorId,
+        plansCount,
+        timestamp: new Date().toISOString()
+      });
+      console.log(`[RPA VM] ✅ HTTP Fallback: Notified Pipeline Service of vendor.plans_ready for ${vendorId}`);
+    } catch (fallbackError) {
+      console.error(`[RPA VM] HTTP Fallback failed for vendor.plans_ready (${vendorId}):`, fallbackError);
+      // Don't throw - Event Grid might still deliver the event
+    }
   }
 
   private async savePlansToCosmosDB(leadId: string, vendorId: string, plans: any[]) {

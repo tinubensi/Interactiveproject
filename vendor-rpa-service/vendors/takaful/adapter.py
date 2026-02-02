@@ -2,6 +2,7 @@
 Takaful Emarat Adapter
 Handles data transformation for Takaful Emarat Insurance portal
 """
+import sys
 from typing import Dict, Any, List
 from datetime import datetime
 from vendors.base.vendor_adapter import VendorAdapter
@@ -105,16 +106,37 @@ class TakafulAdapter(VendorAdapter):
         # Extract salary range - map schema values to Takaful portal options
         # Takaful portal options (verified from logs): "4001-12000 AED/Month", ">12000 AED/Month"
         # Note: "Less than 5000" does NOT exist in portal - map to lowest available option
-        salary_raw = lob_data.get('salaryRange', 'Less than 5000')
-        salary_mapping = {
-            'Less than 5000': '4001-12000 AED/Month',  # Map to lowest available option
-            '5000-10000': '4001-12000 AED/Month',
-            '10000-20000': '4001-12000 AED/Month',
-            '20000-50000': '>12000 AED/Month',
-            'Above 50000': '>12000 AED/Month'
-        }
-        # Default to lowest option if unmapped value (safe fallback)
-        salary_range = salary_mapping.get(salary_raw, '4001-12000 AED/Month')
+        
+        # Check multiple possible field names (prioritize new portal codes)
+        salary_raw = (
+            lob_data.get('monthlySalaryRange') or 
+            form_data.get('monthlySalaryRange') or 
+            lob_data.get('salaryRange') or 
+            'Less than 5000'
+        )
+        
+        # Handle new portal codes (22, 23, 24)
+        if str(salary_raw) in ['22', '23', '24']:
+            portal_code_mapping = {
+                '22': '4001-12000 AED/Month',  # Less than 4,000 -> map to lowest
+                '23': '4001-12000 AED/Month',  # 4,000 - 12,000 AED
+                '24': '>12000 AED/Month'       # Greater than 12,000 AED
+            }
+            salary_range = portal_code_mapping.get(str(salary_raw), '4001-12000 AED/Month')
+            print(f"✓ Takaful: Mapped portal code {salary_raw} to {salary_range}", file=sys.stderr)
+        else:
+            # Old text format mapping (backward compatibility)
+            salary_mapping = {
+                'Less than 5000': '4001-12000 AED/Month',  # Map to lowest available option
+                '5000-10000': '4001-12000 AED/Month',
+                '10000-20000': '4001-12000 AED/Month',
+                '20000-50000': '>12000 AED/Month',
+                'Above 50000': '>12000 AED/Month'
+            }
+            # Default to lowest option if unmapped value (safe fallback)
+            salary_range = salary_mapping.get(salary_raw, '4001-12000 AED/Month')
+            if salary_raw:
+                print(f"✓ Takaful: Mapped text '{salary_raw}' to {salary_range}", file=sys.stderr)
         
         # Extract emirate
         emirate = standard_lead.get('emirate', 'Dubai')

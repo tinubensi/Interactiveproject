@@ -76,12 +76,27 @@ const triggerRPA = df.activity(async (input: {
     });
 
     console.log(`[Activity] RPA trigger result:`, result);
+    
+    // 🔧 FIX: Save plans to Cosmos DB if RPA returned plans
+    if (result.success && result.plans && result.plans.length > 0) {
+      console.log(`[Activity] RPA returned ${result.plans.length} plans - saving to Cosmos DB...`);
+      try {
+        await cosmosService.createPlans(result.plans);
+        console.log(`[Activity] ✅ Saved ${result.plans.length} plans to Cosmos DB`);
+      } catch (saveError: any) {
+        console.error(`[Activity] ⚠️ Failed to save plans to Cosmos:`, saveError.message);
+        // Don't fail the activity - plans might already exist or be saved by another process
+      }
+    } else {
+      console.log(`[Activity] RPA did not return any plans (success: ${result.success})`);
+    }
 
     return {
       success: result.success,
       vendorsTriggered: result.vendorsTriggered,
       vendorsFailed: result.vendorsFailed,
-      error: result.error
+      error: result.error,
+      planCount: result.plans?.length || 0
     };
   } catch (error: any) {
     console.error(`[Activity] RPA trigger failed:`, error);
@@ -90,7 +105,8 @@ const triggerRPA = df.activity(async (input: {
       success: false,
       vendorsTriggered: [],
       vendorsFailed: [],
-      error: error.message
+      error: error.message,
+      planCount: 0
     };
   }
 });

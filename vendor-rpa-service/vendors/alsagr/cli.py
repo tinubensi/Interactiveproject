@@ -148,8 +148,10 @@ async def main():
         
         # Bot configuration
         # Use headless=False for debugging (visible browser)
+        # Check environment variable for headless mode
+        headless_mode = os.environ.get('HEADLESS', 'true').lower() == 'true'
         bot_config = {
-            'headless': True,  # Production mode - headless browser
+            'headless': headless_mode,  # Can be overridden by HEADLESS=false env var
             'browser_type': 'chromium',
             'enable_screenshots': False,
             'default_timeout': 60000,
@@ -251,10 +253,11 @@ async def main():
             
             print(f"PDF enrichment complete: {enriched_count} plans enriched, {missing_pdf_count} plans without PDF", file=sys.stderr)
             
-            # Cleanup any remaining PDFs in download directory
+            # Cleanup any remaining PDFs in download directory (DISABLED FOR DEBUG)
+            print("  ⚠️ PDF cleanup DISABLED for debugging", file=sys.stderr)
             try:
                 download_dir = os.environ.get('DOWNLOAD_DIR', '/tmp/alsagr_downloads')
-                if os.path.exists(download_dir):
+                if False and os.path.exists(download_dir):  # DISABLED
                     remaining_files = os.listdir(download_dir)
                     if remaining_files:
                         print(f"  🗑️  Cleaning up {len(remaining_files)} remaining files in {download_dir}", file=sys.stderr)
@@ -265,6 +268,21 @@ async def main():
                                 pass
             except Exception as cleanup_error:
                 print(f"  ⚠️ Directory cleanup warning: {cleanup_error}", file=sys.stderr)
+            
+            # DEBUG: Check what's in enriched plans BEFORE normalization
+            if enriched_plans:
+                first_plan = enriched_plans[0]
+                print(f"\n🔍 DEBUG: First plan before normalization:", file=sys.stderr)
+                print(f"   inpatientLimit: {first_plan.get('inpatientLimit', 'NOT FOUND')}", file=sys.stderr)
+                print(f"   outpatientLimit: {first_plan.get('outpatientLimit', 'NOT FOUND')}", file=sys.stderr)
+                print(f"   deductible: {first_plan.get('deductible', 'NOT FOUND')}", file=sys.stderr)
+                lob = first_plan.get('lobSpecificData', {})
+                print(f"   lobSpecificData.alternativeMedicine: {type(lob.get('alternativeMedicine'))} - {len(str(lob.get('alternativeMedicine', '')))}", file=sys.stderr)
+                print(f"   Benefits count: {len(first_plan.get('benefits', []))}", file=sys.stderr)
+                if first_plan.get('benefits'):
+                    print(f"   First 3 benefits:", file=sys.stderr)
+                    for i, b in enumerate(first_plan.get('benefits', [])[:3]):
+                        print(f"     {i+1}. {b.get('category', 'N/A')}: {b.get('description', 'N/A')[:60]}...", file=sys.stderr)
             
             # Step 7: Normalize plans using adapter
             standard_plans = adapter.normalize_response(enriched_plans, lead_id)
