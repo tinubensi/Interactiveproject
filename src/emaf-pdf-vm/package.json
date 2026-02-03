@@ -8,6 +8,7 @@
     "copy-templates": "mkdir -p dist/templates && cp -r templates/* dist/templates/",
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
+    "test": "npm run build && node --test dist/src/tests/**/*.test.js",
     "postinstall": "npx playwright install chromium --with-deps || echo 'Playwright browser installation skipped (may already be installed)'"
   },
   "dependencies": {

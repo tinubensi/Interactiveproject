@@ -606,40 +606,40 @@
                     <table class="form-table w-full" cellpadding="0" cellspacing="0">
                         <tr>
                             <td class="form-label">Applicant's Name</td>
-                            <td class="form-field-white" colspan="3">&nbsp;</td>
+                            <td class="form-field-white" colspan="3">{{memberDetails.applicantName}}</td>
                         </tr>
                         <tr>
                             <td class="form-label">Relationship with the<br>proposed insured</td>
-                            <td class="form-field-white" colspan="3">&nbsp;</td>
+                            <td class="form-field-white" colspan="3">{{memberDetails.relationship}}</td>
                         </tr>
                         <tr>
                             <td class="form-label">Address</td>
-                            <td class="form-field-white" colspan="3">&nbsp;</td>
+                            <td class="form-field-white" colspan="3">{{memberDetails.address}}</td>
                         </tr>
                         <tr>
                             <td class="form-label">P.O. Box</td>
-                            <td class="form-field-white" width="200">&nbsp;</td>
+                            <td class="form-field-white" width="200">{{memberDetails.poBox}}</td>
                             <td class="form-label form-label--sm">Email address</td>
-                            <td class="form-field-white">&nbsp;</td>
+                            <td class="form-field-white">{{memberDetails.email}}</td>
                         </tr>
                         <tr>
                             <td class="form-label">Contact Number</td>
-                            <td class="form-field-white" width="200">&nbsp;</td>
+                            <td class="form-field-white" width="200">{{memberDetails.contactNumber}}</td>
                             <td class="form-label form-label--sm">Emirates ID</td>
-                            <td class="form-field-white">&nbsp;</td>
+                            <td class="form-field-white">{{memberDetails.emiratesId}}</td>
                         </tr>
                         <tr>
                             <td class="form-label">Occupation</td>
-                            <td class="form-field-white" width="200">&nbsp;</td>
+                            <td class="form-field-white" width="200">{{memberDetails.occupation}}</td>
                             <td class="form-label form-label--sm">Sponsor's Name</td>
-                            <td class="form-field-white">&nbsp;</td>
+                            <td class="form-field-white">{{memberDetails.sponsorName}}</td>
                         </tr>
                         <tr>
                             <td class="form-label">Salary (AED)</td>
                             <td class="form-field-purple" colspan="3" style="padding: 7px 12px 7px 0px;">
-                                Up to 4,000 &nbsp;<span class="checkbox checkbox--checked"></span>
+                                Up to 4,000 &nbsp;<span class="checkbox {{#if (eq memberDetails.salary 'up_to_4000')}}checkbox--checked{{/if}}"></span>
                                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                                Above 4,000 &nbsp;<span class="checkbox"></span>
+                                Above 4,000 &nbsp;<span class="checkbox {{#if (eq memberDetails.salary 'above_4000')}}checkbox--checked{{/if}}"></span>
                             </td>
                         </tr>
                     </table>
@@ -663,8 +663,8 @@
                                 the
                                 UAE?</td>
                             <td class="question-answer" width="100px;">
-                                <span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;
-                                <span class="checkbox"></span>&nbsp;No
+                                <span class="checkbox {{checkbox previousInsurance.hasInsurance 'yes'}}"></span>&nbsp;Yes &nbsp;&nbsp;
+                                <span class="checkbox {{checkbox previousInsurance.hasInsurance 'no'}}"></span>&nbsp;No
                             </td>
                         </tr>
                     </table>
@@ -673,7 +673,7 @@
                             <td class="form-label" style="vertical-align: top; padding-top: 10px;">If yes, please
                                 provide<br>details ( Policy number),<br>expiry date</td>
                             <td class="form-field-purple">
-                                <div class="form-field-white" style="padding: 10px 5px;">&nbsp;</div>
+                                <div class="form-field-white" style="padding: 10px 5px;">{{previousInsurance.policyNumber}}{{#if previousInsurance.expiryDate}} {{formatDate previousInsurance.expiryDate}}{{/if}}</div>
                             </td>
                         </tr>
                     </table>
@@ -741,6 +741,20 @@
                             <td>Weight</td>
                             <td>Visa<br>Emirate</td>
                         </tr>
+                        {{#with (lookup members 0)}}
+                        <tr class="members-row">
+                            <td>{{name}}</td>
+                            <td>{{nationality}}</td>
+                            <td>{{passportOrEmiratesId}}</td>
+                            <td>{{relationship}}</td>
+                            <td>{{maritalStatus}}</td>
+                            <td>{{formatDate dateOfBirth}}</td>
+                            <td>{{gender}}</td>
+                            <td>{{height}}</td>
+                            <td>{{weight}}</td>
+                            <td>{{visaEmirate}}</td>
+                        </tr>
+                        {{else}}
                         <tr class="members-row">
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
@@ -753,6 +767,21 @@
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                         </tr>
+                        {{/with}}
+                        {{#with (lookup members 1)}}
+                        <tr class="members-row">
+                            <td>{{name}}</td>
+                            <td>{{nationality}}</td>
+                            <td>{{passportOrEmiratesId}}</td>
+                            <td>{{relationship}}</td>
+                            <td>{{maritalStatus}}</td>
+                            <td>{{formatDate dateOfBirth}}</td>
+                            <td>{{gender}}</td>
+                            <td>{{height}}</td>
+                            <td>{{weight}}</td>
+                            <td>{{visaEmirate}}</td>
+                        </tr>
+                        {{else}}
                         <tr class="members-row">
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
@@ -765,6 +794,21 @@
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                         </tr>
+                        {{/with}}
+                        {{#with (lookup members 2)}}
+                        <tr class="members-row">
+                            <td>{{name}}</td>
+                            <td>{{nationality}}</td>
+                            <td>{{passportOrEmiratesId}}</td>
+                            <td>{{relationship}}</td>
+                            <td>{{maritalStatus}}</td>
+                            <td>{{formatDate dateOfBirth}}</td>
+                            <td>{{gender}}</td>
+                            <td>{{height}}</td>
+                            <td>{{weight}}</td>
+                            <td>{{visaEmirate}}</td>
+                        </tr>
+                        {{else}}
                         <tr class="members-row">
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
@@ -777,6 +821,21 @@
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                         </tr>
+                        {{/with}}
+                        {{#with (lookup members 3)}}
+                        <tr class="members-row">
+                            <td>{{name}}</td>
+                            <td>{{nationality}}</td>
+                            <td>{{passportOrEmiratesId}}</td>
+                            <td>{{relationship}}</td>
+                            <td>{{maritalStatus}}</td>
+                            <td>{{formatDate dateOfBirth}}</td>
+                            <td>{{gender}}</td>
+                            <td>{{height}}</td>
+                            <td>{{weight}}</td>
+                            <td>{{visaEmirate}}</td>
+                        </tr>
+                        {{else}}
                         <tr class="members-row">
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
@@ -789,6 +848,21 @@
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                         </tr>
+                        {{/with}}
+                        {{#with (lookup members 4)}}
+                        <tr class="members-row">
+                            <td>{{name}}</td>
+                            <td>{{nationality}}</td>
+                            <td>{{passportOrEmiratesId}}</td>
+                            <td>{{relationship}}</td>
+                            <td>{{maritalStatus}}</td>
+                            <td>{{formatDate dateOfBirth}}</td>
+                            <td>{{gender}}</td>
+                            <td>{{height}}</td>
+                            <td>{{weight}}</td>
+                            <td>{{visaEmirate}}</td>
+                        </tr>
+                        {{else}}
                         <tr class="members-row">
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
@@ -801,6 +875,21 @@
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                         </tr>
+                        {{/with}}
+                        {{#with (lookup members 5)}}
+                        <tr class="members-row">
+                            <td>{{name}}</td>
+                            <td>{{nationality}}</td>
+                            <td>{{passportOrEmiratesId}}</td>
+                            <td>{{relationship}}</td>
+                            <td>{{maritalStatus}}</td>
+                            <td>{{formatDate dateOfBirth}}</td>
+                            <td>{{gender}}</td>
+                            <td>{{height}}</td>
+                            <td>{{weight}}</td>
+                            <td>{{visaEmirate}}</td>
+                        </tr>
+                        {{else}}
                         <tr class="members-row">
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
@@ -813,6 +902,21 @@
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                         </tr>
+                        {{/with}}
+                        {{#with (lookup members 6)}}
+                        <tr class="members-row">
+                            <td>{{name}}</td>
+                            <td>{{nationality}}</td>
+                            <td>{{passportOrEmiratesId}}</td>
+                            <td>{{relationship}}</td>
+                            <td>{{maritalStatus}}</td>
+                            <td>{{formatDate dateOfBirth}}</td>
+                            <td>{{gender}}</td>
+                            <td>{{height}}</td>
+                            <td>{{weight}}</td>
+                            <td>{{visaEmirate}}</td>
+                        </tr>
+                        {{else}}
                         <tr class="members-row">
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
@@ -825,6 +929,7 @@
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                         </tr>
+                        {{/with}}
                     </table>
                 </div>
 
@@ -843,8 +948,8 @@
                                 medical condition requiring regular outpatient treatment, follow – ups or specialized
                                 investigations (Ultrasound/MRI/CT scan) or inpatient treatment/hospitalization? If yes,
                                 please specify condition/s and attach applicable test results:</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question1.hasCondition 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question1.hasCondition 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- 1.a -->
                         <tr>
@@ -852,16 +957,16 @@
                             <td class="list-index list-index--letter">a.</td>
                             <td class="mh-question">Have you been diagnosed for High blood sugar (Diabetes mellitus)?
                             </td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question1.diabetes.has 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question1.diabetes.has 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- 1.a.i -->
                         <tr>
                             <td></td>
                             <td class="list-index list-index--roman">i.</td>
                             <td class="mh-question italic">Are you taking Insulin (Diabetes Mellitus type 1)?</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question1.diabetes.takingInsulin 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question1.diabetes.takingInsulin 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- 1.a.ii -->
                         <tr>
@@ -870,8 +975,8 @@
                             <td class="mh-question italic">Have you been diagnosed or investigated for diminished vision
                                 (retinopathy), kidney impairment (nephropathy) or numbness of limbs (neuropathy) or
                                 advised for hospitalization?</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question1.diabetes.hasComplications 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question1.diabetes.hasComplications 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- 1.b -->
                         <tr>
@@ -879,8 +984,8 @@
                             <td class="list-index list-index--letter">b.</td>
                             <td class="mh-question">Have you been diagnosed with High blood pressure (Hypertension) and/
                                 or abnormal lipid profile (Dyslipidemia/ Hyperlipidemia)?</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question1.hypertension.has 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question1.hypertension.has 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- 1.b.i -->
                         <tr>
@@ -889,8 +994,8 @@
                             <td class="mh-question italic">Have you been investigated or diagnosed for chest pain
                                 (angina pectoris) or any heart disease (coronary artery/ ischemic heart disease,
                                 cardiomyopathy, or heart valve incompetence)?</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question1.hypertension.heartDiseaseInvestigated 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question1.hypertension.heartDiseaseInvestigated 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- 1.c -->
                         <tr>
@@ -898,8 +1003,8 @@
                             <td class="list-index list-index--letter">c.</td>
                             <td class="mh-question">Have you been diagnosed with disease or disorder of Thyroid Gland
                                 with or without abnormal thyroid function tests (Hypothyroidism, Hyperthyroidism)?</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question1.thyroid.has 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question1.thyroid.has 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- 1.c.i -->
                         <tr>
@@ -907,8 +1012,8 @@
                             <td class="list-index list-index--roman">i.</td>
                             <td class="mh-question italic">Do you have Enlarge thyroid (Thyroid nodule, Multinodular
                                 Goiter) with or without past history of surgical treatment or Needle Biopsy?</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question1.thyroid.enlargedThyroid 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question1.thyroid.enlargedThyroid 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- 1.c.ii -->
                         <tr>
@@ -917,8 +1022,8 @@
                             <td class="mh-question italic">Have you been diagnosed with Hyperthyroidism, Thyroiditis or
                                 Graves' disease with or without past history of surgical treatment or Needle Biopsy?
                             </td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question1.thyroid.hyperthyroidism 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question1.thyroid.hyperthyroidism 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- 1.d -->
                         <tr>
@@ -926,8 +1031,8 @@
                             <td class="list-index list-index--letter">d.</td>
                             <td class="mh-question">Have you been diagnosed for Breathlessness or experienced whistling
                                 sound on breathing (Asthma)?</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question1.asthma.has 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question1.asthma.has 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- 1.d.i -->
                         <tr>
@@ -935,8 +1040,8 @@
                             <td class="list-index list-index--roman">i.</td>
                             <td class="mh-question italic">Have you visited to an emergency room or hospitalized for
                                 treatment of Asthma?</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question1.asthma.emergencyVisit 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question1.asthma.emergencyVisit 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- 1.e -->
                         <tr>
@@ -944,15 +1049,15 @@
                             <td class="list-index list-index--letter">e.</td>
                             <td class="mh-question">Do you have any other medical conditions, Physical or mental
                                 disorder/disability not listed above?</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question1.otherConditions 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question1.otherConditions 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- Question 2 -->
                         <tr>
                             <td class="list-index list-index--number">2.</td>
                             <td class="mh-question" colspan="2">Are you currently Pregnant?</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question2.isPregnant 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question2.isPregnant 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- 2.a -->
                         <tr>
@@ -960,8 +1065,8 @@
                             <td class="list-index list-index--letter">a.</td>
                             <td class="mh-question italic">Is your pregnancy single or multiple (twin, triplet etc.)
                             </td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Single &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;Multiple</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question2.pregnancyType 'single'}}"></span>&nbsp;Single &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question2.pregnancyType 'multiple'}}"></span>&nbsp;Multiple</td>
                         </tr>
                         <!-- 2.b -->
                         <tr>
@@ -969,8 +1074,8 @@
                             <td class="list-index list-index--letter">b.</td>
                             <td class="mh-question italic">Are there any pregnancy complications (Fetal Growth
                                 Retardation or Congenital anomaly etc.)?</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question2.hasComplications 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question2.hasComplications 'false'}}"></span>&nbsp;No</td>
                         </tr>
                     </table>
                 </div>
@@ -1027,15 +1132,13 @@
                             <td class="list-index list-index--letter">c.</td>
                             <td class="mh-question italic">Expected date of delivery</td>
                             <td class="mh-answer mh-answer--wide">
-                                <span class="date-group">
-                                    <span class="date-box placeholder">d</span><span
+                                <span class="date-group">{{#if medicalHistory.question2.expectedDeliveryDate}}{{formatDate medicalHistory.question2.expectedDeliveryDate}}{{else}}<span class="date-box placeholder">d</span><span
                                         class="date-box placeholder">d</span>
                                     <span class="date-box placeholder">m</span><span
                                         class="date-box placeholder">m</span>
                                     <span class="date-box placeholder">y</span><span
                                         class="date-box placeholder">y</span><span
-                                        class="date-box placeholder">y</span><span class="date-box placeholder">y</span>
-                                </span>
+                                        class="date-box placeholder">y</span><span class="date-box placeholder">y</span>{{/if}}</span>
                             </td>
                         </tr>
 
@@ -1046,16 +1149,16 @@
                             <td></td>
                             <td class="list-index list-index--letter">d.</td>
                             <td class="mh-question italic">Are you currently trying to get pregnant?</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question2.tryingToGetPregnant 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question2.tryingToGetPregnant 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- 2.e -->
                         <tr>
                             <td></td>
                             <td class="list-index list-index--letter">e.</td>
                             <td class="mh-question italic">Are you undergoing any form of fertility treatment?</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question2.fertilityTreatment 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question2.fertilityTreatment 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- 2.f - Last two Menstrual Dates -->
                         <tr>
@@ -1089,16 +1192,16 @@
                             <td class="list-index list-index--number">3.</td>
                             <td class="mh-question" colspan="2">Have you ever been treated or diagnosed with
                                 Lump/Cyst/Cancer/Tumor?</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question3.hasLumpCystCancer 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question3.hasLumpCystCancer 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- Question 4 -->
                         <tr>
                             <td class="list-index list-index--number">4.</td>
                             <td class="mh-question" colspan="2">Have you undergone surgery or advised a surgery or
                                 currently hospitalized or requiring daycare or inpatient treatment?</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question4.hasSurgery 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question4.hasSurgery 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- Question 5 -->
                         <tr>
@@ -1106,16 +1209,16 @@
                             <td class="mh-question" colspan="2">Do you have any sign, symptom, sickness requiring
                                 treatment or medications or have been advised to take any medication or treatment for
                                 more than 07 days or are you currently taking any medication?</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question5.hasMedications 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question5.hasMedications 'false'}}"></span>&nbsp;No</td>
                         </tr>
                         <!-- Question 6 -->
                         <tr>
                             <td class="list-index list-index--number">6.</td>
                             <td class="mh-question" colspan="2">Have you visited clinics/ hospitals for assessment,
                                 Physiotherapy & treatment for back pain (e.g., Neck Pain, Low Back Pain, etc.)?</td>
-                            <td class="mh-answer"><span class="checkbox"></span>&nbsp;Yes &nbsp;&nbsp;<span
-                                    class="checkbox"></span>&nbsp;No</td>
+                            <td class="mh-answer"><span class="checkbox {{checkbox medicalHistory.question6.hasBackPain 'true'}}"></span>&nbsp;Yes &nbsp;&nbsp;<span
+                                    class="checkbox {{checkbox medicalHistory.question6.hasBackPain 'false'}}"></span>&nbsp;No</td>
                         </tr>
                     </table>
                 </div>
@@ -1137,166 +1240,166 @@
                             <td class="list-index list-index--smh">1.</td>
                             <td class="smh-condition">Birth Malformation, congenital condition, Developmental disorder
                             </td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition1}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">2.</td>
                             <td class="smh-condition">Blood disease (Anemia, Leukemia, Polycythemia, Thrombocytopenia)
                             </td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition2}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                         <tr>
                             <td class="list-index list-index--smh">3.</td>
                             <td class="smh-condition">Chronic Obstructive Pulmonary Disease Chronic bronchitis,
                                 Bronchiectasis)</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition3}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">4.</td>
                             <td class="smh-condition">Chronic Kidney disease, Renal impairment/ Failure</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition4}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                         <tr>
                             <td class="list-index list-index--smh">5.</td>
                             <td class="smh-condition">Bipolar Disorder</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition5}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">6.</td>
                             <td class="smh-condition">Chronic liver disease, Cirrhosis of liver</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition6}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                         <tr>
                             <td class="list-index list-index--smh">7.</td>
                             <td class="smh-condition">Cerebrovascular Stroke (CVA)</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition7}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">8.</td>
                             <td class="smh-condition">Cataract</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition8}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                         <tr>
                             <td class="list-index list-index--smh">9.</td>
                             <td class="smh-condition">Communicable Disease</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition9}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">10.</td>
                             <td class="smh-condition">Crohn's disease</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition10}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                         <tr>
                             <td class="list-index list-index--smh">11.</td>
                             <td class="smh-condition">Diverticulosis of intestine</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition11}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">12.</td>
                             <td class="smh-condition">Cystic Fibrosis</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition12}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                         <tr>
                             <td class="list-index list-index--smh">13.</td>
                             <td class="smh-condition">Enlarge tonsils or adenoids</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition13}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">14.</td>
                             <td class="smh-condition">Head Injury</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition14}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                         <tr>
                             <td class="list-index list-index--smh">15.</td>
                             <td class="smh-condition">Hemorrhoids, Piles</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition15}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">16.</td>
                             <td class="smh-condition">Heart Disease or Heart Failure</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition16}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                         <tr>
                             <td class="list-index list-index--smh">17.</td>
                             <td class="smh-condition">Hypersplenism</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition17}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">18.</td>
                             <td class="smh-condition">Hernia (Inguinal, umbilical, incisional)</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition18}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                         <tr>
                             <td class="list-index list-index--smh">19.</td>
                             <td class="smh-condition">Immunodeficiency state specified</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition19}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">20.</td>
                             <td class="smh-condition">Kidney or Gall bladder stone</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition20}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                         <tr>
                             <td class="list-index list-index--smh">21.</td>
                             <td class="smh-condition">Myasthenia Gravis</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition21}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">22.</td>
                             <td class="smh-condition">Motor neuron disease</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition22}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                         <tr>
                             <td class="list-index list-index--smh">23.</td>
                             <td class="smh-condition">Optic Neuritis</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition23}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">24.</td>
                             <td class="smh-condition">Multiple sclerosis</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition24}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                         <tr>
                             <td class="list-index list-index--smh">25.</td>
                             <td class="smh-condition">Organ Transplant</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition25}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">26.</td>
                             <td class="smh-condition">Osteoarthritis (Knee or Hip)</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition26}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                         <tr>
                             <td class="list-index list-index--smh">27.</td>
                             <td class="smh-condition">Prostate Enlargement (Male)</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition27}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">28.</td>
                             <td class="smh-condition">Pancreatitis</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition28}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                         <tr>
                             <td class="list-index list-index--smh">29.</td>
                             <td class="smh-condition">Psoriasis</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition29}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">30.</td>
                             <td class="smh-condition">Rheumatoid arthritis</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition30}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                         <tr>
                             <td class="list-index list-index--smh">31.</td>
                             <td class="smh-condition">Retinal detachment</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition31}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">32.</td>
                             <td class="smh-condition">Sinusitis, Nasal Polyp</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition32}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                         <tr>
                             <td class="list-index list-index--smh">33.</td>
                             <td class="smh-condition">Ulcerative colitis</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition33}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">34.</td>
                             <td class="smh-condition">Varicose veins of lower extremities</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition34}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                         <tr>
                             <td class="list-index list-index--smh">35.</td>
                             <td class="smh-condition">Viral Hepatitis (B, C or Delta)</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition35}}checkbox--checked{{/if}}"></span></td>
                             <td class="smh-spacer"></td>
                             <td class="list-index list-index--smh">36.</td>
                             <td class="smh-condition">Others</td>
-                            <td class="smh-checkbox"><span class="checkbox"></span></td>
+                            <td class="smh-checkbox"><span class="checkbox {{#if specificMedicalHistory.condition36}}checkbox--checked{{/if}}"></span></td>
                         </tr>
                     </table>
                 </div>
@@ -1356,6 +1459,101 @@
                             <th style="width: 20%;">Details of<br>Treatment</th>
                             <th style="width: 18%;">Name of<br>Hospital/ Clinic</th>
                         </tr>
+                        {{#with (lookup yesAnswerDetails 0)}}
+                        <tr>
+                            <td>{{memberName}}</td>
+                            <td>{{questionNumber}}</td>
+                            <td>{{medicalCondition}}</td>
+                            <td>{{formatDate dateOfOnset}}</td>
+                            <td>{{treatmentDetails}}</td>
+                            <td>{{hospitalClinic}}</td>
+                        </tr>
+                        {{else}}
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                        </tr>
+                        {{/with}}
+                        {{#with (lookup yesAnswerDetails 1)}}
+                        <tr>
+                            <td>{{memberName}}</td>
+                            <td>{{questionNumber}}</td>
+                            <td>{{medicalCondition}}</td>
+                            <td>{{formatDate dateOfOnset}}</td>
+                            <td>{{treatmentDetails}}</td>
+                            <td>{{hospitalClinic}}</td>
+                        </tr>
+                        {{else}}
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                        </tr>
+                        {{/with}}
+                        {{#with (lookup yesAnswerDetails 2)}}
+                        <tr>
+                            <td>{{memberName}}</td>
+                            <td>{{questionNumber}}</td>
+                            <td>{{medicalCondition}}</td>
+                            <td>{{formatDate dateOfOnset}}</td>
+                            <td>{{treatmentDetails}}</td>
+                            <td>{{hospitalClinic}}</td>
+                        </tr>
+                        {{else}}
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                        </tr>
+                        {{/with}}
+                        {{#with (lookup yesAnswerDetails 3)}}
+                        <tr>
+                            <td>{{memberName}}</td>
+                            <td>{{questionNumber}}</td>
+                            <td>{{medicalCondition}}</td>
+                            <td>{{formatDate dateOfOnset}}</td>
+                            <td>{{treatmentDetails}}</td>
+                            <td>{{hospitalClinic}}</td>
+                        </tr>
+                        {{else}}
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                        </tr>
+                        {{/with}}
+                        {{#with (lookup yesAnswerDetails 4)}}
+                        <tr>
+                            <td>{{memberName}}</td>
+                            <td>{{questionNumber}}</td>
+                            <td>{{medicalCondition}}</td>
+                            <td>{{formatDate dateOfOnset}}</td>
+                            <td>{{treatmentDetails}}</td>
+                            <td>{{hospitalClinic}}</td>
+                        </tr>
+                        {{else}}
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                        </tr>
+                        {{/with}}
                         <tr>
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
@@ -1380,6 +1578,16 @@
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                         </tr>
+                        {{#with (lookup yesAnswerDetails 5)}}
+                        <tr>
+                            <td>{{memberName}}</td>
+                            <td>{{questionNumber}}</td>
+                            <td>{{medicalCondition}}</td>
+                            <td>{{formatDate dateOfOnset}}</td>
+                            <td>{{treatmentDetails}}</td>
+                            <td>{{hospitalClinic}}</td>
+                        </tr>
+                        {{else}}
                         <tr>
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
@@ -1388,6 +1596,17 @@
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                         </tr>
+                        {{/with}}
+                        {{#with (lookup yesAnswerDetails 6)}}
+                        <tr>
+                            <td>{{memberName}}</td>
+                            <td>{{questionNumber}}</td>
+                            <td>{{medicalCondition}}</td>
+                            <td>{{formatDate dateOfOnset}}</td>
+                            <td>{{treatmentDetails}}</td>
+                            <td>{{hospitalClinic}}</td>
+                        </tr>
+                        {{else}}
                         <tr>
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
@@ -1396,6 +1615,17 @@
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                         </tr>
+                        {{/with}}
+                        {{#with (lookup yesAnswerDetails 7)}}
+                        <tr>
+                            <td>{{memberName}}</td>
+                            <td>{{questionNumber}}</td>
+                            <td>{{medicalCondition}}</td>
+                            <td>{{formatDate dateOfOnset}}</td>
+                            <td>{{treatmentDetails}}</td>
+                            <td>{{hospitalClinic}}</td>
+                        </tr>
+                        {{else}}
                         <tr>
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
@@ -1404,6 +1634,17 @@
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                         </tr>
+                        {{/with}}
+                        {{#with (lookup yesAnswerDetails 8)}}
+                        <tr>
+                            <td>{{memberName}}</td>
+                            <td>{{questionNumber}}</td>
+                            <td>{{medicalCondition}}</td>
+                            <td>{{formatDate dateOfOnset}}</td>
+                            <td>{{treatmentDetails}}</td>
+                            <td>{{hospitalClinic}}</td>
+                        </tr>
+                        {{else}}
                         <tr>
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
@@ -1412,6 +1653,17 @@
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                         </tr>
+                        {{/with}}
+                        {{#with (lookup yesAnswerDetails 9)}}
+                        <tr>
+                            <td>{{memberName}}</td>
+                            <td>{{questionNumber}}</td>
+                            <td>{{medicalCondition}}</td>
+                            <td>{{formatDate dateOfOnset}}</td>
+                            <td>{{treatmentDetails}}</td>
+                            <td>{{hospitalClinic}}</td>
+                        </tr>
+                        {{else}}
                         <tr>
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
@@ -1420,22 +1672,7 @@
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                         </tr>
-                        <tr>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                        </tr>
-                        <tr>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                        </tr>
+                        {{/with}}
                     </table>
                 </div>
 
@@ -1575,18 +1812,18 @@
                         <tr>
                             <td>
                                 <div class="signature-label">Applicant's Name</div>
-                                <div class="signature-field" style="border-right: 1px solid #D9C1D9;"></div>
+                                <div class="signature-field" style="border-right: 1px solid #D9C1D9;">{{signature.applicantName}}</div>
                             </td>
                             <td style="width: 50%;">
                                 <div class="signature-label" style="padding-left: 5px;">Date (dd/mm/yy)</div>
-                                <div class="signature-field"></div>
+                                <div class="signature-field">{{signature.date}}</div>
                             </td>
                         </tr>
                         <tr>
                             <td>
                                 <div class="signature-label">Emirates ID Number</div>
                                 <div class="signature-field signature-field--tall"
-                                    style="border-right: 1px solid #D9C1D9;"></div>
+                                    style="border-right: 1px solid #D9C1D9;">{{signature.emiratesId}}</div>
                             </td>
                             <td style="width: 50%;">
                                 <div class="signature-label" style="padding-left: 5px;">Applicant's Signature</div>

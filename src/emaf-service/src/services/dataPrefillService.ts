@@ -126,6 +126,15 @@ class DataPrefillService {
   /**
    * Normalize gender value for form
    */
+  /** Format current date as dd/mm/yy for declaration section */
+  private formatCurrentDateDdMmYy(): string {
+    const d = new Date();
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = String(d.getFullYear()).slice(-2);
+    return `${day}/${month}/${year}`;
+  }
+
   private normalizeGender(gender?: string, vendorId?: string): string | undefined {
     if (!gender) return undefined;
     const normalized = gender.trim();
@@ -583,12 +592,12 @@ class DataPrefillService {
         }
       }
 
-      // Section 8: Signature
+      // Section 8: Signature - prefill date with current date, emiratesId from member details
       if (prefilled.memberDetails.applicantName || prefilled.memberDetails.emiratesId) {
         prefilled.signature = {
           applicantName: prefilled.memberDetails.applicantName,
+          date: this.formatCurrentDateDdMmYy(),
           emiratesId: prefilled.memberDetails.emiratesId,
-          // date: Leave empty - user should fill current date
         };
       }
     }
