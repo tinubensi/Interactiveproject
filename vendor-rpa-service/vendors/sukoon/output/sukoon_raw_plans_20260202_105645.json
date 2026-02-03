@@ -1,0 +1,825 @@
+{
+  "lead_id": "test-lead-001",
+  "vendor_id": "vendor-sukoon",
+  "extraction_time": "2026-02-02T10:56:45.911163",
+  "raw_plans": [
+    {
+      "plan_name": "Sukoon HealthPlus - PRIME",
+      "vendor_id": "vendor-sukoon",
+      "premium": "10,251.00",
+      "details": {
+        "INDICATIVE PREMIUM": "10,251.00",
+        "Aggregate Limit": "5,000,000",
+        "Network": "Premium",
+        "Basic Coverage Territory": "Worldwide excluding USA & Canada",
+        "Extension Coverage (Worldwide)": "✔",
+        "Maternity Benefits": "25,000",
+        "Alternate Medicine Limit (Annual)": "5,000",
+        "Optical Plan Coverage": "Optical-Enhanced",
+        "Dental Plan Limit (Annual)": "4,000",
+        "✔  Covered    X Not Covered": "* All amounts are in UAE Dirham (AED). The premiums are indicative, excluding VAT, Regulatory fee(s) and other taxes (if any).",
+        "outPatient": [
+          {
+            "testAndTreatment": "Covered up to annual limit with 10% co insurance subject to pre authorization",
+            "heading": "Tests and Treatments for non-pre-existing conditions"
+          },
+          {
+            "Pharmacy": "Covered up to annual limit with 10% co insurance subject to pre authorization",
+            "heading": "Pharmacy for non-pre-existing conditions"
+          },
+          {
+            "physiotherapy": "Covered up to 10 sessions with 10% co pay subject to pre-authorization",
+            "heading": "Physiotherapy"
+          }
+        ],
+        "inPatient": [
+          {
+            "testAndTreatment": "Covered up to annual limit subject to pre authorization",
+            "heading": "Tests and Treatments for non-pre-existing conditions"
+          },
+          {
+            "Room and Board": "Private Room",
+            "heading": "Room and Board"
+          }
+        ],
+        "maternity": [
+          {
+            "normalDelivery": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Normal Delivery"
+          },
+          {
+            "cesarian": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Cesarian Section"
+          },
+          {
+            "mismarriage": "Covered up to a of AED 25,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Miscarriage/Legal abortion"
+          },
+          {
+            "insideUAEOutsideNetwork": "Not Covered including treatment Abroad (Maternity Treatment Strictly within Network)",
+            "heading": "Inside UAE outside the network"
+          },
+          {
+            "co-insurance": "10% co insurance on all outpatient maternity services",
+            "heading": "Co Insurance"
+          },
+          {
+            "waitingPeriod": "NIL",
+            "heading": "Waiting Period"
+          },
+          {
+            "outPatientservice": "Covered up to annual limit as per DHA Antenatal Protocol (FBC and Platelets, Blood group, Rhesus status and antibodies , VDRL, MSU & urinalysis, Rubella serology, HIV, Hepatitis C offered to high risk patients, GTT if high risk, FBS, Random blood sugar OR HbA1C and Ultrasonography scans)",
+            "heading": "Outpatient Services"
+          }
+        ],
+        "preExistingMedicalCondition": [
+          {
+            "subLimitInpatientOutpatient": "Covered up to a sub limit of AED 150,000",
+            "heading": "Sub Limit for Outpatient & Inpatient Treatment inside UAE"
+          },
+          {
+            "outpatientPharmacy": "Covered up to sublimit applicable for Pre exisiting conditions with 10% co pay",
+            "heading": "Outpatient Pharmacy"
+          },
+          {
+            "waitingPeriod": "Pre Existing conditions are covered from the enrolment date of first scheme membership, subject to declaration at inception and individual medical underwriting",
+            "heading": "Waiting Period"
+          },
+          {
+            "note": "Undeclared preexisting conditions will not be covered during the policy period and will be underwritten at renewal",
+            "heading": "Note"
+          },
+          {
+            "preexistingOutsideUAE": "Covered subject to the above conditions for Pre-exisitng conditions",
+            "heading": "Pre-existing conditions outside UAE"
+          }
+        ],
+        "otherBenefits": [
+          {
+            "dental": "Covered up to AED 4000 with 20% co insurance subject to prior authorization request",
+            "heading": "Dental"
+          },
+          {
+            "optical": "Covered up to AED 1500 on reimbursement basis with 20% co insurance subject to prior authorization request",
+            "heading": "Optical"
+          },
+          {
+            "alternative": "Covered up to AED 5000 on reimbursement basis",
+            "heading": "Alternatives Medicines"
+          }
+        ],
+        "basisClaim": [
+          {
+            "withinNetwork": "Covered subject to pre-authorization",
+            "heading": "Within Network"
+          },
+          {
+            "outsideNetwork": "Covered on reimbursement basis as per UAE Network Tariff Rates",
+            "heading": "Outside network within Geographical Scope"
+          }
+        ],
+        "area": {
+          "name": "Worldwide excluding USA and Canada",
+          "geographicalScope": "Worldwide Excluding USA"
+        },
+        "copayForTest": {
+          "name": "10% Copay "
+        },
+        "copayForConsultation": {
+          "name": "10% co insurance  "
+        },
+        "inpatientnetworkProvider": {
+          "networkName": "IH Premium"
+        },
+        "outpatientnetworkProvider": {
+          "networkName": "IH Premium"
+        },
+        "Dental Coverage": "Yes",
+        "Optical Coverage": "Yes",
+        "Wellness Coverage": "Yes",
+        "Coverage Amount": "5000000"
+      }
+    },
+    {
+      "plan_name": "Sukoon HealthPlus - PRO",
+      "vendor_id": "vendor-sukoon",
+      "premium": "7,107.30",
+      "details": {
+        "INDICATIVE PREMIUM": "7,107.30",
+        "Aggregate Limit": "3,000,000",
+        "Network": "Edge",
+        "Basic Coverage Territory": "Worldwide excluding USA & Canada",
+        "Extension Coverage (Worldwide)": "✔",
+        "Maternity Benefits": "20,000",
+        "Alternate Medicine Limit (Annual)": "3,000",
+        "Optical Plan Coverage": "X",
+        "Dental Plan Limit (Annual)": "2,000",
+        "outPatient": [
+          {
+            "testAndTreatment": "Covered up to annual limit with 10% co insurance subject to pre authorization",
+            "heading": "Tests and Treatments for non-pre-existing conditions"
+          },
+          {
+            "Pharmacy": "Covered up to annual limit with 10% co insurance subject to pre authorization",
+            "heading": "Pharmacy for non-pre-existing conditions"
+          },
+          {
+            "physiotherapy": "Covered up to 10 sessions with 10% co pay subject to pre-authorization",
+            "heading": "Physiotherapy"
+          }
+        ],
+        "inPatient": [
+          {
+            "testAndTreatment": "Covered up to annual limit subject to pre authorization",
+            "heading": "Tests and Treatments for non-pre-existing conditions"
+          },
+          {
+            "Room and Board": "Private Room",
+            "heading": "Room and Board"
+          }
+        ],
+        "maternity": [
+          {
+            "normalDelivery": "Covered up to a of AED 20,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Normal Delivery"
+          },
+          {
+            "cesarian": "Covered up to a of AED 20,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Cesarian Section"
+          },
+          {
+            "mismarriage": "Covered up to a of AED 20,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Miscarriage/Legal abortion"
+          },
+          {
+            "insideUAEOutsideNetwork": "Not Covered including treatment Abroad (Maternity Treatment Strictly within Network)",
+            "heading": "Inside UAE outside the network"
+          },
+          {
+            "co-insurance": "10% co insurance on all outpatient maternity services",
+            "heading": "Co Insurance"
+          },
+          {
+            "waitingPeriod": "NIL",
+            "heading": "Waiting Period"
+          },
+          {
+            "outPatientservice": "Covered up to annual limit as per DHA Antenatal Protocol (FBC and Platelets, Blood group, Rhesus status and antibodies , VDRL, MSU & urinalysis, Rubella serology, HIV, Hepatitis C offered to high risk patients, GTT if high risk, FBS, Random blood sugar OR HbA1C and Ultrasonography scans)",
+            "heading": "Outpatient Services"
+          }
+        ],
+        "preExistingMedicalCondition": [
+          {
+            "subLimitInpatientOutpatient": "Covered up to a sub limit of AED 150,000",
+            "heading": "Sub Limit for Outpatient & Inpatient Treatment inside UAE"
+          },
+          {
+            "outpatientPharmacy": "Covered up to sublimit applicable for Pre exisiting conditions with 10% co pay",
+            "heading": "Outpatient Pharmacy"
+          },
+          {
+            "waitingPeriod": "Pre Existing conditions are covered from the enrolment date of first scheme membership, subject to declaration at inception and individual medical underwriting",
+            "heading": "Waiting Period"
+          },
+          {
+            "note": "Undeclared preexisting conditions will not be covered during the policy period and will be underwritten at renewal",
+            "heading": "Note"
+          },
+          {
+            "preexistingOutsideUAE": "Covered subject to the above conditions for Pre-exisitng conditions",
+            "heading": "Pre-existing conditions outside UAE"
+          }
+        ],
+        "otherBenefits": [
+          {
+            "dental": "Covered up to AED 2000 with 20% co insurance subject to prior authorization request",
+            "heading": "Dental"
+          },
+          {
+            "optical": "No Benefit",
+            "heading": "Optical"
+          },
+          {
+            "alternative": "Covered up to AED 3000 on reimbursement basis",
+            "heading": "Alternatives Medicines"
+          }
+        ],
+        "basisClaim": [
+          {
+            "withinNetwork": "Covered subject to pre-authorization",
+            "heading": "Within Network"
+          },
+          {
+            "outsideNetwork": "Covered on reimbursement basis as per UAE Network Tariff Rates",
+            "heading": "Outside network within Geographical Scope"
+          }
+        ],
+        "area": {
+          "name": "Worldwide excluding USA and Canada",
+          "geographicalScope": "Worldwide Excluding USA"
+        },
+        "copayForTest": {
+          "name": "10% Copay "
+        },
+        "copayForConsultation": {
+          "name": "10% co insurance  "
+        },
+        "inpatientnetworkProvider": {
+          "networkName": "IH Edge"
+        },
+        "outpatientnetworkProvider": {
+          "networkName": "IH Edge"
+        },
+        "Dental Coverage": "Yes",
+        "Optical Coverage": "No",
+        "Wellness Coverage": "Yes",
+        "Coverage Amount": "3000000"
+      }
+    },
+    {
+      "plan_name": "Sukoon HealthPlus - MAX",
+      "vendor_id": "vendor-sukoon",
+      "premium": "5,222.00",
+      "details": {
+        "INDICATIVE PREMIUM": "5,222.00",
+        "Aggregate Limit": "500,000",
+        "Network": "Signature+Medicare",
+        "Basic Coverage Territory": "Worldwide excluding USA & Canada",
+        "Extension Coverage (Worldwide)": "✔",
+        "Maternity Benefits": "15,000",
+        "Alternate Medicine Limit (Annual)": "3,000",
+        "Optical Plan Coverage": "X",
+        "Dental Plan Limit (Annual)": "1,000",
+        "outPatient": [
+          {
+            "testAndTreatment": "Covered up to annual limit with 10% co insurance subject to pre authorization",
+            "heading": "Tests and Treatments for non-pre-existing conditions"
+          },
+          {
+            "Pharmacy": "Covered up to annual limit with 10% co insurance subject to pre authorization",
+            "heading": "Pharmacy for non-pre-existing conditions"
+          },
+          {
+            "physiotherapy": "Covered up to 10 sessions with 10% co pay subject to pre-authorization",
+            "heading": "Physiotherapy"
+          }
+        ],
+        "inPatient": [
+          {
+            "testAndTreatment": "Covered up to annual limit subject to pre authorization",
+            "heading": "Tests and Treatments for non-pre-existing conditions"
+          },
+          {
+            "Room and Board": "Private Room",
+            "heading": "Room and Board"
+          }
+        ],
+        "maternity": [
+          {
+            "normalDelivery": "Covered up to a of AED 15,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Normal Delivery"
+          },
+          {
+            "cesarian": "Covered up to a of AED 15,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Cesarian Section"
+          },
+          {
+            "mismarriage": "Covered up to a of AED 15,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Miscarriage/Legal abortion"
+          },
+          {
+            "insideUAEOutsideNetwork": "Not Covered including treatment Abroad (Maternity Treatment Strictly within Network)",
+            "heading": "Inside UAE outside the network"
+          },
+          {
+            "co-insurance": "10% co insurance on all outpatient maternity services",
+            "heading": "Co Insurance"
+          },
+          {
+            "waitingPeriod": "NIL",
+            "heading": "Waiting Period"
+          },
+          {
+            "outPatientservice": "Covered up to annual limit as per DHA Antenatal Protocol (FBC and Platelets, Blood group, Rhesus status and antibodies , VDRL, MSU & urinalysis, Rubella serology, HIV, Hepatitis C offered to high risk patients, GTT if high risk, FBS, Random blood sugar OR HbA1C and Ultrasonography scans)",
+            "heading": "Outpatient Services"
+          }
+        ],
+        "preExistingMedicalCondition": [
+          {
+            "subLimitInpatientOutpatient": "Covered up to a sub limit of AED 150,000",
+            "heading": "Sub Limit for Outpatient & Inpatient Treatment inside UAE"
+          },
+          {
+            "outpatientPharmacy": "Covered up to sublimit applicable for Pre exisiting conditions with 10% co pay",
+            "heading": "Outpatient Pharmacy"
+          },
+          {
+            "waitingPeriod": "Pre Existing conditions are covered from the enrolment date of first scheme membership, subject to declaration at inception and individual medical underwriting",
+            "heading": "Waiting Period"
+          },
+          {
+            "note": "Undeclared preexisting conditions will not be covered during the policy period and will be underwritten at renewal",
+            "heading": "Note"
+          },
+          {
+            "preexistingOutsideUAE": "Covered subject to the above conditions for Pre-exisitng conditions",
+            "heading": "Pre-existing conditions outside UAE"
+          }
+        ],
+        "otherBenefits": [
+          {
+            "dental": "Covered up to AED 1000 with 20% co insurance subject to prior authorization request",
+            "heading": "Dental"
+          },
+          {
+            "optical": "No Benefit",
+            "heading": "Optical"
+          },
+          {
+            "alternative": "Covered up to AED 3000 on reimbursement basis",
+            "heading": "Alternatives Medicines"
+          }
+        ],
+        "basisClaim": [
+          {
+            "withinNetwork": "Covered subject to pre-authorization",
+            "heading": "Within Network"
+          },
+          {
+            "outsideNetwork": "Covered on reimbursement basis as per UAE Network Tariff Rates",
+            "heading": "Outside network within Geographical Scope"
+          }
+        ],
+        "area": {
+          "name": "Worldwide excluding USA and Canada",
+          "geographicalScope": "Worldwide Excluding USA"
+        },
+        "copayForTest": {
+          "name": "10% Copay "
+        },
+        "copayForConsultation": {
+          "name": "10% co insurance  "
+        },
+        "inpatientnetworkProvider": {
+          "networkName": "IH Signature plus medcare"
+        },
+        "outpatientnetworkProvider": {
+          "networkName": "IH Signature plus medcare"
+        },
+        "Dental Coverage": "Yes",
+        "Optical Coverage": "No",
+        "Wellness Coverage": "Yes",
+        "Coverage Amount": "500000"
+      }
+    },
+    {
+      "plan_name": "Sukoon HealthPlus - HOME",
+      "vendor_id": "vendor-sukoon",
+      "premium": "3,746.00",
+      "details": {
+        "INDICATIVE PREMIUM": "3,746.00",
+        "Aggregate Limit": "250,000",
+        "Network": "Signature",
+        "Basic Coverage Territory": "UAE, Arab Countries & South East Asia",
+        "Extension Coverage (Worldwide)": "✔",
+        "Maternity Benefits": "10,000",
+        "Alternate Medicine Limit (Annual)": "X",
+        "Optical Plan Coverage": "X",
+        "Dental Plan Limit (Annual)": "1,000",
+        "outPatient": [
+          {
+            "testAndTreatment": "Covered up to annual limit with 10% co insurance subject to pre authorization",
+            "heading": "Tests and Treatments for non-pre-existing conditions"
+          },
+          {
+            "Pharmacy": "Covered up to annual limit with 10% co insurance subject to pre authorization",
+            "heading": "Pharmacy for non-pre-existing conditions"
+          },
+          {
+            "physiotherapy": "Covered up to 10 sessions with 10% co pay subject to pre-authorization",
+            "heading": "Physiotherapy"
+          }
+        ],
+        "inPatient": [
+          {
+            "testAndTreatment": "Covered up to annual limit subject to pre authorization",
+            "heading": "Tests and Treatments for non-pre-existing conditions"
+          },
+          {
+            "Room and Board": "Private Room",
+            "heading": "Room and Board"
+          }
+        ],
+        "maternity": [
+          {
+            "normalDelivery": "Covered up to a of AED 10,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Normal Delivery"
+          },
+          {
+            "cesarian": "Covered up to a of AED 10,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Cesarian Section"
+          },
+          {
+            "mismarriage": "Covered up to a of AED 10,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Miscarriage/Legal abortion"
+          },
+          {
+            "insideUAEOutsideNetwork": "Not Covered including treatment Abroad (Maternity Treatment Strictly within Network)",
+            "heading": "Inside UAE outside the network"
+          },
+          {
+            "co-insurance": "10% co insurance on all outpatient maternity services",
+            "heading": "Co Insurance"
+          },
+          {
+            "waitingPeriod": "NIL",
+            "heading": "Waiting Period"
+          },
+          {
+            "outPatientservice": "Covered up to annual limit as per DHA Antenatal Protocol (FBC and Platelets, Blood group, Rhesus status and antibodies , VDRL, MSU & urinalysis, Rubella serology, HIV, Hepatitis C offered to high risk patients, GTT if high risk, FBS, Random blood sugar OR HbA1C and Ultrasonography scans)",
+            "heading": "Outpatient Services"
+          }
+        ],
+        "preExistingMedicalCondition": [
+          {
+            "subLimitInpatientOutpatient": "Covered up to a sub limit of AED 150,000",
+            "heading": "Sub Limit for Outpatient & Inpatient Treatment inside UAE"
+          },
+          {
+            "outpatientPharmacy": "Covered up to sublimit applicable for Pre exisiting conditions with 10% co pay",
+            "heading": "Outpatient Pharmacy"
+          },
+          {
+            "waitingPeriod": "Pre Existing conditions are covered from the enrolment date of first scheme membership, subject to declaration at inception and individual medical underwriting",
+            "heading": "Waiting Period"
+          },
+          {
+            "note": "Undeclared preexisting conditions will not be covered during the policy period and will be underwritten at renewal",
+            "heading": "Note"
+          },
+          {
+            "preexistingOutsideUAE": "Covered subject to the above conditions for Pre-exisitng conditions",
+            "heading": "Pre-existing conditions outside UAE"
+          }
+        ],
+        "otherBenefits": [
+          {
+            "dental": "Covered up to AED 1000 with 20% co insurance subject to prior authorization request",
+            "heading": "Dental"
+          },
+          {
+            "optical": "No Benefit",
+            "heading": "Optical"
+          },
+          {
+            "alternative": "No Benefit",
+            "heading": "Alternatives Medicines"
+          }
+        ],
+        "basisClaim": [
+          {
+            "withinNetwork": "Covered subject to pre-authorization",
+            "heading": "Within Network"
+          },
+          {
+            "outsideNetwork": "Covered on reimbursement basis as per UAE Network Tariff Rates",
+            "heading": "Outside network within Geographical Scope"
+          }
+        ],
+        "area": {
+          "name": "UAE and Regional",
+          "geographicalScope": "UAE, Arab Countries, South East Asia"
+        },
+        "copayForTest": {
+          "name": "10% Copay "
+        },
+        "copayForConsultation": {
+          "name": "10% co insurance  "
+        },
+        "inpatientnetworkProvider": {
+          "networkName": "IH Signature "
+        },
+        "outpatientnetworkProvider": {
+          "networkName": "IH Signature "
+        },
+        "Dental Coverage": "Yes",
+        "Optical Coverage": "No",
+        "Wellness Coverage": "Yes",
+        "Coverage Amount": "250000"
+      }
+    },
+    {
+      "plan_name": "Sukoon HealthPlus - HOME LITE",
+      "vendor_id": "vendor-sukoon",
+      "premium": "3,064.00",
+      "details": {
+        "INDICATIVE PREMIUM": "3,064.00",
+        "Aggregate Limit": "250,000",
+        "Network": "Advance",
+        "Basic Coverage Territory": "UAE, Arab Countries & South East Asia",
+        "Extension Coverage (Worldwide)": "✔",
+        "Maternity Benefits": "10,000",
+        "Alternate Medicine Limit (Annual)": "X",
+        "Optical Plan Coverage": "X",
+        "Dental Plan Limit (Annual)": "500",
+        "outPatient": [
+          {
+            "testAndTreatment": "Covered up to annual limit with 10% co insurance subject to pre authorization",
+            "heading": "Tests and Treatments for non-pre-existing conditions"
+          },
+          {
+            "Pharmacy": "Covered up to annual limit with 10% co insurance subject to pre authorization",
+            "heading": "Pharmacy for non-pre-existing conditions"
+          },
+          {
+            "physiotherapy": "Covered up to 10 sessions with 10% co pay subject to pre-authorization",
+            "heading": "Physiotherapy"
+          }
+        ],
+        "inPatient": [
+          {
+            "testAndTreatment": "Covered up to annual limit subject to pre authorization",
+            "heading": "Tests and Treatments for non-pre-existing conditions"
+          },
+          {
+            "Room and Board": "Private Room",
+            "heading": "Room and Board"
+          }
+        ],
+        "maternity": [
+          {
+            "normalDelivery": "Covered up to a of AED 10,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Normal Delivery"
+          },
+          {
+            "cesarian": "Covered up to a of AED 10,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Cesarian Section"
+          },
+          {
+            "mismarriage": "Covered up to a of AED 10,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Miscarriage/Legal abortion"
+          },
+          {
+            "insideUAEOutsideNetwork": "Not Covered including treatment Abroad (Maternity Treatment Strictly within Network)",
+            "heading": "Inside UAE outside the network"
+          },
+          {
+            "co-insurance": "10% co insurance on all outpatient maternity services",
+            "heading": "Co Insurance"
+          },
+          {
+            "waitingPeriod": "NIL",
+            "heading": "Waiting Period"
+          },
+          {
+            "outPatientservice": "Covered up to annual limit as per DHA Antenatal Protocol (FBC and Platelets, Blood group, Rhesus status and antibodies , VDRL, MSU & urinalysis, Rubella serology, HIV, Hepatitis C offered to high risk patients, GTT if high risk, FBS, Random blood sugar OR HbA1C and Ultrasonography scans)",
+            "heading": "Outpatient Services"
+          }
+        ],
+        "preExistingMedicalCondition": [
+          {
+            "subLimitInpatientOutpatient": "Covered up to a sub limit of AED 150,000",
+            "heading": "Sub Limit for Outpatient & Inpatient Treatment inside UAE"
+          },
+          {
+            "outpatientPharmacy": "Covered up to sublimit applicable for Pre exisiting conditions with 10% co pay",
+            "heading": "Outpatient Pharmacy"
+          },
+          {
+            "waitingPeriod": "Pre Existing conditions are covered from the enrolment date of first scheme membership, subject to declaration at inception and individual medical underwriting",
+            "heading": "Waiting Period"
+          },
+          {
+            "note": "Undeclared preexisting conditions will not be covered during the policy period and will be underwritten at renewal",
+            "heading": "Note"
+          },
+          {
+            "preexistingOutsideUAE": "Covered subject to the above conditions for Pre-exisitng conditions",
+            "heading": "Pre-existing conditions outside UAE"
+          }
+        ],
+        "otherBenefits": [
+          {
+            "dental": "No Benefit",
+            "heading": "Dental"
+          },
+          {
+            "optical": "No Benefit",
+            "heading": "Optical"
+          },
+          {
+            "alternative": "No Benefit",
+            "heading": "Alternatives Medicines"
+          }
+        ],
+        "basisClaim": [
+          {
+            "withinNetwork": "Covered subject to pre-authorization",
+            "heading": "Within Network"
+          },
+          {
+            "outsideNetwork": "Covered on reimbursement basis as per UAE Network Tariff Rates",
+            "heading": "Outside network within Geographical Scope"
+          }
+        ],
+        "area": {
+          "name": "UAE and Regional",
+          "geographicalScope": "UAE, Arab Countries, South East Asia"
+        },
+        "copayForTest": {
+          "name": "10% Copay "
+        },
+        "copayForConsultation": {
+          "name": "10% co insurance  "
+        },
+        "inpatientnetworkProvider": {
+          "networkName": "IH Advance"
+        },
+        "outpatientnetworkProvider": {
+          "networkName": "IH Advance"
+        },
+        "Dental Coverage": "No",
+        "Optical Coverage": "No",
+        "Wellness Coverage": "Yes",
+        "Coverage Amount": "250000"
+      }
+    },
+    {
+      "plan_name": "Sukoon HealthPlus - SAFE",
+      "vendor_id": "vendor-sukoon",
+      "premium": "2,338.00",
+      "details": {
+        "INDICATIVE PREMIUM": "2,338.00",
+        "Aggregate Limit": "150,000",
+        "Network": "Vital",
+        "Basic Coverage Territory": "UAE, Arab Countries & South East Asia",
+        "Extension Coverage (Worldwide)": "X",
+        "Maternity Benefits": "10,000",
+        "Alternate Medicine Limit (Annual)": "X",
+        "Optical Plan Coverage": "X",
+        "Dental Plan Limit (Annual)": "500",
+        "outPatient": [
+          {
+            "testAndTreatment": "Covered up to annual limit with 10% co insurance subject to pre authorization",
+            "heading": "Tests and Treatments for non-pre-existing conditions"
+          },
+          {
+            "Pharmacy": "Covered up to annual limit with 10% co insurance subject to pre authorization",
+            "heading": "Pharmacy for non-pre-existing conditions"
+          },
+          {
+            "physiotherapy": "Covered up to 10 sessions with 10% co pay subject to pre-authorization",
+            "heading": "Physiotherapy"
+          }
+        ],
+        "inPatient": [
+          {
+            "testAndTreatment": "Covered with 20% coinsurance payable by the insured with a cap of 500 AED payable per encounter and an annual aggregate cap of 1000 AED.\nAbove these caps the insurer will cover 100% of treatment.",
+            "heading": "Tests and Treatments for non-pre-existing conditions"
+          },
+          {
+            "Room and Board": "Private Room",
+            "heading": "Room and Board"
+          }
+        ],
+        "maternity": [
+          {
+            "normalDelivery": "Covered up to a of AED 7,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Normal Delivery"
+          },
+          {
+            "cesarian": "Covered up to a of AED 10,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Cesarian Section"
+          },
+          {
+            "mismarriage": "Covered up to a of AED 10,000/- for inpatient treatment in aggregate to all inpatient maternity treatment",
+            "heading": "Miscarriage/Legal abortion"
+          },
+          {
+            "insideUAEOutsideNetwork": "Not Covered including treatment Abroad (Maternity Treatment Strictly within Network)",
+            "heading": "Inside UAE outside the network"
+          },
+          {
+            "co-insurance": "10% co insurance on all outpatient maternity services",
+            "heading": "Co Insurance"
+          },
+          {
+            "waitingPeriod": "NIL",
+            "heading": "Waiting Period"
+          },
+          {
+            "outPatientservice": "Covered up to annual limit as per DHA Antenatal Protocol (FBC and Platelets, Blood group, Rhesus status and antibodies , VDRL, MSU & urinalysis, Rubella serology, HIV, Hepatitis C offered to high risk patients, GTT if high risk, FBS, Random blood sugar OR HbA1C and Ultrasonography scans)",
+            "heading": "Outpatient Services"
+          }
+        ],
+        "preExistingMedicalCondition": [
+          {
+            "subLimitInpatientOutpatient": "Covered up to a sub limit of AED 150,000",
+            "heading": "Sub Limit for Outpatient & Inpatient Treatment inside UAE"
+          },
+          {
+            "outpatientPharmacy": "Covered up to sublimit applicable for Pre exisiting conditions with 10% co pay",
+            "heading": "Outpatient Pharmacy"
+          },
+          {
+            "waitingPeriod": "Pre Existing conditions are covered from the enrolment date of first scheme membership, subject to declaration at inception and individual medical underwriting",
+            "heading": "Waiting Period"
+          },
+          {
+            "note": "Undeclared preexisting conditions will not be covered during the policy period and will be underwritten at renewal",
+            "heading": "Note"
+          },
+          {
+            "preexistingOutsideUAE": "Covered subject to the above conditions for Pre-exisitng conditions",
+            "heading": "Pre-existing conditions outside UAE"
+          }
+        ],
+        "otherBenefits": [
+          {
+            "dental": "No Benefit",
+            "heading": "Dental"
+          },
+          {
+            "optical": "No Benefit",
+            "heading": "Optical"
+          },
+          {
+            "alternative": "No Benefit",
+            "heading": "Alternatives Medicines"
+          }
+        ],
+        "basisClaim": [
+          {
+            "withinNetwork": "Covered subject to pre-authorization",
+            "heading": "Within Network"
+          },
+          {
+            "outsideNetwork": "Covered on reimbursement basis as per UAE Network Tariff Rates",
+            "heading": "Outside network within Geographical Scope"
+          }
+        ],
+        "area": {
+          "name": "UAE and Regional",
+          "geographicalScope": "UAE, Arab Countries, South East Asia"
+        },
+        "copayForTest": {
+          "name": "10% Copay "
+        },
+        "copayForConsultation": {
+          "name": "10% co insurance  "
+        },
+        "inpatientnetworkProvider": {
+          "networkName": "IH Safe"
+        },
+        "outpatientnetworkProvider": {
+          "networkName": "IH Safe"
+        },
+        "Dental Coverage": "No",
+        "Optical Coverage": "No",
+        "Wellness Coverage": "Yes",
+        "Coverage Amount": "150000"
+      }
+    }
+  ],
+  "plan_count": 6
+}

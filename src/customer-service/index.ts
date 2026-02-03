@@ -11,6 +11,7 @@ import './src/functions/customers/listCustomers';
 import './src/functions/customers/getCustomer';
 import './src/functions/customers/updateProfile';
 import './src/functions/customers/addContact';
+import './src/functions/customers/deleteCustomer';
 
 // Integration functions
 import './src/functions/integrations/getPolicies';
