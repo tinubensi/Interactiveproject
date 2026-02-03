@@ -325,6 +325,26 @@ class TemplateRenderer {
     const templatePath = join(this.templatesPath, templateFileName);
     
     try {
+      // Sukoon: ensure top-level keys exist so template never receives undefined
+      if (normalizedVendorCode === 'sukoon') {
+        const prev = formData.previousInsurance || {};
+        // Normalize hasInsurance so Section 2 yes/no checkboxes prefill from user entry (form stores "true"/"false" strings)
+        let hasInsurance: boolean | undefined = undefined;
+        if (prev.hasInsurance === 'true' || prev.hasInsurance === true) hasInsurance = true;
+        else if (prev.hasInsurance === 'false' || prev.hasInsurance === false) hasInsurance = false;
+        formData = {
+          memberDetails: formData.memberDetails || {},
+          members: Array.isArray(formData.members) ? formData.members : [],
+          previousInsurance: { ...prev },
+          signature: formData.signature || {},
+          medicalHistory: formData.medicalHistory || {},
+          specificMedicalHistory: formData.specificMedicalHistory || {},
+          yesAnswerDetails: Array.isArray(formData.yesAnswerDetails) ? formData.yesAnswerDetails : [],
+          ...formData,
+        };
+        (formData as any).previousInsurance = { ...(formData as any).previousInsurance, ...(hasInsurance !== undefined && { hasInsurance }) };
+      }
+      
       console.log(`Loading template from: ${templatePath}`);
       
       const templateSource = readFileSync(templatePath, 'utf-8');

@@ -831,18 +831,11 @@ export const sukoonTemplateSections: FormSection[] = [
       }
     ]
   },
-  // Section 7: Data Privacy Notice (read-only, no questions)
-  {
-    id: uuidv4(),
-    title: 'Sukoon\'s Data Privacy Notice and Data Subject\'s Consent',
-    order: 7,
-    questions: [] // Read-only section
-  },
-  // Section 8: Declaration & Signature
+  // Section 7: Declaration & Signature
   {
     id: uuidv4(),
     title: 'Declaration',
-    order: 8,
+    order: 7,
     questions: [
       {
         id: uuidv4(),

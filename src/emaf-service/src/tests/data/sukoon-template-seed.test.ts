@@ -9,8 +9,8 @@ import { sukoonTemplateSections, sukoonDocumentRequirements } from '../../data/s
 import { FormQuestion } from '../../models/emafTypes';
 
 describe('Sukoon Template Seed Data', () => {
-  it('should have 8 sections', () => {
-    assert.strictEqual(sukoonTemplateSections.length, 8, 'Should have exactly 8 sections');
+  it('should have 7 sections', () => {
+    assert.strictEqual(sukoonTemplateSections.length, 7, 'Should have exactly 7 sections');
   });
 
   it('should have sections in correct order', () => {
@@ -61,18 +61,11 @@ describe('Sukoon Template Seed Data', () => {
     assert.strictEqual(section6.questions.length, 6, 'Section 6 should have 6 questions');
   });
 
-  it('should have Section 7: Data Privacy Notice with 0 questions (read-only)', () => {
+  it('should have Section 7: Declaration with 3 questions', () => {
     const section7 = sukoonTemplateSections.find(s => s.order === 7);
     assert(section7, 'Section 7 should exist');
-    assert(section7.title.includes('Data Privacy'));
-    assert.strictEqual(section7.questions.length, 0, 'Section 7 should have 0 questions (read-only)');
-  });
-
-  it('should have Section 8: Declaration with 3 questions', () => {
-    const section8 = sukoonTemplateSections.find(s => s.order === 8);
-    assert(section8, 'Section 8 should exist');
-    assert.strictEqual(section8.title, 'Declaration');
-    assert.strictEqual(section8.questions.length, 3, 'Section 8 should have 3 questions');
+    assert.strictEqual(section7.title, 'Declaration');
+    assert.strictEqual(section7.questions.length, 3, 'Section 7 should have 3 questions');
   });
 
   it('should have unique question IDs', () => {
@@ -156,17 +149,17 @@ describe('Sukoon Template Seed Data', () => {
   });
 
   it('should have signature section with correct fields', () => {
-    const section8 = sukoonTemplateSections.find(s => s.order === 8);
-    assert(section8, 'Section 8 should exist');
+    const section7 = sukoonTemplateSections.find(s => s.order === 7);
+    assert(section7, 'Section 7 (Declaration) should exist');
     
-    const applicantName = section8.questions.find(q => q.dataKey === 'signature.applicantName');
+    const applicantName = section7.questions.find(q => q.dataKey === 'signature.applicantName');
     assert(applicantName, 'Should have signature.applicantName');
     
-    const date = section8.questions.find(q => q.dataKey === 'signature.date');
+    const date = section7.questions.find(q => q.dataKey === 'signature.date');
     assert(date, 'Should have signature.date');
     assert.strictEqual(date.type, 'date', 'Signature date should be date type');
     
-    const emiratesId = section8.questions.find(q => q.dataKey === 'signature.emiratesId');
+    const emiratesId = section7.questions.find(q => q.dataKey === 'signature.emiratesId');
     assert(emiratesId, 'Should have signature.emiratesId');
   });
 });
